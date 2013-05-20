@@ -1,0 +1,102 @@
+﻿<Window x:Class="KinectWithVRServer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Initialized="Window_Initialized" Closing="Window_Closing"
+        Title="Kinect With VR (KiwiVR) Server" Height="400" Width="590">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Menu IsMainMenu="True">
+            <MenuItem Header="File">
+                <MenuItem Name="OpenSettingsMenuItem" Header="_Open Settings" Click="OpenSettingsMenuItem_Click"/>
+                <MenuItem Name="SaveSettingsMenuItem" Header="_Save Settings" Click="SaveSettingsMenuItem_Click"/>
+                <Separator/>
+                <MenuItem Name="SaveLogMenuItem" Header="Save Log" Click="SaveLogMenuItem_Click"/>
+                <MenuItem Name="GenJCONFMenuItem" Header="Generate .jconf" Click="GenJCONFMenuItem_Click"/>
+                <Separator/>
+                <MenuItem Name="ExitMenuItem" Header="Exit" Click="ExitMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="Help">
+                <MenuItem Name="AboutMenuItem" Header="About" Click="AboutMenuItem_Click"/>
+                <MenuItem Name="HelpMenuItem" Header="Help" Click="HelpMenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*" MaxWidth="150"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="Color:"/>
+            <Image Name="ColorImage" Grid.Row="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"/>
+            <Canvas Name="ColorImageCanvas" Grid.Row="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
+
+            <Label Content="Depth:" Grid.Column="1"/>
+            <Image Name="DepthImage" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <Label Content="Info:" Grid.Column="2"/>
+        </Grid>
+        <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
+        <GridSplitter Grid.Row="2" VerticalAlignment="Top" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
+        <TabControl Name="SettingsTabControl" Grid.Row="2" SelectedIndex="0">
+            <TabItem Name="StatusTab" Header="Status">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal">
+                        <Button Content="Start" Height="23" Name="startServerButton" Width="75" Margin="2" Click="startServerButton_Click"/>
+                    </StackPanel> 
+                </Grid>
+
+            </TabItem>
+            <TabItem Name="KinectTab" Header="Kinect Settings">
+                
+            </TabItem>
+            <TabItem Name="VoiceTab" Header="Voice Commands">
+                <ScrollViewer>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <DataGrid Name="VoiceButtonDataGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="True" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
+                        </DataGrid>
+                        <DataGrid Name="VoiceTextDataGrid" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="True" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
+                        </DataGrid>
+                        <!--<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Name="VoiceRemoveButton" Width="72" Height="24" Margin="2" Content="Remove" Click="VoiceRemoveButton_Click" />
+                        </StackPanel>-->
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Name="GestureTab" Header="Gesture Commands">
+                
+            </TabItem>
+            <TabItem Name="SkeletonTab" Header="Skeleton Settings">
+                
+            </TabItem>
+            <TabItem Name="ServersTab" Header="Servers">
+                
+            </TabItem>
+            <TabItem Name="LogTab" Header="Log">
+                <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="Welcome to the Kinect With VR (KiwiVR) Server!" AcceptsReturn="True" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
+            </TabItem>
+        </TabControl>
+        <StatusBar Grid.Row="3">
+            <StatusBarItem Name="KinectStatusItem" Content="0 Kinects Attached"/>
+            <StatusBarItem Name="ClientStatusItem" Content="0 Clients Attached"/>
+            <StatusBarItem Content=" "/><!--Used to keep the status bar height set correctly-->
+            <StatusBarItem Name="ServerStatusItem" Content="Server Stopped" HorizontalAlignment="Right"/>
+        </StatusBar>
+    </Grid>
+</Window>
