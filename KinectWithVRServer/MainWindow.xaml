@@ -1,4 +1,4 @@
-﻿<Window x:Class="KinectWithVRServer.MainWindow"
+<Window x:Class="KinectWithVRServer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Initialized="Window_Initialized" Closing="Window_Closing"
@@ -54,13 +54,29 @@
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal">
                         <Button Content="Start" Height="23" Name="startServerButton" Width="75" Margin="2" Click="startServerButton_Click"/>
-                    </StackPanel> 
+                    </StackPanel>
+                    <TextBlock Name="StatusTextBlock" TextWrapping="Wrap" Margin="6,4,0,0" Width="552">
+      Server Status: <Bold>Not Happy</Bold><LineBreak/>
+      Frame Rate: 0 fps<LineBreak/>
+      # of Tracked Skeletons: 0<LineBreak/>
+      Runtime: 0 seconds
+                    </TextBlock>
                 </Grid>
 
             </TabItem>
             <TabItem Name="KinectTab" Header="Kinect Settings">
-                
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Name="KinectTextBlock" TextWrapping="Wrap" Margin="6,4,0,0">
+      Camera Resolution:<LineBreak/> 
+                    </TextBlock>
+                    <Button Content="640 x 480" Height="23" Name="ChooseResolutionButton" Width="73" Margin="6,21,478,115" Click="CameraResButton0_Click"/>
+                </Grid>
             </TabItem>
+                
             <TabItem Name="VoiceTab" Header="Voice Commands">
                 <ScrollViewer>
                     <Grid>
@@ -83,13 +99,26 @@
                 
             </TabItem>
             <TabItem Name="SkeletonTab" Header="Skeleton Settings">
-                
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="21*"/>
+                        <RowDefinition Height="138*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="6,4,0,115" Grid.RowSpan="2">
+      Skeleton Position Mode:<LineBreak/>
+                    </TextBlock>
+                    <Button Content="Standing" Height="23" Name="StandModeButton" Width="73" Margin="85,0,400,115" Click="StandModeButton0_Click" Grid.Row="1" />
+                    <Button Content="Sitting" Height="23" Name="SitModeButton" Width="73" Margin="6,0,479,115" Click="SitModeButton0_Click" Grid.Row="1" />
+                </Grid>
             </TabItem>
             <TabItem Name="ServersTab" Header="Servers">
                 
             </TabItem>
             <TabItem Name="LogTab" Header="Log">
-                <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="Welcome to the Kinect With VR (KiwiVR) Server!" AcceptsReturn="True" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
+                <ScrollViewer>
+                    <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="Welcome to the Kinect With VR (KiwiVR) Server!" AcceptsReturn="True" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
+                </ScrollViewer>
             </TabItem>
         </TabControl>
         <StatusBar Grid.Row="3">
