@@ -50,13 +50,14 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal">
                         <Button Content="Start" Height="23" Name="startServerButton" Width="75" Margin="2" Click="startServerButton_Click"/>
                     </StackPanel>
-                    <TextBlock Name="StatusTextBlock" TextWrapping="Wrap" Margin="6,4,0,0" Width="552">
-      Server Status: <Bold>Not Happy</Bold><LineBreak/>
+                    <TextBlock Name="StatusTextBlock" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" Margin="6">
+      Server Status: <Bold>Happy</Bold><LineBreak/>
       Frame Rate: 0 fps<LineBreak/>
       # of Tracked Skeletons: 0<LineBreak/>
       Runtime: 0 seconds
@@ -71,9 +72,11 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="KinectTextBlock" TextWrapping="Wrap" Margin="6,4,0,0">
-      Camera Resolution:<LineBreak/> 
+      Camera Resolution:<LineBreak/><LineBreak/><LineBreak/>Depth Setting:<LineBreak/>
+                        <CheckBox Content="Near Mode" Height="23" Name="ChooseNearModeButton" Margin="6" Checked="SelectNearModeChanged"/>
                     </TextBlock>
-                    <Button Content="640 x 480" Height="23" Name="ChooseResolutionButton" Width="73" Margin="6,21,478,115" Click="CameraResButton0_Click"/>
+                    <!--<Button Content="640 x 480" Height="23" Name="ChooseResolutionButton0" Width="73" Margin="6,21,478,115" Click="CameraResButton0_Click"/>-->
+                    
                 </Grid>
             </TabItem>
                 
@@ -101,15 +104,12 @@
             <TabItem Name="SkeletonTab" Header="Skeleton Settings">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="21*"/>
-                        <RowDefinition Height="138*"/>
+                        <RowDefinition Height="53*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="6,4,0,115" Grid.RowSpan="2">
-      Skeleton Position Mode:<LineBreak/>
-                    </TextBlock>
-                    <Button Content="Standing" Height="23" Name="StandModeButton" Width="73" Margin="85,0,400,115" Click="StandModeButton0_Click" Grid.Row="1" />
-                    <Button Content="Sitting" Height="23" Name="SitModeButton" Width="73" Margin="6,0,479,115" Click="SitModeButton0_Click" Grid.Row="1" />
+                    <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="0" Grid.RowSpan="2">
+      Skeleton Position Mode:<LineBreak/><CheckBox Content="Sitting" Height="23" Margin="6" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/></TextBlock>
+                    
                 </Grid>
             </TabItem>
             <TabItem Name="ServersTab" Header="Servers">
