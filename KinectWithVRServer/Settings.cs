@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -155,8 +155,8 @@ namespace KinectWithVRServer
         public bool trackSkeletons = true;
         public ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
         public DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
-        public DepthRange depthRangeMode = DepthRange.Default;
-        public SkeletonTrackingMode skeletonMode = SkeletonTrackingMode.Default;
+        public static DepthRange depthRangeMode = DepthRange.Default;
+        public static SkeletonTrackingMode skeletonMode = SkeletonTrackingMode.Default;
         public bool previewEnabled = true;
         public double sensorAngle = 0.0;
         public EchoCancellationMode echoMode = EchoCancellationMode.None;
@@ -176,12 +176,12 @@ namespace KinectWithVRServer
 
     public class SkeletonSettings
     {
-
+        public bool EnableTrackingInNearRange { get; set; }
     }
 
     public class AnalogServerSettings
     {
-        public string serverName {get; set;}
+        public string serverName { get; set; }
         public int channelCount { get; set; }
         public List<int> uniqueChannels { get; set; }
     }
