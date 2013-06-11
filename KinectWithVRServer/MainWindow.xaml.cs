@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +15,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
 using Microsoft.Win32;
+using Microsoft.Kinect;
 
 namespace KinectWithVRServer
 {
@@ -120,7 +121,7 @@ namespace KinectWithVRServer
         }
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Kinect with VR (KiwiVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson and Tim Morgan\r\nCopyright 2013", "About KiwiVR", MessageBoxButton.OK);
+            MessageBox.Show("Kinect with VR (KiwiVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson, Tim Morgan, and Diana Jarrell\r\nCopyright 2013", "About KiwiVR", MessageBoxButton.OK);
         }
         private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -196,6 +197,38 @@ namespace KinectWithVRServer
                 {
                     server.launchServer(settings);
                     startServerButton.Content = "Stop";
+                }
+            }
+        }
+
+        //Changes to and from seated mode
+        private void SelectSeatedModeChanged(object sender, RoutedEventArgs e)
+        {
+            if (null != this.kinect)
+            {
+                if (this.ChooseSeatedModeButton.IsChecked.GetValueOrDefault())
+                {
+                    KinectSettings.skeletonMode = SkeletonTrackingMode.Seated; //Changes default settings in Settings.cs
+                }
+                else
+                {
+                    KinectSettings.skeletonMode = SkeletonTrackingMode.Default;
+                }
+            }
+        }
+        
+        //Changes to and from near mode
+        private void SelectNearModeChanged(object sender, RoutedEventArgs e)
+        {
+            if (null != this.kinect)
+            {
+                if (this.ChooseNearModeButton.IsChecked.GetValueOrDefault())
+                {
+                    KinectSettings.depthRangeMode = DepthRange.Near; //Changes default settings in Settings.cs
+                }
+                else
+                {
+                    KinectSettings.depthRangeMode = DepthRange.Default;
                 }
             }
         }
