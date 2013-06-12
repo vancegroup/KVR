@@ -72,7 +72,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="KinectTextBlock" TextWrapping="Wrap" Margin="6,4,0,0">
-      Camera Resolution:<LineBreak/><LineBreak/><LineBreak/>Depth Setting:<LineBreak/>
+      <Underline>Camera Resolution</Underline>: <LineBreak/>640x480<LineBreak/><Underline>Depth Setting</Underline>:<LineBreak/>
                         <CheckBox Content="Near Mode" Height="23" Name="ChooseNearModeButton" Margin="6" Checked="SelectNearModeChanged"/>
                     </TextBlock>
                     <!--<Button Content="640 x 480" Height="23" Name="ChooseResolutionButton0" Width="73" Margin="6,21,478,115" Click="CameraResButton0_Click"/>-->
@@ -107,8 +107,8 @@
                         <RowDefinition Height="53*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="0" Grid.RowSpan="2">
-      Skeleton Position Mode:<LineBreak/><CheckBox Content="Sitting" Height="23" Margin="6" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/></TextBlock>
+                    <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="4,5,-4,-5" Grid.RowSpan="2">
+      <Underline>Skeleton Position Mode</Underline>:<LineBreak/><CheckBox Content="Sitting" Height="23" Margin="6" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/></TextBlock>
                     
                 </Grid>
             </TabItem>
