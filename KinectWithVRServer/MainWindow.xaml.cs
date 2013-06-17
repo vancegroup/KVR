@@ -30,6 +30,9 @@ namespace KinectWithVRServer
         internal MasterSettings settings;
         internal ServerCore server;
         internal KinectCore kinect;
+        int totalFrames = 0;
+        int lastFrames = 0;
+        DateTime lastTime = DateTime.MaxValue;
 
         public MainWindow(bool isVerbose, bool isAutoStart)
         {
@@ -64,6 +67,7 @@ namespace KinectWithVRServer
                 }
             }
         }
+
         private void SaveSettingsMenuItem_Click(object sender, RoutedEventArgs e)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(MasterSettings));
@@ -86,6 +90,7 @@ namespace KinectWithVRServer
                 }
             }
         }
+
         private void SaveLogMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveDlg = new SaveFileDialog();
@@ -111,22 +116,27 @@ namespace KinectWithVRServer
                 }
             }
         }
+
         private void GenJCONFMenuItem_Click(object sender, RoutedEventArgs e)
         {
             //TODO: Add jconf generating
         }
+
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
+
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Kinect with VR (KiwiVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson, Tim Morgan, and Diana Jarrell\r\nCopyright 2013", "About KiwiVR", MessageBoxButton.OK);
         }
+
         private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
         {
             //TODO: Add help
         }
+
         #endregion
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -165,6 +175,7 @@ namespace KinectWithVRServer
 
             //Open the Kinect
             kinect = new KinectCore(server, this);
+            KinectStatusBlock.Text = "1";
 
             if (startupFile != null && startupFile != "")
             {
@@ -227,14 +238,39 @@ namespace KinectWithVRServer
                 {
                     server.shutdownServer();
                     startServerButton.Content = "Start";
+                    ServerStatusItem.Content = "Server Stopped";
+                    ServerStatusBlock.Text = "Disabled";
                 }
                 else
                 {
                     server.launchServer(settings);
                     startServerButton.Content = "Stop";
+                    ServerStatusItem.Content = "Server Running";
+                    ServerStatusBlock.Text = "Enabled";
                 }
             }
         }
+
+        //Frames per second readout
+        /*private void CalculateFps()
+        {
+            ++totalFrames;
+
+            var cur = DateTime.Now;
+            if (cur.Subtract(lastTime) > TimeSpan.FromSeconds(1))
+            {
+                int frameDiff = totalFrames - lastFrames;
+                lastFrames = totalFrames;
+                lastTime = cur;
+                FrameRateValue.Text = frameDiff.ToString();
+            }
+        }*/
+
+        //Number of skeletons present readout
+        /*public void SkelCountUpdate(string text)
+        {
+                SkelCountBlock.Text = text;
+        }*/
 
         internal void WriteToLog(string text)
         {

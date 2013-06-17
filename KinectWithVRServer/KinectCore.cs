@@ -23,6 +23,7 @@ namespace KinectWithVRServer
         ServerCore server;
         public static bool seatedmode = false;
         public static bool nearmode = false;
+        public static int skelcount;
 
         //The parent has to be optional to allow for console operation
         public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int KinectNumber = 0)
@@ -121,9 +122,10 @@ namespace KinectWithVRServer
                         parent.ColorImageCanvas.Children.Clear();
                     }
 
-                    Skeleton[] skeletons = new Skeleton[skelFrame.SkeletonArrayLength];
+                    Skeleton[] skeletons = new Skeleton[skelFrame.SkeletonArrayLength]; 
                     skelFrame.CopySkeletonDataTo(skeletons);
                     int index = 0;
+
                     foreach (Skeleton skel in skeletons)
                     {
                         //Pick a color for the bones and joints based off the player ID
@@ -131,26 +133,32 @@ namespace KinectWithVRServer
                         if (index == 0)
                         {
                             renderColor = Colors.Red;
+                            skelcount = 1;
                         }
                         else if (index == 1)
                         {
                             renderColor = Colors.Blue;
+                            skelcount = 2;
                         }
                         else if (index == 2)
                         {
                             renderColor = Colors.Green;
+                            skelcount = 3;
                         }
                         else if (index == 3)
                         {
                             renderColor = Colors.Yellow;
+                            skelcount = 4;
                         }
                         else if (index == 4)
                         {
                             renderColor = Colors.Cyan;
+                            skelcount = 5;
                         }
                         else if (index == 5)
                         {
                             renderColor = Colors.Fuchsia;
+                            skelcount = 6;
                         }
 
                         //Send the points across if the skeleton is either tracked or has a position
@@ -170,6 +178,7 @@ namespace KinectWithVRServer
                         }
 
                         index++;
+                        //Test for skeleton number >> System.Console.WriteLine(skelcount);
                     }
                 }
             }
@@ -401,7 +410,7 @@ namespace KinectWithVRServer
                 //Map the joint from the skeleton to the color image
                 ColorImagePoint point = mapper.MapSkeletonPointToColorPoint(joint.Position, kinect.ColorStream.Format);
 
-                //Calculat the coordinates on the image (the offset is also added in this section)
+                //Calculate the coordinates on the image (the offset is also added in this section)
                 Point imagePoint = new Point(0.0, 0.0);
                 imagePoint.X = ((double)point.X / (double)kinect.ColorStream.FrameWidth) * parent.ColorImage.ActualWidth + offset.X;
                 imagePoint.Y = ((double)point.Y / (double)kinect.ColorStream.FrameHeight) * parent.ColorImage.ActualHeight + offset.Y;
