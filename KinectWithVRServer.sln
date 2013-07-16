@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectWithVRServer", "..\KiwiVR-master\KinectWithVRServer\KinectWithVRServer.csproj", "{DF4941C5-2949-40B4-B4DB-4FEC3D345C19}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectWithVRServer", "KinectWithVRServer\KinectWithVRServer.csproj", "{DF4941C5-2949-40B4-B4DB-4FEC3D345C19}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectWithVRServer.GestureRecog", "KinectWithVRServer.GestureRecog\KinectWithVRServer.GestureRecog.csproj", "{A88C9A86-F6DB-4151-87CC-AFA0CC40B882}"
 EndProject
