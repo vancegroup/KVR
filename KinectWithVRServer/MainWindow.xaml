@@ -120,9 +120,8 @@
                 
             </TabItem>
             <TabItem Name="LogTab" Header="Log">
-                <ScrollViewer>
-                    <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="Welcome to the Kinect With VR (KiwiVR) Server!" AcceptsReturn="True" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
-                </ScrollViewer>
+                <!--src:TextBoxBehaviour.ScrollOnTextChanged="True" - Goes in line below; not working currently-->
+                <TextBox VerticalScrollBarVisibility="Auto" Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="Welcome to the Kinect With VR (KiwiVR) Server!" AcceptsReturn="True" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
             </TabItem>
         </TabControl>
         <StatusBar Grid.Row="3">
