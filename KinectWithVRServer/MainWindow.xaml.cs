@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +11,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Windows.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
@@ -23,6 +22,7 @@ namespace KinectWithVRServer
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+
     public partial class MainWindow : Window
     {
         internal string startupFile = "";
@@ -33,6 +33,7 @@ namespace KinectWithVRServer
         internal KinectCore kinect;
         //int totalFrames = 0;
         //int lastFrames = 0;
+        bool isGUI = false;
         DateTime lastTime = DateTime.MaxValue;
 
         public MainWindow(bool isVerbose, bool isAutoStart)
@@ -149,7 +150,7 @@ namespace KinectWithVRServer
             testCommand.recognizedWord = "Hello";
             testCommand.buttonNumber = 0;
             testCommand.buttonType = ButtonType.Toggle;
-            testCommand.commandName = "Test";
+            testCommand.comments = "Test";
             testCommand.confidence = 0.9;
             testCommand.initialState = false;
             testCommand.sendSourceAngle = false;
@@ -159,7 +160,7 @@ namespace KinectWithVRServer
             settings.voiceButtonCommands.Add(testCommand);
             VoiceTextCommand testCommand2 = new VoiceTextCommand();
             testCommand2.recognizedWord = "Goodbye";
-            testCommand2.commandName = "Test2";
+            testCommand2.comments = "Test2";
             testCommand2.confidence = 0.9;
             testCommand2.sendSourceAngle = false;
             testCommand2.serverName = "ButtonServe";
@@ -175,7 +176,7 @@ namespace KinectWithVRServer
             server = new ServerCore(verbose, kinect, this);
 
             //Open the Kinect
-            kinect = new KinectCore(server, this);
+            ///kinect = new KinectCore(server, this); <-- Not needed; kinect initialization handled by ServerCore.
             KinectStatusBlock.Text = "1";
 
             if (startupFile != null && startupFile != "")
@@ -190,6 +191,7 @@ namespace KinectWithVRServer
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            
             if (kinect != null)
             {
                 kinect.ShutdownSensor();
@@ -204,16 +206,19 @@ namespace KinectWithVRServer
                 if (this.ChooseSeatedModeButton.IsChecked.GetValueOrDefault())
                 {
                     KinectCore.seatedmode = true;
+                    KinectSettings.skeletonMode = SkeletonTrackingMode.Seated;
                 }
                 else
                 {
                     KinectCore.seatedmode = false;
+                    KinectSettings.skeletonMode = SkeletonTrackingMode.Default;
                 }
 
                 kinect.CheckSeated();
             }
         }
 
+        //Receives checkbox input and orders near mode.
         public void SelectNearModeChanged(object sender, RoutedEventArgs e)
         {
             if (kinect != null)
@@ -221,15 +226,19 @@ namespace KinectWithVRServer
                 if (this.ChooseNearModeButton.IsChecked.GetValueOrDefault())
                 {
                     KinectCore.nearmode = true;
+                    KinectSettings.depthRangeMode = DepthRange.Near;
                 }
                 else
                 {
                     KinectCore.nearmode = false;
+                    KinectSettings.depthRangeMode = DepthRange.Default;
                 }
 
                 kinect.CheckNear();
             }
         }
+
+
 
         private void startServerButton_Click(object sender, RoutedEventArgs e)
         {
@@ -244,7 +253,9 @@ namespace KinectWithVRServer
                 }
                 else
                 {
+                    //Loading(true);
                     server.launchServer(settings);
+                    //Loading(false);
                     startServerButton.Content = "Stop";
                     ServerStatusItem.Content = "Server Running";
                     ServerStatusBlock.Text = "Enabled";
@@ -275,9 +286,21 @@ namespace KinectWithVRServer
 
         internal void WriteToLog(string text)
         {
-            LogTextBox.Text += "\r\n";
-            LogTextBox.Text += DateTime.Now.ToString() + ": ";
-            LogTextBox.Text += text;
+            if (isGUI)
+            {
+                LogTextBox.Text += "\r\n";
+                LogTextBox.Text += DateTime.Now.ToString() + ": ";
+                LogTextBox.Text += text;
+
+                //Auto-scrolling mechanism
+                LogTextBox.Focus();
+                LogTextBox.CaretIndex = LogTextBox.Text.Length;
+                LogTextBox.ScrollToEnd();
+            }
+            else
+            {
+                ServerCore.printerGrunt = text;
+            }
         }
 
         private void VoiceButtonDataGrid_LostFocus(object sender, RoutedEventArgs e)
@@ -289,89 +312,24 @@ namespace KinectWithVRServer
         {
             VoiceTextDataGrid.SelectedIndex = -1;
         }
-    }
 
-    /*public class TextBoxBehaviour
-    {
-        static readonly Dictionary<TextBox, Capture> _associations = new Dictionary<TextBox, Capture>();
-
-        public static bool GetScrollOnTextChanged(DependencyObject dependencyObject)
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            return (bool)dependencyObject.GetValue(ScrollOnTextChangedProperty);
+
         }
 
-        public static void SetScrollOnTextChanged(DependencyObject dependencyObject, bool value)
+        /*public void Loading(bool showScreen)
         {
-            dependencyObject.SetValue(ScrollOnTextChangedProperty, value);
-        }
-
-        public static readonly DependencyProperty ScrollOnTextChangedProperty =
-            DependencyProperty.RegisterAttached("ScrollOnTextChanged", typeof(bool), typeof(TextBoxBehaviour), new UIPropertyMetadata(false, OnScrollOnTextChanged));
-
-        static void OnScrollOnTextChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
-        {
-            var textBox = dependencyObject as TextBox;
-            if (textBox == null)
+            if (showScreen)
             {
-                return;
-            }
-            bool oldValue = (bool)e.OldValue, newValue = (bool)e.NewValue;
-            if (newValue == oldValue)
-            {
-                return;
-            }
-            if (newValue)
-            {
-                textBox.Loaded += TextBoxLoaded;
-                textBox.Unloaded += TextBoxUnloaded;
+                LoadingBorder.Height = 125;
+                LoadingBorder.Width = 200;
             }
             else
             {
-                textBox.Loaded -= TextBoxLoaded;
-                textBox.Unloaded -= TextBoxUnloaded;
-                if (_associations.ContainsKey(textBox))
-                {
-                    _associations[textBox].Dispose();
-                }
+                LoadingBorder.Height = 1;
+                LoadingBorder.Width = 1;
             }
-        }
-
-        static void TextBoxUnloaded(object sender, RoutedEventArgs routedEventArgs)
-        {
-            var textBox = (TextBox)sender;
-            _associations[textBox].Dispose();
-            textBox.Unloaded -= TextBoxUnloaded;
-        }
-
-        static void TextBoxLoaded(object sender, RoutedEventArgs routedEventArgs)
-        {
-            var textBox = (TextBox)sender;
-            textBox.Loaded -= TextBoxLoaded;
-            _associations[textBox] = new Capture(textBox);
-        }
-
-        class Capture : IDisposable
-        {
-            private TextBox TextBox { get; set; }
-
-            public Capture(TextBox textBox)
-            {
-                TextBox = textBox;
-                TextBox.TextChanged += OnTextBoxOnTextChanged;
-            }
-
-            private void OnTextBoxOnTextChanged(object sender, TextChangedEventArgs args)
-            {
-                TextBox.ScrollToEnd();
-            }
-
-            public void Dispose()
-            {
-                TextBox.TextChanged -= OnTextBoxOnTextChanged;
-            }
-
-        }
-
-    }*/
-
+        }*/
+    }
 }

@@ -24,8 +24,10 @@ namespace KinectWithVRServer
         bool verbose = false;
         bool GUI = false;
         MainWindow parent;
-        internal KinectCore kinect;
+        public KinectCore kinect;
         VoiceRecogCore voiceRecog;
+        GestureRecogCore gestureRecog;
+        public static string printerGrunt;
 
         public ServerCore(bool isVerbose, KinectCore kinectCore, MainWindow guiParent = null)
         {                
@@ -58,6 +60,9 @@ namespace KinectWithVRServer
             //Start voice recognition
             voiceRecog = new VoiceRecogCore(this, verbose, parent);
             voiceRecog.launchVoiceRecognizer();
+
+            gestureRecog = new GestureRecogCore(this, verbose, parent);
+            //gestureRecog.launchGestureCore();
         }
 
         public void shutdownServer()
@@ -211,5 +216,10 @@ namespace KinectWithVRServer
         }
 
         private delegate void runServerCoreDelegate();
+
+        //public void ConsolePrint(string outputMessage)
+        //{
+
+        //}
     }
 }

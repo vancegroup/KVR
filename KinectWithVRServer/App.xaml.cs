@@ -91,19 +91,15 @@ namespace KinectWithVRServer
 
                     if (connected)
                     {
-                        //Run loop here!
+                        MainWindow gui = new MainWindow(verbose, autoStart);
+                    //    //Run loop here!
                         Console.Clear();
-                        Console.WriteLine("Hello World!");
-                        Console.WriteLine("Hello Moon!");
-                        //Don't use ReadLine - causes some funky stuff to happen
-
                         bool running = true;
-                        int i = 0;
                         while (running)
                         {
                             Thread.Sleep(1000);
-                            Console.WriteLine("Running loop " + i.ToString() + "th time.");
-                            //input += Console.In.Read();
+                            Console.WriteLine(ServerCore.printerGrunt);
+                            ServerCore.printerGrunt = "";
                             if (Console.KeyAvailable)
                             {
                                 ConsoleKeyInfo key = Console.ReadKey(false);
@@ -112,12 +108,33 @@ namespace KinectWithVRServer
                                     running = false;
                                 }
                             }
-                            i++;
                         }
+                    //    //Console.WriteLine("Meow!");
+                    //    //Console.WriteLine("Hello Moon!");
+                    //    //Don't use ReadLine - causes some funky stuff to happen
 
+                    //    bool running = true;
+                    //    int i = 0;
+                    //    while (running)
+                    //    {
+                    //        Thread.Sleep(1000);
+                    //        //Console.WriteLine("Running loop " + i.ToString() + "th time.");
+                    //        Console.WriteLine(ServerCore.printerGrunt);
+                    //        //input += Console.In.Read();
+                    //        if (Console.KeyAvailable)
+                    //        {
+                    //            ConsoleKeyInfo key = Console.ReadKey(false);
+                    //            if (key.Key == ConsoleKey.E)
+                    //            {
+                    //                running = false;
+                    //            }
+                    //        }
+                    //        i++;
+                    //    }
 
                         NativeInterop.FreeConsole();
                     }
+
                 }
                 else
                 {

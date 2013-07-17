@@ -114,7 +114,9 @@ namespace KinectWithVRServer
                 }
                 else
                 {
-                    Console.WriteLine("Speech Rejected!");
+                    //Console.WriteLine("Speech Rejected!");
+                    ServerCore.printerGrunt = "Speech Rejected!";
+
                 }
             }
         }
@@ -129,7 +131,8 @@ namespace KinectWithVRServer
                 }
                 else
                 {
-                    Console.WriteLine("Hypothesized the word \"{0}\"", e.Result.Text);
+                    //Console.WriteLine("Hypothesized the word \"{0}\"", e.Result.Text);
+                    ServerCore.printerGrunt = "Hypothesized the word " + e.Result.Text;
                 }
             }
         }

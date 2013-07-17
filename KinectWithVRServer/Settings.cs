@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -153,8 +153,8 @@ namespace KinectWithVRServer
     public class KinectSettings
     {
         public bool trackSkeletons = true;
-        public ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
-        public DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
+        public static ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
+        public static DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
         public static DepthRange depthRangeMode = DepthRange.Default;
         public static SkeletonTrackingMode skeletonMode = SkeletonTrackingMode.Default;
         public bool previewEnabled = true;
@@ -181,7 +181,7 @@ namespace KinectWithVRServer
 
     public class AnalogServerSettings
     {
-        public string serverName { get; set; }
+        public string serverName { get; set;}
         public int channelCount { get; set; }
         public List<int> uniqueChannels { get; set; }
     }
@@ -206,9 +206,9 @@ namespace KinectWithVRServer
 
     public class Command
     {
-        public string commandName { get; set; }
         public string serverName { get; set; }
         public CommandType commandType { get; set; }
+        public string comments { get; set; }
     }
 
     public class VoiceCommand : Command
@@ -255,6 +255,8 @@ namespace KinectWithVRServer
     //    int channel;
     //}
 
+
+    //(*)Need to hide CommandType and ServerType from visible columns
     public enum CommandType { Voice, Gesture/*, Analog */}
     public enum ServerType { Button, Analog, Tracker, Text }
     public enum ButtonType { Setter, Toggle, Momentary }

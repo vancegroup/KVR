@@ -1,17 +1,20 @@
 ﻿<Window x:Class="KinectWithVRServer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="KinectWithVRServer.TextBoxBehavour"
         xmlns:System="clr-namespace:System;assembly=mscorlib"
+        xmlns:Collections="clr-namespace:System.Collections;assembly=mscorlib"
         Initialized="Window_Initialized" Closing="Window_Closing"
         Title="Kinect With VR (KiwiVR) Server" Height="400" Width="590">
     <Window.Resources>
         <System:Int16 x:Key="kinectsPresent">0</System:Int16>
     </Window.Resources>
-    <Grid>
+        <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="2*"/>
             <RowDefinition Height="3*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Menu IsMainMenu="True">
@@ -29,6 +32,7 @@
                 <MenuItem Name="HelpMenuItem" Header="Help" Click="HelpMenuItem_Click"/>
             </MenuItem>
         </Menu>
+
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -49,26 +53,33 @@
         </Grid>
         <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
         <GridSplitter Grid.Row="2" VerticalAlignment="Top" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
+
         <TabControl Name="SettingsTabControl" Grid.Row="2" SelectedIndex="0">
             <TabItem Name="StatusTab" Header="Status">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="114" />
+                        <ColumnDefinition Width="444" />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,46,0,0">
-                        <Button Content="Start" Height="23" Name="startServerButton" Width="75" Margin="2" Click="startServerButton_Click"/>
+                    <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.ColumnSpan="2">
+                        <Button Content="Start" Height="23" Name="startServerButton" Width="75" Margin="2" Click="startServerButton_Click">
+                            
+                        </Button>
                     </StackPanel>
-                    <TextBlock Name="StatusTextBlock" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" Margin="6,6,6,0">
+                    <TextBlock Name="StatusTextBlock" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" Margin="6,6,6,0" Grid.ColumnSpan="2">
       Server Status: <Bold><TextBlock Margin="0" Name="ServerStatusBlock" Width="Auto"> Disabled</TextBlock></Bold><LineBreak/>
       Frame Rate: <TextBlock Margin="0" Name="FrameRateValue" Width="Auto">0</TextBlock> fps<LineBreak/>
       # of Tracked Skeletons: <TextBlock Margin="0" Name="SkelCountBlock" Width="18">0</TextBlock><LineBreak/>
       Runtime:  <TextBlock Margin="0" Name="StopWatch" Width="Auto">0</TextBlock> seconds
                     </TextBlock>
                 </Grid>
-
             </TabItem>
+            
             <TabItem Name="KinectTab" Header="Kinect Settings">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -76,11 +87,17 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="KinectTextBlock" TextWrapping="Wrap" Margin="6,4,0,0">
-      <Underline>Camera Resolution</Underline>: <LineBreak/><!--640x480--><LineBreak/><Underline>Depth Setting</Underline>:<LineBreak/>
-                        <CheckBox Content="Near Mode" Height="23" Name="ChooseNearModeButton" Margin="6" Checked="SelectNearModeChanged"/>
-                    </TextBlock>
-                    <!--<Button Content="640 x 480" Height="23" Name="ChooseResolutionButton0" Width="73" Margin="6,21,478,115" Click="CameraResButton0_Click"/>-->
-                    
+    Camera Resolution: <LineBreak/>
+                        <StackPanel>
+    <ComboBox Margin="4,4,0,6" SelectionChanged="ComboBox_SelectionChanged">
+        <ComboBoxItem Tag="highres">1280x1024</ComboBoxItem>
+        <ComboBoxItem Tag="defaultres" IsSelected="True">640x480</ComboBoxItem>
+        <ComboBoxItem Tag="lowres">320x240</ComboBoxItem>
+    </ComboBox>
+</StackPanel>
+                        <LineBreak/>Depth Setting:<LineBreak/>
+                        <CheckBox Content="Near Mode" Height="23" Name="ChooseNearModeButton" Margin="4,2,0,6" Checked="SelectNearModeChanged" Unchecked="SelectNearModeChanged"/>
+                    </TextBlock>                    
                 </Grid>
             </TabItem>
                 
@@ -92,9 +109,37 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <DataGrid Name="VoiceButtonDataGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="True" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
+                        <DataGrid Name="VoiceButtonDataGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
+                            <DataGrid.Columns>
+                                <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding shortCommand.buttonType, UpdateSourceTrigger=PropertyChanged}">
+                                    <DataGridComboBoxColumn.ItemsSource>
+                                        <Collections:ArrayList>
+                                            <ComboBoxItem>Toggle</ComboBoxItem>
+                                            <ComboBoxItem>Momentary</ComboBoxItem>
+                                            <ComboBoxItem>Setter</ComboBoxItem>
+                                        </Collections:ArrayList>
+                                    </DataGridComboBoxColumn.ItemsSource>
+                                </DataGridComboBoxColumn>
+
+                                <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>
+                                <DataGridCheckBoxColumn Header="Intitial State" Binding="{Binding initialState}"/>
+                                <DataGridCheckBoxColumn Header="Set State" Binding="{Binding setState}"/>
+                                <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
+                                <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                                <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
+                                <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
+                                <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
+                            </DataGrid.Columns>
                         </DataGrid>
-                        <DataGrid Name="VoiceTextDataGrid" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="True" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
+                        <DataGrid Name="VoiceTextDataGrid" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
+                                <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
+                                <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
+                                <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
+                                <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                                <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
+                            </DataGrid.Columns>
                         </DataGrid>
                         <!--<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Name="VoiceRemoveButton" Width="72" Height="24" Margin="2" Content="Remove" Click="VoiceRemoveButton_Click" />
@@ -102,28 +147,74 @@
                     </Grid>
                 </ScrollViewer>
             </TabItem>
+            
             <TabItem Name="GestureTab" Header="Gesture Commands">
-             
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="41"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.ColumnSpan="5" Name="GestureInfoBlock" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" Margin="6,6,0,0" Width="Auto">
+                        <Bold>Gesture Information:</Bold> Select the gestures relevant to your project from below. The program will watch for selected gestures and return a message in the Log tab when they are seen for testing purposes. 
+                    </TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Name="SwipeBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
+                        Swipe:<LineBreak/><CheckBox Name="UpSwipeCheckBox" Content="Up" Margin="4"/>
+                              <LineBreak/><CheckBox Name="DownSwipeCheckBox" Content="Down" Margin="4,0,4,4"/>
+                              <LineBreak/><CheckBox Name="RightSwipeCheckBox" Content="Right" Margin="4,0,4,4"/>
+                              <LineBreak/><CheckBox Name="LeftSwipeCheckBox" Content="Left" Margin="4,0"/>
+                    </TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Name="WaveBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
+                        Wave: <LineBreak/><CheckBox Name="RightWaveCheckBox" Content="Right" Margin="4"/>
+                              <LineBreak/><CheckBox Name="LeftWaveCheckBox" Content="Left" Margin="4,0,4,4"/>
+                    </TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="2" Name="SelectionBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
+                        Selection: <LineBreak/><CheckBox Name="PushCheckBox" Content="Push" Margin="4"/>
+                              <LineBreak/><CheckBox Name="GrabCheckBox" Content="Grab" Margin="4,0,4,4"/>
+                    </TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="3" Name="MiscBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4,0,0" Grid.ColumnSpan="2">
+                        Misc: <LineBreak/>
+                            <CheckBox Name="HandsGraspBox" Margin="4" Height="40">
+                                <TextBlock>
+                                    <Run Text="Hands"/><LineBreak/><Run Text="clasped"/>
+                                </TextBlock>
+                            </CheckBox>
+                    </TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="4" Name="ServerBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
+                        Enter server name:<LineBreak/><TextBox x:Name="GCServerInputBox" Height="22" Width="125" Margin="0,4" Text="Unconnected in code"/>
+                    </TextBlock>
+                </Grid>
             </TabItem>
+            
             <TabItem Name="SkeletonTab" Header="Skeleton Settings">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="53*"/>
+                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="4,5,-4,-5" Grid.RowSpan="2">
-      <Underline>Skeleton Position Mode</Underline>:<LineBreak/><CheckBox Content="Sitting" Height="23" Margin="6" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/></TextBlock>
-                    
+      <CheckBox Content="Seated Mode" Height="23" Margin="6,2,0,0" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/>
+                    <LineBreak/>Skeleton Tracking:<LineBreak/></TextBlock>
                 </Grid>
             </TabItem>
+            
             <TabItem Name="ServersTab" Header="Servers">
-                
+
             </TabItem>
+            
             <TabItem Name="LogTab" Header="Log">
-                <!--src:TextBoxBehaviour.ScrollOnTextChanged="True" - Goes in line below; not working currently-->
-                <TextBox VerticalScrollBarVisibility="Auto" Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="Welcome to the Kinect With VR (KiwiVR) Server!" AcceptsReturn="True" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
+                <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" Text="Welcome to the Kinect With VR (KiwiVR) Server! 
+(Note: For verbose logging, add -V as a Command Line Argument in the namespace Properties menu.)  " IsReadOnly="True" IsReadOnlyCaretVisible="True" />
             </TabItem>
         </TabControl>
+        
         <StatusBar Grid.Row="3">
             <StatusBarItem>
                 <TextBlock x:Name="KinectStatusBlock">0</TextBlock>
@@ -137,5 +228,25 @@
             <StatusBarItem Content=" "/><!--Used to keep the status bar height set correctly-->
             <StatusBarItem x:Name="ServerStatusItem" Content="Server Stopped" HorizontalAlignment="Right"/>
         </StatusBar>
+
+        <Grid>
+            <!--Loading Screen
+            <Border x:Name="LoadingBorder"
+                    Background="Gray" Grid.ColumnSpan="2" Grid.RowSpan="3"
+                    Height="1" Width="1" Opacity="0.8" BorderThickness="2" CornerRadius="6" >
+                <TextBlock x:Name="LoadingText" Text="Loading...
+Please Wait" 
+                           VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
+                           Foreground="White" FontSize="28"/>
+            </Border>-->
+            
+            <!--Open/close animation for loading screen. Currently not working.
+            <Storyboard x:Name="LoadingAnimation">
+                <DoubleAnimation Storyboard.TargetName="LoadingText"
+                             Storyboard.TargetProperty="Opacity" To="0">
+                </DoubleAnimation>
+            </Storyboard>-->
+        </Grid>
     </Grid>
+    
 </Window>

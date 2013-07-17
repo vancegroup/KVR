@@ -1,8 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Kinect;
+using Microsoft.Kinect.Toolkit;
+using Microsoft.Kinect.Toolkit.Controls;
+using Microsoft.Kinect.Toolkit.Interaction;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows;
@@ -23,6 +26,7 @@ namespace KinectWithVRServer
         ServerCore server;
         public static bool seatedmode = false;
         public static bool nearmode = false;
+        public static bool skeltracking = true;
         public static int skelcount;
 
         //The parent has to be optional to allow for console operation
@@ -56,6 +60,7 @@ namespace KinectWithVRServer
             kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
             kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
             kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
+            kinect.SkeletonStream.EnableTrackingInNearRange = true;
 
             if (isGUI)
             {
@@ -97,6 +102,13 @@ namespace KinectWithVRServer
             {
                 kinect.DepthStream.Range = DepthRange.Default;
             }
+        }
+
+        public void CheckTrackingEnabled()
+        {
+            /*if (skeltracking == true)
+            {
+            }*/
         }
 
         public void ShutdownSensor()
