@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
@@ -175,6 +176,7 @@ namespace KinectWithVRServer
             //Create the server core (this does NOT start the server)
             server = new ServerCore(verbose, kinect, this);
 
+            //BUG!!!  -> Because the kinect is also initialized inside the ServerCore code, the kinect is actually getting started TWICE
             //Open the Kinect
             ///kinect = new KinectCore(server, this); <-- Not needed; kinect initialization handled by ServerCore.
             KinectStatusBlock.Text = "1";

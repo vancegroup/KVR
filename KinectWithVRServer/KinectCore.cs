@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Kinect;
-using Microsoft.Kinect.Toolkit;
-using Microsoft.Kinect.Toolkit.Controls;
-using Microsoft.Kinect.Toolkit.Interaction;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Windows.Shapes;
+using Microsoft.Kinect.Toolkit.Interaction;
 
 namespace KinectWithVRServer
 {
@@ -28,6 +26,7 @@ namespace KinectWithVRServer
         public static bool nearmode = false;
         public static bool skeltracking = true;
         public static int skelcount;
+        private InteractionStream interactStream;
 
         //The parent has to be optional to allow for console operation
         public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int KinectNumber = 0)
@@ -57,10 +56,12 @@ namespace KinectWithVRServer
             kinect.ColorStream.Enable();
             kinect.DepthStream.Enable();
             kinect.SkeletonStream.Enable();
+            interactStream = new InteractionStream(kinect, new DummyInteractionClient());
             kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
             kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
             kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
             kinect.SkeletonStream.EnableTrackingInNearRange = true;
+            interactStream.InteractionFrameReady += new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
 
             if (isGUI)
             {
@@ -191,6 +192,10 @@ namespace KinectWithVRServer
 
                         index++;
                         //Test for skeleton number >> System.Console.WriteLine(skelcount);
+
+                    //Pass the data to the interaction stream for processing
+                    Vector4 accelReading = kinect.AccelerometerGetCurrentReading();
+                    interactStream.ProcessSkeleton(skeletons, accelReading, skelFrame.Timestamp);
                     }
                 }
             }
@@ -202,6 +207,9 @@ namespace KinectWithVRServer
             {
                 if (frame != null)
                 {
+                    //Pass the data to the interaction frame for processing
+                    interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
+
                     depthImagePixels = new short[frame.PixelDataLength];
                     frame.CopyPixelDataTo(depthImagePixels);
                     depthImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), depthImagePixels, frame.Width * frame.BytesPerPixel, 0);
@@ -217,6 +225,51 @@ namespace KinectWithVRServer
                     colorImagePixels = new byte[frame.PixelDataLength];
                     frame.CopyPixelDataTo(colorImagePixels);
                     colorImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), colorImagePixels, frame.Width * frame.BytesPerPixel, 0);
+                }
+            }
+        }
+        private void interactStream_InteractionFrameReady(object sender, InteractionFrameReadyEventArgs e)
+        {
+            using (InteractionFrame interactFrame = e.OpenInteractionFrame())
+            {
+                if (interactFrame != null)
+                {
+                    UserInfo[] tempUserInfo = new UserInfo[6];
+                    interactFrame.CopyInteractionDataTo(tempUserInfo);
+
+                    foreach (UserInfo info in tempUserInfo)
+                    {
+                        foreach (InteractionHandPointer hand in info.HandPointers)
+                        {
+                            if (hand.HandEventType != InteractionHandEventType.None)
+                            {
+                                parent.WriteToLog("Skeleton Number: " + info.SkeletonTrackingId);
+
+                                if (hand.HandEventType == InteractionHandEventType.Grip)
+                                {
+                                    if (hand.HandType == InteractionHandType.Left)
+                                    {
+                                        parent.WriteToLog("Left hand closed!");
+                                    }
+                                    else if (hand.HandType == InteractionHandType.Right)
+                                    {
+                                        parent.WriteToLog("Right hand closed!");
+                                    }
+                                }
+                                else if (hand.HandEventType == InteractionHandEventType.GripRelease)
+                                {
+                                    if (hand.HandType == InteractionHandType.Left)
+                                    {
+                                        parent.WriteToLog("Left hand opened!");
+                                    }
+                                    else if (hand.HandType == InteractionHandType.Right)
+                                    {
+                                        parent.WriteToLog("Right hand opened!");
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
