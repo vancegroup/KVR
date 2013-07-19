@@ -153,10 +153,10 @@ namespace KinectWithVRServer
     public class KinectSettings
     {
         public bool trackSkeletons = true;
-        public static ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
-        public static DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
-        public static DepthRange depthRangeMode = DepthRange.Default;
-        public static SkeletonTrackingMode skeletonMode = SkeletonTrackingMode.Default;
+        public ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
+        public DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
+        public bool isNearMode = false;
+        public bool isSeatedMode = false;
         public bool previewEnabled = true;
         public double sensorAngle = 0.0;
         public EchoCancellationMode echoMode = EchoCancellationMode.None;
@@ -208,7 +208,7 @@ namespace KinectWithVRServer
     {
         public string serverName { get; set; }
         public CommandType commandType { get; set; }
-        public string comments { get; set; }
+        public string comments { get; set; }  //I think this should either be changed to button name (for use in VR juggler JCONFs) or a seperate name should be added for it
     }
 
     public class VoiceCommand : Command

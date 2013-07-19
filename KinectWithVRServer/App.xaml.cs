@@ -25,6 +25,7 @@ namespace KinectWithVRServer
             bool connected = false;
             bool verbose = false;
             bool autoStart = false;
+            string startupFile = "";
 
             string[] args = e.Args;
 
@@ -35,20 +36,20 @@ namespace KinectWithVRServer
                 {
                     parentCommandLine = true;
                 }
-                if (args[i].ToLower() == "-nc" || args[i].ToLower() == "/nc")
+                else if (args[i].ToLower() == "-nc" || args[i].ToLower() == "/nc")
                 {
                     parentCommandLine = false;
                     newCommandLine = true;
                 }
-                if (args[i].ToLower() == "-v" || args[i].ToLower() == "/v")
+                else if (args[i].ToLower() == "-v" || args[i].ToLower() == "/v")
                 {
                     verbose = true;
                 }
-                if (args[i].ToLower() == "-s" || args[i].ToLower() == "/s")
+                else if (args[i].ToLower() == "-s" || args[i].ToLower() == "/s")
                 {
                     autoStart = true;
                 }
-                if(args[i].ToLower() == "-h" || args[i].ToLower() == "/h" || args[i].ToLower() == "-?" || args[i].ToLower() == "/?")
+                else if(args[i].ToLower() == "-h" || args[i].ToLower() == "/h" || args[i].ToLower() == "-?" || args[i].ToLower() == "/?")
                 {
                     help = true;
                     connected = NativeInterop.AttachConsole(-1);
@@ -67,6 +68,10 @@ namespace KinectWithVRServer
                         Console.WriteLine("\t/v\tVerbose output mode.");
                         NativeInterop.FreeConsole();
                     }
+                }
+                else if (i == 0)
+                {
+                    startupFile = args[i];
                 }
             }
 
@@ -91,54 +96,12 @@ namespace KinectWithVRServer
 
                     if (connected)
                     {
-                        MainWindow gui = new MainWindow(verbose, autoStart);
-                    //    //Run loop here!
-                        Console.Clear();
-                        bool running = true;
-                        while (running)
-                        {
-                            Thread.Sleep(1000);
-                            Console.WriteLine(ServerCore.printerGrunt);
-                            ServerCore.printerGrunt = "";
-                            if (Console.KeyAvailable)
-                            {
-                                ConsoleKeyInfo key = Console.ReadKey(false);
-                                if (key.Key == ConsoleKey.E)
-                                {
-                                    running = false;
-                                }
-                            }
-                        }
-                    //    //Console.WriteLine("Meow!");
-                    //    //Console.WriteLine("Hello Moon!");
-                    //    //Don't use ReadLine - causes some funky stuff to happen
-
-                    //    bool running = true;
-                    //    int i = 0;
-                    //    while (running)
-                    //    {
-                    //        Thread.Sleep(1000);
-                    //        //Console.WriteLine("Running loop " + i.ToString() + "th time.");
-                    //        Console.WriteLine(ServerCore.printerGrunt);
-                    //        //input += Console.In.Read();
-                    //        if (Console.KeyAvailable)
-                    //        {
-                    //            ConsoleKeyInfo key = Console.ReadKey(false);
-                    //            if (key.Key == ConsoleKey.E)
-                    //            {
-                    //                running = false;
-                    //            }
-                    //        }
-                    //        i++;
-                    //    }
-
-                        NativeInterop.FreeConsole();
+                        ConsoleUI.RunServerInConsole(verbose, autoStart, startupFile);
                     }
-
                 }
                 else
                 {
-                    MainWindow gui = new MainWindow(verbose, autoStart);
+                    MainWindow gui = new MainWindow(verbose, autoStart, startupFile);
 
                     gui.ShowDialog();
                 }

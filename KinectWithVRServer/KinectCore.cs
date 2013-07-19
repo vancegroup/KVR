@@ -22,10 +22,10 @@ namespace KinectWithVRServer
         CoordinateMapper mapper;
         bool isGUI = false;
         ServerCore server;
-        public static bool seatedmode = false;
-        public static bool nearmode = false;
-        public static bool skeltracking = true;
-        public static int skelcount;
+        //public static bool seatedmode = false;
+        //public static bool nearmode = false;
+        //public static bool skeltracking = true;
+        public int skelcount;
         private InteractionStream interactStream;
 
         //The parent has to be optional to allow for console operation
@@ -78,39 +78,6 @@ namespace KinectWithVRServer
             kinect.Start();
             //Note: Audio stream must be started AFTER the skeleton stream 
         }
-        
-        //Changes to and from seated mode
-        public void CheckSeated()
-        {
-           if (seatedmode == true)
-           {
-               kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated;
-           }
-           else
-           {
-               kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Default;
-           }
-        }
-
-        //Changes to and from near mode
-        public void CheckNear()
-        {
-            if (nearmode == true)
-            {
-                kinect.DepthStream.Range = DepthRange.Near;
-            }
-            else
-            {
-                kinect.DepthStream.Range = DepthRange.Default;
-            }
-        }
-
-        public void CheckTrackingEnabled()
-        {
-            /*if (skeltracking == true)
-            {
-            }*/
-        }
 
         public void ShutdownSensor()
         {
@@ -119,6 +86,9 @@ namespace KinectWithVRServer
                 kinect.ColorFrameReady -= new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
                 kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
                 kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
+                interactStream.InteractionFrameReady -= new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+                interactStream.Dispose();
+                interactStream = null;
 
                 kinect.Stop();
             }
@@ -200,7 +170,6 @@ namespace KinectWithVRServer
                 }
             }
         }
-
         private void kinect_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e)
         {
             using (DepthImageFrame frame = e.OpenDepthImageFrame())
@@ -210,9 +179,12 @@ namespace KinectWithVRServer
                     //Pass the data to the interaction frame for processing
                     interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
 
-                    depthImagePixels = new short[frame.PixelDataLength];
-                    frame.CopyPixelDataTo(depthImagePixels);
-                    depthImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), depthImagePixels, frame.Width * frame.BytesPerPixel, 0);
+                    if (isGUI)
+                    {
+                        depthImagePixels = new short[frame.PixelDataLength];
+                        frame.CopyPixelDataTo(depthImagePixels);
+                        depthImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), depthImagePixels, frame.Width * frame.BytesPerPixel, 0);
+                    }
                 }
             }
         }
@@ -222,9 +194,12 @@ namespace KinectWithVRServer
             {
                 if (frame != null)
                 {
-                    colorImagePixels = new byte[frame.PixelDataLength];
-                    frame.CopyPixelDataTo(colorImagePixels);
-                    colorImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), colorImagePixels, frame.Width * frame.BytesPerPixel, 0);
+                    if (isGUI)
+                    {
+                        colorImagePixels = new byte[frame.PixelDataLength];
+                        frame.CopyPixelDataTo(colorImagePixels);
+                        colorImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), colorImagePixels, frame.Width * frame.BytesPerPixel, 0);
+                    }
                 }
             }
         }
@@ -243,28 +218,28 @@ namespace KinectWithVRServer
                         {
                             if (hand.HandEventType != InteractionHandEventType.None)
                             {
-                                parent.WriteToLog("Skeleton Number: " + info.SkeletonTrackingId);
+                                HelperMethods.WriteToLog("Skeleton Number: " + info.SkeletonTrackingId, parent);
 
                                 if (hand.HandEventType == InteractionHandEventType.Grip)
                                 {
                                     if (hand.HandType == InteractionHandType.Left)
                                     {
-                                        parent.WriteToLog("Left hand closed!");
+                                        HelperMethods.WriteToLog("Left hand closed!", parent);
                                     }
                                     else if (hand.HandType == InteractionHandType.Right)
                                     {
-                                        parent.WriteToLog("Right hand closed!");
+                                        HelperMethods.WriteToLog("Right hand closed!", parent);
                                     }
                                 }
                                 else if (hand.HandEventType == InteractionHandEventType.GripRelease)
                                 {
                                     if (hand.HandType == InteractionHandType.Left)
                                     {
-                                        parent.WriteToLog("Left hand opened!");
+                                        HelperMethods.WriteToLog("Left hand opened!", parent);
                                     }
                                     else if (hand.HandType == InteractionHandType.Right)
                                     {
-                                        parent.WriteToLog("Right hand opened!");
+                                        HelperMethods.WriteToLog("Right hand opened!", parent);
                                     }
                                 }
                             }
@@ -492,8 +467,6 @@ namespace KinectWithVRServer
                 parent.ColorImageCanvas.Children.Add(circle);
             }
         }
-
-        
     }
 
     public class DummyInteractionClient : IInteractionClient

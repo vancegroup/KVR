@@ -53,7 +53,7 @@ namespace KinectWithVRServer
         public void launchVoiceRecognizer()
         {
             //Setup the audio source
-            KinectAudioSource source = server.kinect.kinect.AudioSource;
+            KinectAudioSource source = server.kinectCore.kinect.AudioSource;
             source.EchoCancellationMode = EchoCancellationMode.None; //May need to be an option somewhere
             source.AutomaticGainControlEnabled = false; //Needs to be this way for voice recognition
 
@@ -108,16 +108,16 @@ namespace KinectWithVRServer
         {
             if (verbose)
             {
-                if (isGUI)
-                {
-                    parent.WriteToLog("Speech Rejected!");
-                }
-                else
-                {
-                    //Console.WriteLine("Speech Rejected!");
-                    ServerCore.printerGrunt = "Speech Rejected!";
-
-                }
+                HelperMethods.WriteToLog("Speech Rejected!", parent);
+                //if (isGUI)
+                //{
+                //    parent.WriteToLog("Speech Rejected!");
+                //}
+                //else
+                //{
+                //    Console.WriteLine("Speech Rejected!");
+                //    //ServerCore.printerGrunt = "Speech Rejected!";
+                //}
             }
         }
 
@@ -125,15 +125,16 @@ namespace KinectWithVRServer
         {
             if (verbose)
             {
-                if (isGUI)
-                {
-                    parent.WriteToLog("Hypothesized the word \"" + e.Result.Text + "\"");
-                }
-                else
-                {
-                    //Console.WriteLine("Hypothesized the word \"{0}\"", e.Result.Text);
-                    ServerCore.printerGrunt = "Hypothesized the word " + e.Result.Text;
-                }
+                HelperMethods.WriteToLog("Hypothesized the word \"" + e.Result.Text + "\"", parent);
+                //if (isGUI)
+                //{
+                //    parent.WriteToLog("Hypothesized the word \"" + e.Result.Text + "\"");
+                //}
+                //else
+                //{
+                //    Console.WriteLine("Hypothesized the word \"{0}\"", e.Result.Text);
+                //    //ServerCore.printerGrunt = "Hypothesized the word " + e.Result.Text;
+                //}
             }
         }
 
@@ -184,27 +185,29 @@ namespace KinectWithVRServer
                         //TODO: Send the audio source angle here
 
                         //Write out to the log
-                        if (isGUI)
-                        {
-                            parent.WriteToLog("Recognized the word \"" + e.Result.Text + "\", with the confidence of " + e.Result.Confidence.ToString("F2") + ".");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Recognized the word \"{0}\", with the confidence of {1}.", e.Result.Text, e.Result.Confidence.ToString("F2"));
-                        }
+                        HelperMethods.WriteToLog("Recognized the word \"" + e.Result.Text + "\", with the confidence of " + e.Result.Confidence.ToString("F2") + ".", parent);
+                        //if (isGUI)
+                        //{
+                        //    parent.WriteToLog("Recognized the word \"" + e.Result.Text + "\", with the confidence of " + e.Result.Confidence.ToString("F2") + ".");
+                        //}
+                        //else
+                        //{
+                        //    Console.WriteLine("Recognized the word \"{0}\", with the confidence of {1}.", e.Result.Text, e.Result.Confidence.ToString("F2"));
+                        //}
                     }
                     else
                     {
                         if (verbose)
                         {
-                            if (isGUI)
-                            {
-                                parent.WriteToLog("Recognized the word \"" + e.Result.Text + "\", but the confidence (" + e.Result.Confidence.ToString("F2") + ") was too low.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Recognized the word \"{0}\", but the confidence ({1}) was too low.", e.Result.Text, e.Result.Confidence.ToString("F2"));
-                            }
+                            HelperMethods.WriteToLog("Recognized the word \"" + e.Result.Text + "\", but the confidence (" + e.Result.Confidence.ToString("F2") + ") was too low.", parent);
+                            //if (isGUI)
+                            //{
+                            //    parent.WriteToLog("Recognized the word \"" + e.Result.Text + "\", but the confidence (" + e.Result.Confidence.ToString("F2") + ") was too low.");
+                            //}
+                            //else
+                            //{
+                            //    Console.WriteLine("Recognized the word \"{0}\", but the confidence ({1}) was too low.", e.Result.Text, e.Result.Confidence.ToString("F2"));
+                            //}
                         }
                     }
                 }

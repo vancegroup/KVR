@@ -98,6 +98,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ConsoleUI.cs" />
+    <Compile Include="HelperMethods.cs" />
     <Compile Include="KinectCore.cs" />
     <Compile Include="ServerCore.cs" />
     <Compile Include="Settings.cs" />

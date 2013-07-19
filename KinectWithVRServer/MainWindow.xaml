@@ -102,7 +102,7 @@
             </TabItem>
                 
             <TabItem Name="VoiceTab" Header="Voice Commands">
-                <ScrollViewer>
+                <!--<ScrollViewer>-->
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -145,7 +145,7 @@
                             <Button Name="VoiceRemoveButton" Width="72" Height="24" Margin="2" Content="Remove" Click="VoiceRemoveButton_Click" />
                         </StackPanel>-->
                     </Grid>
-                </ScrollViewer>
+                <!--</ScrollViewer>-->
             </TabItem>
             
             <TabItem Name="GestureTab" Header="Gesture Commands">
@@ -200,7 +200,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="4,5,-4,-5" Grid.RowSpan="2">
-      <CheckBox Content="Seated Mode" Height="23" Margin="6,2,0,0" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/>
+                        <CheckBox Content="Seated Mode" Height="23" Margin="6,2,0,0" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/>
                     <LineBreak/>Skeleton Tracking:<LineBreak/></TextBlock>
                 </Grid>
             </TabItem>
@@ -210,8 +210,11 @@
             </TabItem>
             
             <TabItem Name="LogTab" Header="Log">
-                <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" Text="Welcome to the Kinect With VR (KiwiVR) Server! 
-(Note: For verbose logging, add -V as a Command Line Argument in the namespace Properties menu.)  " IsReadOnly="True" IsReadOnlyCaretVisible="True" />
+                <ScrollViewer Name="LogScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled" AcceptsReturn="True"
+                             Text="Welcome to the Kinect With VR (KiwiVR) Server!&#x0d;&#x0a;Note: For verbose logging, add -V as a Command Line Argument in the namespace Properties menu."
+                             IsReadOnly="True" IsReadOnlyCaretVisible="True" />
+                </ScrollViewer>
             </TabItem>
         </TabControl>
         
