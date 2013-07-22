@@ -5,7 +5,6 @@ using System.Text;
 using Vrpn;
 using System.Threading;
 using System.Windows.Threading;
-using System.Collections.Generic;
 
 namespace KinectWithVRServer
 {
