@@ -9,8 +9,9 @@ and skeletal tracking.
 
 Requirements:
 
-* Microsoft .NET Framework
-* [Microsoft Kinect SDK (Toolkit optional but recommended)](http://www.microsoft.com/en-us/kinectforwindows/)
+* [Microsoft .NET Framework (currently tested against 4.0)](http://www.microsoft.com/en-us/download/details.aspx?id=17851)
+* [Microsoft Kinect SDK along with the Toolkit (currently tested against 1.7)](http://www.microsoft.com/en-us/kinectforwindows/)
+* [Microsoft Speech Platform SDK (currently tested against version 11)](http://www.microsoft.com/en-us/download/details.aspx?id=27226)
 * VRPN .NET Bindings
 	1. [VRPN](http://www.cs.unc.edu/Research/vrpn/)
 	Our research group using [this version](https://github.com/rpavlik/vrpn) of VRPN.
