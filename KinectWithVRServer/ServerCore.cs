@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using Vrpn;
 using System.Threading;
+using System.Windows.Threading;
+using System.Collections.Generic;
 
 namespace KinectWithVRServer
 {
@@ -30,36 +32,77 @@ namespace KinectWithVRServer
         //public static string printerGrunt;
 
         //public ServerCore(bool isVerbose, KinectCore kinectCore, MainWindow guiParent = null)
-        public ServerCore(bool isVerbose, MainWindow guiParent = null)
+        public ServerCore(bool isVerbose, MasterSettings serverOptions, MainWindow guiParent = null)
         {                
             parent = guiParent;
             verbose = isVerbose;
+            serverMasterOptions = serverOptions;
 
             if (guiParent != null)
             {
                 GUI = true;
             }
+
             kinectCore = new KinectCore(this, parent);
         }
 
-        public void launchServer(MasterSettings serverSettings)
+        //public void launchServer(MasterSettings serverSettings)
+        public void launchServer()
         {
-            serverMasterOptions = serverSettings;
+            //serverMasterOptions = serverSettings;
             serverMasterOptions.parseSettings();
 
             runServerCoreDelegate serverDelegate = runServerCore;
             serverDelegate.BeginInvoke(null, null);
 
-            //Start voice recognition
-            voiceRecog = new VoiceRecogCore(this, verbose, parent);
-            voiceRecog.launchVoiceRecognizer();
+            //Start voice recognition, if necessary
+            if (serverMasterOptions.voiceCommands.Count > 0)
+            {
+                voiceRecog = new VoiceRecogCore(this, verbose, parent);
+                launchVoiceRecognizerDelegate voiceDelegate = voiceRecog.launchVoiceRecognizer;
+                //Dispatcher newDispatch = new Dispatcher();
+
+                voiceDelegate.BeginInvoke(new AsyncCallback(voiceStartedCallback), null);
+                //voiceRecog.launchVoiceRecognizer();
+            }
+            else
+            {
+                //Because the voice callback will not be called, we need to call this stuff here
+                if (GUI)
+                {
+                    parent.startServerButton.Content = "Stop";
+                    parent.startServerButton.IsEnabled = true;
+                    parent.ServerStatusItem.Content = "Running";
+                    parent.ServerStatusTextBlock.Text = "Running";
+                }
+            }
+        }
+
+        private void voiceStartedCallback(IAsyncResult ar)
+        {
+            HelperMethods.WriteToLog("Voice started!", parent);
+
+            if (GUI)
+            {
+                parent.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    parent.startServerButton.Content = "Stop";
+                    parent.startServerButton.IsEnabled = true;
+                    parent.ServerStatusItem.Content = "Running";
+                    parent.ServerStatusTextBlock.Text = "Running";
+                }), null
+                );
+            }
         }
 
         public void stopServer()
         {
             running = false;
 
-            voiceRecog.stopVoiceRecognizer();
+            if (voiceRecog != null)
+            {
+                voiceRecog.stopVoiceRecognizer();
+            }
 
             int count = 0;
             while (count < 30)
@@ -214,5 +257,6 @@ namespace KinectWithVRServer
         }
 
         private delegate void runServerCoreDelegate();
+        private delegate void launchVoiceRecognizerDelegate();
     }
 }

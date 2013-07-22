@@ -24,13 +24,14 @@ namespace KinectWithVRServer
         internal string startupFile = "";
         internal bool verbose = false;
         internal bool startOnLaunch = false;
-        internal MasterSettings settings;
+        //internal MasterSettings settings;
         internal ServerCore server;
         //internal KinectCore kinect;
         //int totalFrames = 0;
         //int lastFrames = 0;
         //bool isGUI = false;  //Shouldn't be needed, if this class exists, then it must be in GUI mode
-        DateTime lastTime = DateTime.MaxValue;
+        internal DateTime serverStartTime = DateTime.MaxValue;
+        System.Timers.Timer uptimeUpdateTimer;
 
         public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
         {
@@ -53,7 +54,7 @@ namespace KinectWithVRServer
             {
                 try
                 {
-                    settings = HelperMethods.LoadSettings(openDlg.FileName);
+                    server.serverMasterOptions = HelperMethods.LoadSettings(openDlg.FileName);
                     UpdateGUISettings();
                 }
                 catch
@@ -72,7 +73,7 @@ namespace KinectWithVRServer
             {
                 try
                 {
-                    HelperMethods.SaveSettings(saveDlg.FileName, settings);
+                    HelperMethods.SaveSettings(saveDlg.FileName, server.serverMasterOptions);
                 }
                 catch
                 {
@@ -129,9 +130,37 @@ namespace KinectWithVRServer
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            settings = new MasterSettings();
+            //Setup the timer to update the GUI with the server runtime
+            uptimeUpdateTimer = new System.Timers.Timer();
+            uptimeUpdateTimer.Interval = 500;
+            uptimeUpdateTimer.Elapsed += new System.Timers.ElapsedEventHandler(uptimeUpdateTimer_Elapsed);
 
-            //FOR TESTING ONLY!!
+            MasterSettings tempSettings = new MasterSettings();
+
+            //FOR TESTING ONLY!!  Replace with an option on the GUI
+            tempSettings.skeletonOptions.skeletonSortMode = SkeletonSortMethod.Closest;
+
+            //Since skeleton tracking is on by default, add the buttons for the hands
+            for (int i = 0; i < 6; i++)
+            {
+                for (int j = 0; j < 2; j++) //We need a command for each hand
+                {
+                    GestureCommand gripCommand = new GestureCommand();
+                    gripCommand.buttonNumber = j;
+                    string handString = "_left";
+                    if (j == 0)
+                    {
+                        handString = "_right";
+                    }
+                    gripCommand.comments = "Skeleton" + i.ToString() + handString;
+                    gripCommand.gestureType = GestureType.Grip;
+                    gripCommand.serverName = "Tracker0" + i.ToString();
+                    gripCommand.skeletonNumber = i;
+                    tempSettings.gestureCommands.Add(gripCommand);
+                }
+            }
+
+            //MORE TESTING
             //VoiceButtonCommand testCommand = new VoiceButtonCommand();
             //testCommand.recognizedWord = "Hello";
             //testCommand.buttonNumber = 0;
@@ -154,15 +183,15 @@ namespace KinectWithVRServer
             ////testCommand2.serverType = ServerType.Button;
             //settings.voiceTextCommands.Add(testCommand2);
 
+            //Create the server core (this does NOT start the server)
+            server = new ServerCore(verbose, tempSettings, this);
+
             //Set all the data for the data grids
-            VoiceButtonDataGrid.ItemsSource = settings.voiceButtonCommands;
-            VoiceTextDataGrid.ItemsSource = settings.voiceTextCommands;
+            VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
+            VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
 
             //Start the Kinect to pass to the ServerCore; NOTE: This must be started BEFORE running the server core
             //kinect = new KinectCore(server, this);
-
-            //Create the server core (this does NOT start the server)
-            server = new ServerCore(verbose, this);
 
             //BUG!!!  -> Because the kinect is also initialized inside the ServerCore code, the kinect is actually getting started TWICE
             //Open the Kinect
@@ -173,7 +202,7 @@ namespace KinectWithVRServer
             {
                 try
                 {
-                    settings = HelperMethods.LoadSettings(startupFile);
+                    server.serverMasterOptions = HelperMethods.LoadSettings(startupFile);
                     UpdateGUISettings();
                 }
                 catch
@@ -203,7 +232,7 @@ namespace KinectWithVRServer
         {
             if ((bool)ChooseSeatedModeButton.IsChecked)
             {
-                settings.kinectOptions.isSeatedMode = true;
+                server.serverMasterOptions.skeletonOptions.isSeatedMode = true;
                 if (server.kinectCore != null)
                 {
                     server.kinectCore.kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated;
@@ -211,7 +240,7 @@ namespace KinectWithVRServer
             }
             else
             {
-                settings.kinectOptions.isSeatedMode = false;
+                server.serverMasterOptions.skeletonOptions.isSeatedMode = false;
                 if (server.kinectCore != null)
                 {
                     server.kinectCore.kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Default;
@@ -224,12 +253,12 @@ namespace KinectWithVRServer
         {
             if ((bool)ChooseNearModeButton.IsChecked)
             {
-                settings.kinectOptions.isNearMode = true;
+                server.serverMasterOptions.kinectOptions.isNearMode = true;
                 server.kinectCore.kinect.DepthStream.Range = DepthRange.Near;
             }
             else
             {
-                settings.kinectOptions.isNearMode = false;
+                server.serverMasterOptions.kinectOptions.isNearMode = false;
                 server.kinectCore.kinect.DepthStream.Range = DepthRange.Default;
             }
         }
@@ -240,57 +269,29 @@ namespace KinectWithVRServer
             {
                 if (server.isRunning)
                 {
+                    uptimeUpdateTimer.Stop();
+
                     server.stopServer();
                     startServerButton.Content = "Start";
                     ServerStatusItem.Content = "Server Stopped";
-                    ServerStatusBlock.Text = "Disabled";
+                    ServerStatusTextBlock.Text = "Stopped";
+                    RunTimeTextBlock.Text = "0";
                 }
                 else
                 {
-                    //Loading(true);
-                    server.launchServer(settings);
-                    //Loading(false);
-                    startServerButton.Content = "Stop";
-                    ServerStatusItem.Content = "Server Running";
-                    ServerStatusBlock.Text = "Enabled";
+                    //The server doesn't actually start until the callback from the voice core
+                    startServerButton.IsEnabled = false;
+                    startServerButton.Content = "...Starting"; //For some screwy reason, it reverses where the periods are on the button, which is why they are first here
+                    ServerStatusItem.Content = "Server Starting...";
+                    ServerStatusTextBlock.Text = "Starting...";
+
+                    server.launchServer();
+
+                    serverStartTime = DateTime.Now;
+                    uptimeUpdateTimer.Start();
                 }
             }
         }
-
-        //Frames per second readout
-        /*private void CalculateFps()
-        {
-            ++totalFrames;
-
-            var cur = DateTime.Now;
-            if (cur.Subtract(lastTime) > TimeSpan.FromSeconds(1))
-            {
-                int frameDiff = totalFrames - lastFrames;
-                lastFrames = totalFrames;
-                lastTime = cur;
-                FrameRateValue.Text = frameDiff.ToString();
-            }
-        }*/
-
-        //Number of skeletons present readout
-        /*public void SkelCountUpdate(string text)
-        {
-                SkelCountBlock.Text = text;
-        }*/
-
-        //internal void WriteToLog(string text)
-        //{
-        //    string stringTemp = "\r\n" + DateTime.Now.ToString() + ": " + text;
-        //    LogTextBox.AppendText(stringTemp);
-
-        //    //Auto-scrolling mechanism
-        //    Debug.WriteLine(LogScrollViewer.VerticalOffset.ToString() + " of " + ((TextBox)LogScrollViewer.Content).ActualHeight.ToString() + " and " + LogScrollViewer.ActualHeight.ToString());
-
-        //    if (LogScrollViewer.VerticalOffset >= (((TextBox)LogScrollViewer.Content).ActualHeight - LogScrollViewer.ActualHeight))
-        //    {
-        //        LogScrollViewer.ScrollToEnd();
-        //    }
-        //}
 
         private void VoiceButtonDataGrid_LostFocus(object sender, RoutedEventArgs e)
         {
@@ -307,26 +308,23 @@ namespace KinectWithVRServer
 
         }
 
+        //Refreshes all the data on the GUI after a new settings file is loaded
         private void UpdateGUISettings()
         {
-            VoiceTextDataGrid.ItemsSource = settings.voiceTextCommands;
-            VoiceButtonDataGrid.ItemsSource = settings.voiceTextCommands;
+            VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
+            VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
 
             //TODO: Add the rest of the GUI updates here.
         }
 
-        /*public void Loading(bool showScreen)
+        void uptimeUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            if (showScreen)
+            //This is on another thread...
+            this.Dispatcher.BeginInvoke((Action)(() =>
             {
-                LoadingBorder.Height = 125;
-                LoadingBorder.Width = 200;
-            }
-            else
-            {
-                LoadingBorder.Height = 1;
-                LoadingBorder.Width = 1;
-            }
-        }*/
+                this.RunTimeTextBlock.Text = ((TimeSpan)(DateTime.Now - serverStartTime)).ToString(@"dd\:hh\:mm\:ss");
+            }), null
+            );
+        }
     }
 }

@@ -6,6 +6,9 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Windows.Controls;
+using System.Threading;
+using System.Windows.Data;
+using System.Globalization;
 
 namespace KinectWithVRServer
 {
@@ -17,12 +20,29 @@ namespace KinectWithVRServer
 
             if (parent != null) //GUI mode
             {
-                parent.LogTextBox.AppendText(stringTemp);
-
-                //Autoscroll mechanism
-                if (parent.LogScrollViewer.VerticalOffset >= (((TextBox)parent.LogScrollViewer.Content).ActualHeight - parent.LogScrollViewer.ActualHeight))
+                if (parent.Dispatcher.Thread.ManagedThreadId == Thread.CurrentThread.ManagedThreadId)
                 {
-                    parent.LogScrollViewer.ScrollToEnd();
+                    parent.LogTextBox.AppendText(stringTemp);
+
+                    //Autoscroll mechanism
+                    if (parent.LogScrollViewer.VerticalOffset >= (((TextBox)parent.LogScrollViewer.Content).ActualHeight - parent.LogScrollViewer.ActualHeight))
+                    {
+                        parent.LogScrollViewer.ScrollToEnd();
+                    }
+                }
+                else
+                {
+                    parent.Dispatcher.BeginInvoke((Action)(() =>
+                    {
+                        parent.LogTextBox.AppendText(stringTemp);
+
+                        //Autoscroll mechanism
+                        if (parent.LogScrollViewer.VerticalOffset >= (((TextBox)parent.LogScrollViewer.Content).ActualHeight - parent.LogScrollViewer.ActualHeight))
+                        {
+                            parent.LogScrollViewer.ScrollToEnd();
+                        }
+                    }), null
+                    );
                 }
             }
             else //Console mode
@@ -64,6 +84,19 @@ namespace KinectWithVRServer
                 file.Close();
                 file.Dispose();
             }
+        }
+    }
+
+    public class BoolToPressConverter : IValueConverter
+    {
+        public object Convert(object value, Type tagertType, object parameter, CultureInfo culture)
+        {
+            return ((bool)value == true) ? PressState.Pressed : PressState.Released;
+        }
+
+        public object ConvertBack(object value, Type tagetType, object parameter, CultureInfo culture)
+        {
+            return ((PressState)value == PressState.Pressed) ? true : false;
         }
     }
 }

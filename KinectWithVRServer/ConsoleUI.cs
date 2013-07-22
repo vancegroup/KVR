@@ -14,7 +14,6 @@ namespace KinectWithVRServer
             Console.WriteLine("Welcome to the Kinect With VR (KiwiVR) Server!");
             Console.WriteLine("Press the \"E\" key at any time to exit.");
 
-            ServerCore server = new ServerCore(isVerbose);
             MasterSettings settings = new MasterSettings();
 
             try
@@ -26,7 +25,8 @@ namespace KinectWithVRServer
                 HelperMethods.WriteToLog("Cannot open settings file!");
             }
 
-            server.launchServer(settings); //This will still try to launch with default settings even if the settings load fails
+            ServerCore server = new ServerCore(isVerbose, settings);
+            server.launchServer(); //This will still try to launch with default settings even if the settings load fails
 
 
             bool running = true;
@@ -38,7 +38,7 @@ namespace KinectWithVRServer
                 if (Console.KeyAvailable)
                 {
                     ConsoleKeyInfo key = Console.ReadKey(false);
-                    if (key.Key == ConsoleKey.E)
+                    if (key.Key == ConsoleKey.E || (key.Key == ConsoleKey.C && key.Modifiers == ConsoleModifiers.Control))
                     {
                         running = false;
                     }

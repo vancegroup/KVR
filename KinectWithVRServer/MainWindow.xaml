@@ -4,10 +4,23 @@
         xmlns:src="KinectWithVRServer.TextBoxBehavour"
         xmlns:System="clr-namespace:System;assembly=mscorlib"
         xmlns:Collections="clr-namespace:System.Collections;assembly=mscorlib"
+        xmlns:local="clr-namespace:KinectWithVRServer"
+        xmlns:core="clr-namespace:System;assembly=mscorlib"
         Initialized="Window_Initialized" Closing="Window_Closing"
         Title="Kinect With VR (KiwiVR) Server" Height="400" Width="590">
     <Window.Resources>
-        <System:Int16 x:Key="kinectsPresent">0</System:Int16>
+        <!--<System:Int16 x:Key="kinectsPresent">0</System:Int16>-->
+        <ObjectDataProvider x:Key="ButtonTypeEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="local:ButtonType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="PressStateEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="local:PressState"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <local:BoolToPressConverter x:Key="boolToPressConverter"/>
     </Window.Resources>
         <Grid>
         <Grid.RowDefinitions>
@@ -57,26 +70,37 @@
         <TabControl Name="SettingsTabControl" Grid.Row="2" SelectedIndex="0">
             <TabItem Name="StatusTab" Header="Status">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="114" />
-                        <ColumnDefinition Width="444" />
-                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.ColumnSpan="2">
-                        <Button Content="Start" Height="23" Name="startServerButton" Width="75" Margin="2" Click="startServerButton_Click">
-                            
-                        </Button>
+                    <StackPanel Grid.Row="0" Orientation="Vertical" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2" >
+                            <TextBlock Text="Server Status: "/>
+                            <TextBlock Name="ServerStatusTextBlock" Text="Stopped" FontWeight="Bold"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2" >
+                            <TextBlock Text="Depth Frame Rate: "/>
+                            <TextBlock Name="DepthFPSTextBlock" Text="0.0"/>
+                            <TextBlock Text=" FPS"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2" >
+                            <TextBlock Text="Color Frame Rate: "/>
+                            <TextBlock Name="ColorFPSTextBlock" Text="0.0"/>
+                            <TextBlock Text=" FPS"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2" >
+                            <TextBlock Text="Tracked Skeletons: "/>
+                            <TextBlock Name="TrackedSkeletonsTextBlock" Text="0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2" >
+                            <TextBlock Text="Server Run Time: "/>
+                            <TextBlock Name="RunTimeTextBlock" Text="0"/>
+                        </StackPanel>
+                    </StackPanel> 
+                    <StackPanel Grid.Row="1" FlowDirection="RightToLeft" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Start" Height="23" Name="startServerButton" Width="100" Margin="2" Click="startServerButton_Click"/>
                     </StackPanel>
-                    <TextBlock Name="StatusTextBlock" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" Margin="6,6,6,0" Grid.ColumnSpan="2">
-      Server Status: <Bold><TextBlock Margin="0" Name="ServerStatusBlock" Width="Auto"> Disabled</TextBlock></Bold><LineBreak/>
-      Frame Rate: <TextBlock Margin="0" Name="FrameRateValue" Width="Auto">0</TextBlock> fps<LineBreak/>
-      # of Tracked Skeletons: <TextBlock Margin="0" Name="SkelCountBlock" Width="18">0</TextBlock><LineBreak/>
-      Runtime:  <TextBlock Margin="0" Name="StopWatch" Width="Auto">0</TextBlock> seconds
-                    </TextBlock>
                 </Grid>
             </TabItem>
             
@@ -86,6 +110,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <!--TODO:  Clean this up.  This is a wierd way of handling this.-->
                     <TextBlock Name="KinectTextBlock" TextWrapping="Wrap" Margin="6,4,0,0">
     Camera Resolution: <LineBreak/>
                         <StackPanel>
@@ -102,50 +127,40 @@
             </TabItem>
                 
             <TabItem Name="VoiceTab" Header="Voice Commands">
-                <!--<ScrollViewer>-->
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <DataGrid Name="VoiceButtonDataGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
-                            <DataGrid.Columns>
-                                <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding shortCommand.buttonType, UpdateSourceTrigger=PropertyChanged}">
-                                    <DataGridComboBoxColumn.ItemsSource>
-                                        <Collections:ArrayList>
-                                            <ComboBoxItem>Toggle</ComboBoxItem>
-                                            <ComboBoxItem>Momentary</ComboBoxItem>
-                                            <ComboBoxItem>Setter</ComboBoxItem>
-                                        </Collections:ArrayList>
-                                    </DataGridComboBoxColumn.ItemsSource>
-                                </DataGridComboBoxColumn>
-
-                                <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>
-                                <DataGridCheckBoxColumn Header="Intitial State" Binding="{Binding initialState}"/>
-                                <DataGridCheckBoxColumn Header="Set State" Binding="{Binding setState}"/>
-                                <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
-                                <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
-                                <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
-                                <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
-                                <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <DataGrid Name="VoiceTextDataGrid" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
-                                <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
-                                <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
-                                <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
-                                <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
-                                <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <!--<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Name="VoiceRemoveButton" Width="72" Height="24" Margin="2" Content="Remove" Click="VoiceRemoveButton_Click" />
-                        </StackPanel>-->
-                    </Grid>
-                <!--</ScrollViewer>-->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DataGrid Name="VoiceButtonDataGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
+                        <DataGrid.Columns>
+                            <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
+                            <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>                            
+                            <DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
+                            <!--<DataGridCheckBoxColumn Header="Set State" Binding="{Binding setState}"/>-->
+                            <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
+                            <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
+                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                            <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
+                            <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
+                            <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DataGrid Name="VoiceTextDataGrid" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
+                            <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
+                            <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
+                            <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
+                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                            <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <!--<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="VoiceRemoveButton" Width="72" Height="24" Margin="2" Content="Remove" Click="VoiceRemoveButton_Click" />
+                    </StackPanel>-->
+                </Grid>
             </TabItem>
             
             <TabItem Name="GestureTab" Header="Gesture Commands">
@@ -220,36 +235,16 @@
         
         <StatusBar Grid.Row="3">
             <StatusBarItem>
-                <TextBlock x:Name="KinectStatusBlock">0</TextBlock>
+                <TextBlock x:Name="KinectStatusBlock" Text="0"/>
             </StatusBarItem>
             <StatusBarItem Name="KinectStatusItem" Content="Kinects Attached"/>
             <Separator/>
             <StatusBarItem>
-                <TextBlock x:Name="ClientStatusBlock">0</TextBlock>
+                <TextBlock x:Name="ClientStatusBlock" Text="0"/>
             </StatusBarItem>
             <StatusBarItem Name="ClientStatusItem" Content="Clients Attached"/>
             <StatusBarItem Content=" "/><!--Used to keep the status bar height set correctly-->
             <StatusBarItem x:Name="ServerStatusItem" Content="Server Stopped" HorizontalAlignment="Right"/>
         </StatusBar>
-
-        <Grid>
-            <!--Loading Screen
-            <Border x:Name="LoadingBorder"
-                    Background="Gray" Grid.ColumnSpan="2" Grid.RowSpan="3"
-                    Height="1" Width="1" Opacity="0.8" BorderThickness="2" CornerRadius="6" >
-                <TextBlock x:Name="LoadingText" Text="Loading...
-Please Wait" 
-                           VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
-                           Foreground="White" FontSize="28"/>
-            </Border>-->
-            
-            <!--Open/close animation for loading screen. Currently not working.
-            <Storyboard x:Name="LoadingAnimation">
-                <DoubleAnimation Storyboard.TargetName="LoadingText"
-                             Storyboard.TargetProperty="Opacity" To="0">
-                </DoubleAnimation>
-            </Storyboard>-->
-        </Grid>
-    </Grid>
-    
+    </Grid>   
 </Window>

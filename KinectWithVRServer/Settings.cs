@@ -20,7 +20,7 @@ namespace KinectWithVRServer
         public ObservableCollection<VoiceButtonCommand> voiceButtonCommands;
         public ObservableCollection<VoiceTextCommand> voiceTextCommands;
         public ObservableCollection<GestureCommand> gestureCommands;
-        public List<VoiceCommand> voiceCommands
+        internal List<VoiceCommand> voiceCommands //This needs to be internal so the save method won't try to save it to the settings file
         {
             get
             {
@@ -129,7 +129,33 @@ namespace KinectWithVRServer
                 analogServers.Add(angleServer);
             }
 
-            //TODO: Add gesture parsing
+            //Gesture Parsing
+            for (int i = 0; i < gestureCommands.Count; i++)
+            {
+                bool found = false;
+
+                for (int j = 0; j < buttonServers.Count; j++)
+                {
+                    if (buttonServers[j].serverName == gestureCommands[i].serverName)
+                    {
+                        //The button server exists, so lets see if it is using a unique button channel
+                        found = true;
+                        if (!buttonServers[j].uniqueChannels.Contains(((GestureCommand)gestureCommands[i]).buttonNumber))
+                        {
+                            buttonServers[j].uniqueChannels.Add(((GestureCommand)gestureCommands[i]).buttonNumber);
+                        }
+                    }
+                }
+
+                if (!found)
+                {
+                    ButtonServerSettings temp = new ButtonServerSettings();
+                    temp.serverName = gestureCommands[i].serverName;
+                    temp.uniqueChannels = new List<int>();
+                    temp.uniqueChannels.Add(((GestureCommand)gestureCommands[i]).buttonNumber);
+                    buttonServers.Add(temp);
+                }
+            }
 
             //Count unique channels for each button server
             for (int i = 0; i < buttonServers.Count; i++)
@@ -156,8 +182,8 @@ namespace KinectWithVRServer
         public ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
         public DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
         public bool isNearMode = false;
-        public bool isSeatedMode = false;
-        public bool previewEnabled = true;
+        //public bool isSeatedMode = false;
+        //public bool previewEnabled = true;
         public double sensorAngle = 0.0;
         public EchoCancellationMode echoMode = EchoCancellationMode.None;
         public bool autoGainEnabled = false;
@@ -177,6 +203,8 @@ namespace KinectWithVRServer
     public class SkeletonSettings
     {
         public bool EnableTrackingInNearRange { get; set; }
+        public bool isSeatedMode { get; set; }
+        public SkeletonSortMethod skeletonSortMode { get; set; }
     }
 
     public class AnalogServerSettings
@@ -226,6 +254,7 @@ namespace KinectWithVRServer
         public VoiceTextCommand()
         {
             base.serverType = ServerType.Text;
+            base.commandType = CommandType.Voice;
         }
 
         public string actionText { get; set; }
@@ -233,10 +262,10 @@ namespace KinectWithVRServer
 
     public class VoiceButtonCommand : VoiceCommand
     {
-
         public VoiceButtonCommand()
         {
             base.serverType = ServerType.Button;
+            base.commandType = CommandType.Voice;
         }
 
         public ButtonType buttonType { get; set; }
@@ -247,7 +276,19 @@ namespace KinectWithVRServer
 
     public class GestureCommand : Command
     {
+        public GestureCommand()
+        {
+            base.commandType = CommandType.Gesture;
+        }
 
+        public ServerType serverType
+        {
+            get { return ServerType.Button; }
+        }
+        public GestureType gestureType { get; set; }
+        public int buttonNumber { get; set; }
+        public int skeletonNumber { get; set; }
+        //This will likely need to be added to to handle recorded gestures
     }
 
     //public class AnalogCommand : Command
@@ -260,4 +301,7 @@ namespace KinectWithVRServer
     public enum CommandType { Voice, Gesture/*, Analog */}
     public enum ServerType { Button, Analog, Tracker, Text }
     public enum ButtonType { Setter, Toggle, Momentary }
+    public enum SkeletonSortMethod {NoSort, Closest, Farthest}
+    public enum GestureType { Grip, Recorded }
+    public enum PressState { Pressed, Released }
 }

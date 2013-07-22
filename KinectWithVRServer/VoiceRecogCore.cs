@@ -8,6 +8,7 @@ using Microsoft.Speech.Recognition;
 using Vrpn;
 using System.Threading;
 using System.IO;
+using System.Diagnostics;
 
 namespace KinectWithVRServer
 {
@@ -36,7 +37,7 @@ namespace KinectWithVRServer
             }
         }
 
-        //Need an explicit destructor to cleanup the audio stream and voice recognition engine
+        //Need an explicit destructor to ensure cleanup of the audio stream and voice recognition engine
         ~VoiceRecogCore()
         {
             if (engine != null)
@@ -101,7 +102,7 @@ namespace KinectWithVRServer
             engine.RecognizeAsyncStop();
             audioStream.Close();
             audioStream.Dispose();
-            //engine.Dispose();
+            engine.Dispose();  //This was commented out.  Was it causing problems?
         }
 
         void engine_SpeechRecognitionRejected(object sender, SpeechRecognitionRejectedEventArgs e)
@@ -109,32 +110,16 @@ namespace KinectWithVRServer
             if (verbose)
             {
                 HelperMethods.WriteToLog("Speech Rejected!", parent);
-                //if (isGUI)
-                //{
-                //    parent.WriteToLog("Speech Rejected!");
-                //}
-                //else
-                //{
-                //    Console.WriteLine("Speech Rejected!");
-                //    //ServerCore.printerGrunt = "Speech Rejected!";
-                //}
             }
         }
 
         void engine_SpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
         {
+            Debug.WriteLine("Hypothesized word at time: " + e.Result.Audio.StartTime.ToString());
+
             if (verbose)
             {
                 HelperMethods.WriteToLog("Hypothesized the word \"" + e.Result.Text + "\"", parent);
-                //if (isGUI)
-                //{
-                //    parent.WriteToLog("Hypothesized the word \"" + e.Result.Text + "\"");
-                //}
-                //else
-                //{
-                //    Console.WriteLine("Hypothesized the word \"{0}\"", e.Result.Text);
-                //    //ServerCore.printerGrunt = "Hypothesized the word " + e.Result.Text;
-                //}
             }
         }
 
@@ -156,17 +141,17 @@ namespace KinectWithVRServer
                                     VoiceButtonCommand shortCommand =  (VoiceButtonCommand)server.serverMasterOptions.voiceCommands[i];
                                     if (shortCommand.buttonType == ButtonType.Momentary)
                                     {
-                                        server.buttonServers[i].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
-                                        Thread.Sleep(500);
-                                        server.buttonServers[i].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;
+                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
+                                        Thread.Sleep(500);  //TODO:  Figure out a way to make this a non-blocking call
+                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;
                                     }
                                     else if (shortCommand.buttonType == ButtonType.Setter)
                                     {
-                                        server.buttonServers[i].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
+                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
                                     }
                                     else //Toggle button
                                     {
-                                        server.buttonServers[i].Buttons[shortCommand.buttonNumber] = !server.buttonServers[i].Buttons[shortCommand.buttonNumber];
+                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = !server.buttonServers[j].Buttons[shortCommand.buttonNumber];
                                     }
                                 }
                             }
@@ -186,28 +171,12 @@ namespace KinectWithVRServer
 
                         //Write out to the log
                         HelperMethods.WriteToLog("Recognized the word \"" + e.Result.Text + "\", with the confidence of " + e.Result.Confidence.ToString("F2") + ".", parent);
-                        //if (isGUI)
-                        //{
-                        //    parent.WriteToLog("Recognized the word \"" + e.Result.Text + "\", with the confidence of " + e.Result.Confidence.ToString("F2") + ".");
-                        //}
-                        //else
-                        //{
-                        //    Console.WriteLine("Recognized the word \"{0}\", with the confidence of {1}.", e.Result.Text, e.Result.Confidence.ToString("F2"));
-                        //}
                     }
                     else
                     {
                         if (verbose)
                         {
                             HelperMethods.WriteToLog("Recognized the word \"" + e.Result.Text + "\", but the confidence (" + e.Result.Confidence.ToString("F2") + ") was too low.", parent);
-                            //if (isGUI)
-                            //{
-                            //    parent.WriteToLog("Recognized the word \"" + e.Result.Text + "\", but the confidence (" + e.Result.Confidence.ToString("F2") + ") was too low.");
-                            //}
-                            //else
-                            //{
-                            //    Console.WriteLine("Recognized the word \"{0}\", but the confidence ({1}) was too low.", e.Result.Text, e.Result.Confidence.ToString("F2"));
-                            //}
                         }
                     }
                 }

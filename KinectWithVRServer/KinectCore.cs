@@ -8,6 +8,8 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Windows.Shapes;
 using Microsoft.Kinect.Toolkit.Interaction;
+using System.Diagnostics;
+using System.Threading;
 
 namespace KinectWithVRServer
 {
@@ -22,11 +24,11 @@ namespace KinectWithVRServer
         CoordinateMapper mapper;
         bool isGUI = false;
         ServerCore server;
-        //public static bool seatedmode = false;
-        //public static bool nearmode = false;
-        //public static bool skeltracking = true;
         public int skelcount;
         private InteractionStream interactStream;
+        private List<Int64> depthTimeStamps = new List<long>();
+        private List<Int64> colorTimeStamps = new List<long>();
+        private Skeleton[] skeletons = null;
 
         //The parent has to be optional to allow for console operation
         public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int KinectNumber = 0)
@@ -52,10 +54,50 @@ namespace KinectWithVRServer
                 isGUI = true;
             }
 
+            if (isGUI)
+            {
+                LaunchKinect();
+            }
+            else
+            {
+                launchKinectDelegate kinectDelegate = LaunchKinect;
+                IAsyncResult result = kinectDelegate.BeginInvoke(null, null);
+                kinectDelegate.EndInvoke(result);  //Even though this is blocking, the events should be on a different thread now.
+            }
+
+            ////Setup default properties
+            //kinect.ColorStream.Enable();
+            //kinect.DepthStream.Enable();
+            //kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
+            //interactStream = new InteractionStream(kinect, new DummyInteractionClient());
+            //kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
+            //kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
+            //kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
+            //kinect.SkeletonStream.EnableTrackingInNearRange = true;
+            //interactStream.InteractionFrameReady += new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+
+            //if (isGUI)
+            //{
+            //    //Setup the images for the display
+            //    depthImage = new WriteableBitmap(kinect.DepthStream.FrameWidth, kinect.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Gray16, null);
+            //    parent.DepthImage.Source = depthImage;
+            //    colorImage = new WriteableBitmap(kinect.ColorStream.FrameWidth, kinect.ColorStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
+            //    parent.ColorImage.Source = colorImage;
+            //}
+
+            ////Create the coordinate mapper
+            //mapper = new CoordinateMapper(kinect);
+
+            //kinect.Start();
+            ////Note: Audio stream must be started AFTER the skeleton stream 
+        }
+
+        private void LaunchKinect()
+        {
             //Setup default properties
             kinect.ColorStream.Enable();
             kinect.DepthStream.Enable();
-            kinect.SkeletonStream.Enable();
+            kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
             interactStream = new InteractionStream(kinect, new DummyInteractionClient());
             kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
             kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
@@ -105,9 +147,12 @@ namespace KinectWithVRServer
                         parent.ColorImageCanvas.Children.Clear();
                     }
 
-                    Skeleton[] skeletons = new Skeleton[skelFrame.SkeletonArrayLength]; 
+                    skeletons = new Skeleton[skelFrame.SkeletonArrayLength]; 
                     skelFrame.CopySkeletonDataTo(skeletons);
                     int index = 0;
+
+                    skeletons = SortSkeletons(skeletons, server.serverMasterOptions.skeletonOptions.skeletonSortMode);
+                    skelcount = 0;
 
                     foreach (Skeleton skel in skeletons)
                     {
@@ -116,39 +161,35 @@ namespace KinectWithVRServer
                         if (index == 0)
                         {
                             renderColor = Colors.Red;
-                            skelcount = 1;
                         }
                         else if (index == 1)
                         {
                             renderColor = Colors.Blue;
-                            skelcount = 2;
                         }
                         else if (index == 2)
                         {
                             renderColor = Colors.Green;
-                            skelcount = 3;
                         }
                         else if (index == 3)
                         {
                             renderColor = Colors.Yellow;
-                            skelcount = 4;
                         }
                         else if (index == 4)
                         {
                             renderColor = Colors.Cyan;
-                            skelcount = 5;
                         }
                         else if (index == 5)
                         {
                             renderColor = Colors.Fuchsia;
-                            skelcount = 6;
                         }
 
                         //Send the points across if the skeleton is either tracked or has a position
                         if (skel.TrackingState != SkeletonTrackingState.NotTracked)
                         {
-                            if (parent.settings.kinectOptions.trackSkeletons)
+                            if (server.serverMasterOptions.kinectOptions.trackSkeletons)
                             {
+                                skelcount++;
+
                                 if (server.isRunning)
                                 {
                                     SendSkeletonVRPN(skel, index);
@@ -161,12 +202,19 @@ namespace KinectWithVRServer
                         }
 
                         index++;
-                        //Test for skeleton number >> System.Console.WriteLine(skelcount);
+                    }
 
                     //Pass the data to the interaction stream for processing
-                    Vector4 accelReading = kinect.AccelerometerGetCurrentReading();
-                    interactStream.ProcessSkeleton(skeletons, accelReading, skelFrame.Timestamp);
+                    if (interactStream != null)
+                    {
+                        Vector4 accelReading = kinect.AccelerometerGetCurrentReading();
+                        interactStream.ProcessSkeleton(skeletons, accelReading, skelFrame.Timestamp);
                     }
+                }
+
+                if (isGUI)
+                {
+                    parent.TrackedSkeletonsTextBlock.Text = skelcount.ToString();
                 }
             }
         }
@@ -177,13 +225,20 @@ namespace KinectWithVRServer
                 if (frame != null)
                 {
                     //Pass the data to the interaction frame for processing
-                    interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
+                    if (interactStream != null)
+                    {
+                        interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
+                    }
 
                     if (isGUI)
                     {
                         depthImagePixels = new short[frame.PixelDataLength];
                         frame.CopyPixelDataTo(depthImagePixels);
                         depthImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), depthImagePixels, frame.Width * frame.BytesPerPixel, 0);
+                        
+                        //Display the frame rate on the GUI
+                        double tempFPS = CalculateFrameRate(frame.Timestamp, depthTimeStamps);
+                        parent.DepthFPSTextBlock.Text = tempFPS.ToString("F1");
                     }
                 }
             }
@@ -199,6 +254,10 @@ namespace KinectWithVRServer
                         colorImagePixels = new byte[frame.PixelDataLength];
                         frame.CopyPixelDataTo(colorImagePixels);
                         colorImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), colorImagePixels, frame.Width * frame.BytesPerPixel, 0);
+
+                        //Display the frame rate on the GUI
+                        double tempFPS = CalculateFrameRate(frame.Timestamp, colorTimeStamps);
+                        parent.ColorFPSTextBlock.Text = tempFPS.ToString("F1");
                     }
                 }
             }
@@ -207,39 +266,97 @@ namespace KinectWithVRServer
         {
             using (InteractionFrame interactFrame = e.OpenInteractionFrame())
             {
-                if (interactFrame != null)
+                if (interactFrame != null && skeletons != null)
                 {
                     UserInfo[] tempUserInfo = new UserInfo[6];
                     interactFrame.CopyInteractionDataTo(tempUserInfo);
 
                     foreach (UserInfo info in tempUserInfo)
                     {
-                        foreach (InteractionHandPointer hand in info.HandPointers)
-                        {
-                            if (hand.HandEventType != InteractionHandEventType.None)
-                            {
-                                HelperMethods.WriteToLog("Skeleton Number: " + info.SkeletonTrackingId, parent);
+                        int skeletonIndex = -1;
 
-                                if (hand.HandEventType == InteractionHandEventType.Grip)
+                        for (int i = 0; i < skeletons.Length; i++)
+                        {
+                            if (info.SkeletonTrackingId == skeletons[i].TrackingId)
+                            {
+                                skeletonIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (skeletonIndex >= 0)
+                        {
+                            foreach (InteractionHandPointer hand in info.HandPointers)
+                            {
+                                if (hand.HandEventType != InteractionHandEventType.None)
                                 {
-                                    if (hand.HandType == InteractionHandType.Left)
+                                    
+                                    int gestureIndex = -1;
+                                    int serverIndex = -1;
+                                    bool sendGrip = server.isRunning && server.serverMasterOptions.kinectOptions.trackSkeletons;
+
+                                    if (sendGrip)
                                     {
-                                        HelperMethods.WriteToLog("Left hand closed!", parent);
+                                        //Figure out which gesture command the grip is
+                                        for (int i = 0; i < server.serverMasterOptions.gestureCommands.Count; i++)
+                                        {
+                                            //Technically, there should be TWO gesture commands per skeletons, but we only need one for now
+                                            //TODO: Make this more robust
+                                            if (server.serverMasterOptions.gestureCommands[i].skeletonNumber == skeletonIndex)
+                                            {
+                                                gestureIndex = skeletonIndex;
+                                                break;
+                                            }
+                                        }
+
+                                        //Figure out which tracking server the grip is to be transmitted on
+                                        for (int i = 0; i < server.buttonServers.Count; i++)
+                                        {
+                                            if (server.serverMasterOptions.buttonServers[i].serverName == server.serverMasterOptions.gestureCommands[gestureIndex].serverName)
+                                            {
+                                                serverIndex = i;
+                                                break;
+                                            }
+                                        }
                                     }
-                                    else if (hand.HandType == InteractionHandType.Right)
+
+                                    if (hand.HandEventType == InteractionHandEventType.Grip)
                                     {
-                                        HelperMethods.WriteToLog("Right hand closed!", parent);
+                                        if (hand.HandType == InteractionHandType.Left)
+                                        {
+                                            if (sendGrip)
+                                            {
+                                                server.buttonServers[serverIndex].Buttons[1] = true;
+                                            }
+                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " left hand closed!", parent);
+                                        }
+                                        else if (hand.HandType == InteractionHandType.Right)
+                                        {
+                                            if (sendGrip)
+                                            {
+                                                server.buttonServers[serverIndex].Buttons[0] = true;
+                                            }
+                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " right hand closed!", parent);
+                                        }
                                     }
-                                }
-                                else if (hand.HandEventType == InteractionHandEventType.GripRelease)
-                                {
-                                    if (hand.HandType == InteractionHandType.Left)
+                                    else if (hand.HandEventType == InteractionHandEventType.GripRelease)
                                     {
-                                        HelperMethods.WriteToLog("Left hand opened!", parent);
-                                    }
-                                    else if (hand.HandType == InteractionHandType.Right)
-                                    {
-                                        HelperMethods.WriteToLog("Right hand opened!", parent);
+                                        if (hand.HandType == InteractionHandType.Left)
+                                        {
+                                            if (sendGrip)
+                                            {
+                                                server.buttonServers[serverIndex].Buttons[1] = false;
+                                            }
+                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " left hand opened!", parent);
+                                        }
+                                        else if (hand.HandType == InteractionHandType.Right)
+                                        {
+                                            if (sendGrip)
+                                            {
+                                                server.buttonServers[serverIndex].Buttons[0] = false;
+                                            }
+                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " right hand opened!", parent);
+                                        }
                                     }
                                 }
                             }
@@ -467,6 +584,85 @@ namespace KinectWithVRServer
                 parent.ColorImageCanvas.Children.Add(circle);
             }
         }
+        private double CalculateFrameRate(Int64 timeStamp, List<Int64> oldTimes)
+        {
+            double FPS = 0.0;
+
+            //TODO: Consider making the number of frames to average over a user settable value
+            if (oldTimes.Count >= 10) //Computes a running average of 50 frames for stability
+            {
+                oldTimes.RemoveAt(0);
+            }
+            oldTimes.Add(timeStamp);
+
+            //Calculate the time between each frame
+            if (oldTimes.Count > 1)
+            {
+                double[] tempFPS = new double[oldTimes.Count - 1];
+                for (int i = 0; i < oldTimes.Count - 1; i++)
+                {
+                    tempFPS[i] = (1.0 / (double)(oldTimes[i + 1] - oldTimes[i]) * 1000.0);
+                }
+
+                FPS = tempFPS.Average();
+            }
+            //FPS = ((double)(oldTimes.Count - 1) / (double)(oldTimes[oldTimes.Count - 1] - oldTimes[0])) * 1000.0;
+
+            return FPS;
+        }
+        private Skeleton[] SortSkeletons(Skeleton[] unsortedSkeletons, SkeletonSortMethod sortMethod)
+        {
+            if (sortMethod == SkeletonSortMethod.NoSort)
+            {
+                return unsortedSkeletons;
+            }
+            else
+            {
+                //Seperate the tracked and untracked skeletons
+                List<Skeleton> trackedSkeletons = new List<Skeleton>();
+                List<Skeleton> untrackedSkeletons = new List<Skeleton>();
+                for (int i = 0; i < unsortedSkeletons.Length; i++)
+                {
+                    if (unsortedSkeletons[i].TrackingState == SkeletonTrackingState.NotTracked)
+                    {
+                        untrackedSkeletons.Add(unsortedSkeletons[i]);
+                    }
+                    else
+                    {
+                        trackedSkeletons.Add(unsortedSkeletons[i]);
+                    }
+                }
+
+                if (sortMethod == SkeletonSortMethod.Closest || sortMethod == SkeletonSortMethod.Farthest)
+                {
+                    //We only care about the tracked skeletons, so only sort those
+                    for (int i = 1; i < trackedSkeletons.Count; i++)
+                    {
+                        int insertIndex = i;
+                        Skeleton tempSkeleton = trackedSkeletons[i];
+
+                        while (insertIndex > 0 && tempSkeleton.Position.Z < trackedSkeletons[insertIndex - 1].Position.Z)
+                        {
+                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                            insertIndex--;
+                        }
+                        trackedSkeletons[insertIndex] = tempSkeleton;
+                    }
+
+                    if (sortMethod == SkeletonSortMethod.Farthest)
+                    {
+                        trackedSkeletons.Reverse();
+                    }
+                }
+
+                //Add the untracked skeletons to the tracked ones before sending everything back
+                trackedSkeletons.AddRange(untrackedSkeletons);
+
+                return trackedSkeletons.ToArray();
+            }
+        }
+
+        private delegate void launchKinectDelegate();
     }
 
     public class DummyInteractionClient : IInteractionClient
