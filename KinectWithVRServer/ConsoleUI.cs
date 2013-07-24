@@ -33,7 +33,7 @@ namespace KinectWithVRServer
             //int i = 0;
             while (running)
             {
-                Thread.Sleep(100);  //This seems to be blocking, preventing the events from getting triggered
+                Thread.Sleep(100);
                 //Console.WriteLine("Running loop " + i.ToString() + "th time.");
                 if (Console.KeyAvailable)
                 {

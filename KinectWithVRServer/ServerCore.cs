@@ -224,6 +224,7 @@ namespace KinectWithVRServer
                     trackerServers[i].Update();
                 }
                 vrpnConnection.Update();
+                Thread.Sleep(5);  //Unfortunately, this will add some latency to the system, but this loop burns too much processor time if it isn't there
             }
 
             //Cleanup everything
