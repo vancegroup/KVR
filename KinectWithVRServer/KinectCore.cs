@@ -371,7 +371,7 @@ namespace KinectWithVRServer
             foreach (Joint joint in skeleton.Joints)
             {
                 //I could include inferred joints as well, should I? 
-                if (joint.TrackingState == JointTrackingState.Tracked)
+                if (joint.TrackingState != JointTrackingState.NotTracked)
                 {
                     Vector4 boneQuat = skeleton.BoneOrientations[joint.JointType].AbsoluteRotation.Quaternion;
                     server.trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
