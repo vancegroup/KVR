@@ -131,6 +131,22 @@ namespace KinectWithVRServer
             }
         }
 
+        private static void updateList<T>(ref List<T> serverlist) where T : Vrpn.IVrpnObject
+        {
+            for (int i = 0; i < serverlist.Count; i++)
+            {
+                serverlist[i].Update();
+            }
+        }
+
+        private static void disposeList<T>(ref List<T> list) where T : IDisposable
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].Dispose();
+            }
+        }
+
         private void runServerCore()
         {
             serverStopped = false;
@@ -179,56 +195,20 @@ namespace KinectWithVRServer
             while (running)
             {
                 //Update the analog servers
-                for (int i = 0; i < analogServers.Count; i++)
-                {
-                    analogServers[i].Update();
-                }
-
-                //Update the button servers
-                for (int i = 0; i < buttonServers.Count; i++)
-                {
-                    buttonServers[i].Update();
-                }
-
-                //Update the text servers
-                for (int i = 0; i < textServers.Count; i++)
-                {
-                    textServers[i].Update();
-                }
-
-                //Update the tracker servers
-                for (int i = 0; i < trackerServers.Count; i++)
-                {
-                    trackerServers[i].Update();
-                }
+                updateList(ref analogServers);
+                updateList(ref buttonServers);
+                updateList(ref textServers);
+                updateList(ref trackerServers);
                 vrpnConnection.Update();
-                Thread.Sleep(5);  //Unfortunately, this will add some latency to the system, but this loop burns too much processor time if it isn't there
+                Thread.Yield(); // Be polite, but don't add unnecessary latency.
             }
 
             //Cleanup everything
             //Dispose the analog servers
-            for (int i = 0; i < analogServers.Count; i++)
-            {
-                analogServers[i].Dispose();
-            }
-
-            //Dispose the button servers
-            for (int i = 0; i < buttonServers.Count; i++)
-            {
-                buttonServers[i].Dispose();
-            }
-
-            //Dispose the text servers
-            for (int i = 0; i < textServers.Count; i++)
-            {
-                textServers[i].Dispose();
-            }
-
-            //Dispose the tracker servers
-            for (int i = 0; i < trackerServers.Count; i++)
-            {
-                trackerServers[i].Dispose();
-            }
+            disposeList(ref analogServers);
+            disposeList(ref buttonServers);
+            disposeList(ref textServers);
+            disposeList(ref trackerServers);
             vrpnConnection.Dispose();
 
             serverStopped = true;
