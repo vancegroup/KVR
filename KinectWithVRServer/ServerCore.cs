@@ -139,14 +139,7 @@ namespace KinectWithVRServer
             for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
             {
                 analogServers.Add(new AnalogServer(serverMasterOptions.analogServers[i].serverName, vrpnConnection, serverMasterOptions.analogServers[i].channelCount));
-                if (!verbose)
-                {
-                    analogServers[i].MuteWarnings = true;
-                }
-                else
-                {
-                    analogServers[i].MuteWarnings = false;
-                }
+                analogServers[i].MuteWarnings = !verbose;
             }
 
             //Set up all the button servers
@@ -154,14 +147,7 @@ namespace KinectWithVRServer
             for (int i = 0; i < serverMasterOptions.buttonServers.Count; i++)
             {
                 buttonServers.Add(new ButtonServer(serverMasterOptions.buttonServers[i].serverName, vrpnConnection, serverMasterOptions.buttonServers[i].buttonCount));
-                if (!verbose)
-                {
-                    buttonServers[i].MuteWarnings = true;
-                }
-                else
-                {
-                    buttonServers[i].MuteWarnings = false;
-                }
+                buttonServers[i].MuteWarnings = !verbose;
             }
 
             //Set up all the text servers
@@ -169,14 +155,7 @@ namespace KinectWithVRServer
             for (int i = 0; i < serverMasterOptions.textServers.Count; i++)
             {
                 textServers.Add(new TextSender(serverMasterOptions.textServers[i].serverName, vrpnConnection));
-                if (!verbose)
-                {
-                    textServers[i].MuteWarnings = true;
-                }
-                else
-                {
-                    textServers[i].MuteWarnings = false;
-                }
+                textServers[i].MuteWarnings = !verbose;
             }
 
             //Set up all the tracker servers
@@ -184,14 +163,7 @@ namespace KinectWithVRServer
             for (int i = 0; i < serverMasterOptions.trackerServers.Count; i++)
             {
                 trackerServers.Add(new TrackerServer(serverMasterOptions.trackerServers[i].serverName, vrpnConnection, serverMasterOptions.trackerServers[i].sensorCount));
-                if (!verbose)
-                {
-                    trackerServers[i].MuteWarnings = true;
-                }
-                else
-                {
-                    trackerServers[i].MuteWarnings = false;
-                }
+                trackerServers[i].MuteWarnings = !verbose;
             }
 
             //The server isn't really running until everything is setup here.
