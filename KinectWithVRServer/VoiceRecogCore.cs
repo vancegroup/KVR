@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.Kinect;
-using Microsoft.Speech;
-using Microsoft.Speech.Recognition;
-using Vrpn;
-using System.Threading;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using Microsoft.Kinect;
+using Microsoft.Speech.Recognition;
 
 namespace KinectWithVRServer
 {
