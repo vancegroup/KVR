@@ -235,7 +235,7 @@ namespace KinectWithVRServer
                         depthImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), depthImagePixels, frame.Width * frame.BytesPerPixel, 0);
                         
                         //Display the frame rate on the GUI
-                        double tempFPS = CalculateFrameRate(frame.Timestamp, depthTimeStamps);
+                        double tempFPS = CalculateFrameRate(frame.Timestamp, ref depthTimeStamps);
                         parent.DepthFPSTextBlock.Text = tempFPS.ToString("F1");
                     }
                 }
@@ -254,7 +254,7 @@ namespace KinectWithVRServer
                         colorImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), colorImagePixels, frame.Width * frame.BytesPerPixel, 0);
 
                         //Display the frame rate on the GUI
-                        double tempFPS = CalculateFrameRate(frame.Timestamp, colorTimeStamps);
+                        double tempFPS = CalculateFrameRate(frame.Timestamp, ref colorTimeStamps);
                         parent.ColorFPSTextBlock.Text = tempFPS.ToString("F1");
                     }
                 }
@@ -393,6 +393,7 @@ namespace KinectWithVRServer
             }
                             
             //Render all the bones
+            /// TODO can't you make this a loop on all the enum types?
             DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset);
             DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset);
             DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset);
@@ -422,6 +423,7 @@ namespace KinectWithVRServer
         {
             int sensorNumber = -1;
 
+            /// TODO can't you make this a simple mapping in some way?
             switch (joint)
             {
                 case JointType.Head:
@@ -582,7 +584,7 @@ namespace KinectWithVRServer
                 parent.ColorImageCanvas.Children.Add(circle);
             }
         }
-        private double CalculateFrameRate(Int64 timeStamp, List<Int64> oldTimes)
+        private static double CalculateFrameRate(Int64 timeStamp, ref List<Int64> oldTimes)
         {
             double FPS = 0.0;
 
@@ -608,6 +610,7 @@ namespace KinectWithVRServer
 
             return FPS;
         }
+
         private Skeleton[] SortSkeletons(Skeleton[] unsortedSkeletons, SkeletonSortMethod sortMethod)
         {
             if (sortMethod == SkeletonSortMethod.NoSort)
