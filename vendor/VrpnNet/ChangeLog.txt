@@ -1,0 +1,37 @@
+Version 1.1.1                           2009-07-20
+==================================================
+
+- Maintenance release linked against VRPN 7.21.
+- Removed Visual Studio 2005 support.
+
+
+Version 1.1.0                           2009-03-02
+==================================================
+
+- Added Quaternion axis-angle conversion functions.
+- Updated copyright notice.
+- Added Connection.CreateServerConnection overloads.
+- Added MutexRemote class.
+- Moved destruction logic from Dispose to Finalize. As part of
+  this change, objects now throw ObjectDisposedException if
+  they are accessed after disposal.
+- Added AnalogServer, ButtonServer, and MutexServer classes.
+- Added preview of TrackerServer class.
+
+
+Version 1.0.2				2008-10-03
+==================================================
+
+- Added Visual Studio 2008 project files.
+
+
+Version 1.0.1				2008-08-31
+==================================================
+
+- Bugfix: Vrpn.AnalogRemote.onAnalogChanged was causing crashes.
+
+
+Version 1.0.0				2008-08-30
+==================================================
+
+- Initial release for Visual Studio 2005.
