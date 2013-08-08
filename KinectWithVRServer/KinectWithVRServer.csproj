@@ -87,7 +87,7 @@
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="VrpnNet">
-      <HintPath>C:\Users\djarrell\Desktop\VrpnNet-1.1.1-Source\VrpnNet-1.1.1\Release-VC9\VrpnNet.dll</HintPath>
+      <HintPath>..\vendor\VrpnNet\Release-VC9\VrpnNet.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
