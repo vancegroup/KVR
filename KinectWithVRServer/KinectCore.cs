@@ -36,8 +36,7 @@ namespace KinectWithVRServer
             }
             else
             {
-                /// TODO make this not blow up with a weird gui error if thrown.
-                throw new Exception("Specified Kinect sensor does not exist");
+                throw new System.IndexOutOfRangeException("Specified Kinect sensor does not exist");
             }
 
             server = mainServer;
