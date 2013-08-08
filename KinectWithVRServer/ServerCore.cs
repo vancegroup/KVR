@@ -80,7 +80,11 @@ namespace KinectWithVRServer
                 }
             }
         }
-
+        /// <summary>
+        /// TODO why is GUI code in the server core?
+        /// 
+        /// </summary>
+        /// <param name="ar"></param>
         private void voiceStartedCallback(IAsyncResult ar)
         {
             HelperMethods.WriteToLog("Voice started!", parent);
@@ -98,6 +102,9 @@ namespace KinectWithVRServer
             }
         }
 
+        /// <summary>
+        /// TODO who calls this?
+        /// </summary>
         public void stopServer()
         {
             running = false;
@@ -122,7 +129,9 @@ namespace KinectWithVRServer
                 throw new Exception("VRPN server shutdown failed!");
             }
         }
-
+        /// <summary>
+        /// TODO what is this?
+        /// </summary>
         public void shutdownServer()
         {
             if (kinectCore != null)

@@ -142,7 +142,7 @@ namespace KinectWithVRServer
                                     if (shortCommand.buttonType == ButtonType.Momentary)
                                     {
                                         server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
-                                        Thread.Sleep(500);  //TODO:  Figure out a way to make this a non-blocking call
+                                        Thread.Sleep(500);  ///TODO:  Queue up something here - Figure out a way to make this a non-blocking call
                                         server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;
                                     }
                                     else if (shortCommand.buttonType == ButtonType.Setter)
