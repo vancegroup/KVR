@@ -10,6 +10,10 @@ namespace KinectWithVRServer
 {
     class ServerCore
     {
+        /// <summary>
+        /// Flag used to indicate whether we've entered the main loop, and modified to stop the loop.
+        /// Probably a race condition - you probably want to either use like a semaphore, or at least atomic data structures.
+        /// </summary>
         bool running = false;
         bool serverStopped = true;
         public bool isRunning
@@ -133,7 +137,9 @@ namespace KinectWithVRServer
 
             //Create the connection for all the servers
             vrpnConnection = Connection.CreateServerConnection();
-            
+
+            /// TODO Can these be parameterized, since they're essentially the same thing? If this were C++ I'd use templates.
+
             //Set up all the analog servers
             analogServers = new List<AnalogServer>();
             for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
