@@ -161,12 +161,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\..\..\Program Files\Microsoft SDKs\Kinect\Developer Toolkit v1.7.0\Redist\x86\KinectInteraction170_32.dll">
+    <None Include="C:\Program Files\Microsoft SDKs\Kinect\Developer Toolkit v1.7.0\Redist\x86\KinectInteraction170_32.dll">
       <Link>KinectInteraction170_32.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
