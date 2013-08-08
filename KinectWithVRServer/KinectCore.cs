@@ -63,31 +63,6 @@ namespace KinectWithVRServer
                 kinectDelegate.EndInvoke(result);  //Even though this is blocking, the events should be on a different thread now.
             }
 
-            ////Setup default properties
-            //kinect.ColorStream.Enable();
-            //kinect.DepthStream.Enable();
-            //kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
-            //interactStream = new InteractionStream(kinect, new DummyInteractionClient());
-            //kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
-            //kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
-            //kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
-            //kinect.SkeletonStream.EnableTrackingInNearRange = true;
-            //interactStream.InteractionFrameReady += new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
-
-            //if (isGUI)
-            //{
-            //    //Setup the images for the display
-            //    depthImage = new WriteableBitmap(kinect.DepthStream.FrameWidth, kinect.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Gray16, null);
-            //    parent.DepthImage.Source = depthImage;
-            //    colorImage = new WriteableBitmap(kinect.ColorStream.FrameWidth, kinect.ColorStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
-            //    parent.ColorImage.Source = colorImage;
-            //}
-
-            ////Create the coordinate mapper
-            //mapper = new CoordinateMapper(kinect);
-
-            //kinect.Start();
-            ////Note: Audio stream must be started AFTER the skeleton stream 
         }
 
         private void LaunchKinect()
