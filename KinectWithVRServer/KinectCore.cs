@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Microsoft.Kinect;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows;
 using System.Windows.Shapes;
+using Microsoft.Kinect;
 using Microsoft.Kinect.Toolkit.Interaction;
-using System.Diagnostics;
-using System.Threading;
 
 namespace KinectWithVRServer
 {
