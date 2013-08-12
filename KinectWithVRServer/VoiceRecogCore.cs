@@ -137,17 +137,29 @@ namespace KinectWithVRServer
                                     VoiceButtonCommand shortCommand =  (VoiceButtonCommand)server.serverMasterOptions.voiceCommands[i];
                                     if (shortCommand.buttonType == ButtonType.Momentary)
                                     {
-                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
+                                        lock (server.buttonServers[j])
+                                        {
+                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
+                                        }
                                         Thread.Sleep(500);  ///TODO:  Queue up something here - Figure out a way to make this a non-blocking call
-                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;
+                                        lock (server.buttonServers[j])
+                                        {
+                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;
+                                        }
                                     }
                                     else if (shortCommand.buttonType == ButtonType.Setter)
                                     {
-                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
+                                        lock (server.buttonServers[j])
+                                        {
+                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
+                                        }
                                     }
                                     else //Toggle button
                                     {
-                                        server.buttonServers[j].Buttons[shortCommand.buttonNumber] = !server.buttonServers[j].Buttons[shortCommand.buttonNumber];
+                                        lock (server.buttonServers[j])
+                                        {
+                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = !server.buttonServers[j].Buttons[shortCommand.buttonNumber];
+                                        }
                                     }
                                 }
                             }
@@ -158,7 +170,10 @@ namespace KinectWithVRServer
                             {
                                 if (server.serverMasterOptions.textServers[j].serverName == server.serverMasterOptions.voiceCommands[i].serverName)
                                 {
-                                    server.textServers[j].SendMessage(((VoiceTextCommand)server.serverMasterOptions.voiceCommands[i]).actionText);
+                                    lock (server.textServers[j])
+                                    {
+                                        server.textServers[j].SendMessage(((VoiceTextCommand)server.serverMasterOptions.voiceCommands[i]).actionText);
+                                    }
                                 }
                             }
                         }

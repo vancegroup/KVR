@@ -347,9 +347,12 @@ namespace KinectWithVRServer
                 if (joint.TrackingState != JointTrackingState.NotTracked)
                 {
                     Vector4 boneQuat = skeleton.BoneOrientations[joint.JointType].AbsoluteRotation.Quaternion;
-                    server.trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
-                                                         new Vector3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
-                                                         new Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
+                    lock (server.trackerServers[id])
+                    {
+                        server.trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
+                                                             new Vector3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
+                                                             new Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
+                    }
                 }
             }
         }

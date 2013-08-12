@@ -150,7 +150,10 @@ namespace KinectWithVRServer
         {
             for (int i = 0; i < serverlist.Count; i++)
             {
-                serverlist[i].Update();
+                lock (serverlist[i])
+                {
+                    serverlist[i].Update();
+                }
             }
         }
 
@@ -158,7 +161,10 @@ namespace KinectWithVRServer
         {
             for (int i = 0; i < list.Count; i++)
             {
-                list[i].Dispose();
+                lock (list[i])
+                {
+                    list[i].Dispose();
+                }
             }
         }
 
@@ -175,32 +181,44 @@ namespace KinectWithVRServer
             analogServers = new List<AnalogServer>();
             for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
             {
-                analogServers.Add(new AnalogServer(serverMasterOptions.analogServers[i].serverName, vrpnConnection, serverMasterOptions.analogServers[i].channelCount));
-                analogServers[i].MuteWarnings = !verbose;
+                lock (serverMasterOptions.analogServers[i])
+                {
+                    analogServers.Add(new AnalogServer(serverMasterOptions.analogServers[i].serverName, vrpnConnection, serverMasterOptions.analogServers[i].channelCount));
+                    analogServers[i].MuteWarnings = !verbose;
+                }
             }
 
             //Set up all the button servers
             buttonServers = new List<ButtonServer>();
             for (int i = 0; i < serverMasterOptions.buttonServers.Count; i++)
             {
-                buttonServers.Add(new ButtonServer(serverMasterOptions.buttonServers[i].serverName, vrpnConnection, serverMasterOptions.buttonServers[i].buttonCount));
-                buttonServers[i].MuteWarnings = !verbose;
+                lock (serverMasterOptions.buttonServers[i])
+                {
+                    buttonServers.Add(new ButtonServer(serverMasterOptions.buttonServers[i].serverName, vrpnConnection, serverMasterOptions.buttonServers[i].buttonCount));
+                    buttonServers[i].MuteWarnings = !verbose;
+                }
             }
 
             //Set up all the text servers
             textServers = new List<TextSender>();
             for (int i = 0; i < serverMasterOptions.textServers.Count; i++)
             {
-                textServers.Add(new TextSender(serverMasterOptions.textServers[i].serverName, vrpnConnection));
-                textServers[i].MuteWarnings = !verbose;
+                lock (serverMasterOptions.textServers[i])
+                {
+                    textServers.Add(new TextSender(serverMasterOptions.textServers[i].serverName, vrpnConnection));
+                    textServers[i].MuteWarnings = !verbose;
+                }
             }
 
             //Set up all the tracker servers
             trackerServers = new List<TrackerServer>();
             for (int i = 0; i < serverMasterOptions.trackerServers.Count; i++)
             {
-                trackerServers.Add(new TrackerServer(serverMasterOptions.trackerServers[i].serverName, vrpnConnection, serverMasterOptions.trackerServers[i].sensorCount));
-                trackerServers[i].MuteWarnings = !verbose;
+                lock (serverMasterOptions.trackerServers[i])
+                {
+                    trackerServers.Add(new TrackerServer(serverMasterOptions.trackerServers[i].serverName, vrpnConnection, serverMasterOptions.trackerServers[i].sensorCount));
+                    trackerServers[i].MuteWarnings = !verbose;
+                }
             }
 
             //The server isn't really running until everything is setup here.
@@ -214,7 +232,10 @@ namespace KinectWithVRServer
                 updateList(ref buttonServers);
                 updateList(ref textServers);
                 updateList(ref trackerServers);
-                vrpnConnection.Update();
+                lock (vrpnConnection)
+                {
+                    vrpnConnection.Update();
+                }
                 Thread.Yield(); // Be polite, but don't add unnecessary latency.
             }
 
@@ -224,7 +245,10 @@ namespace KinectWithVRServer
             disposeList(ref buttonServers);
             disposeList(ref textServers);
             disposeList(ref trackerServers);
-            vrpnConnection.Dispose();
+            lock (vrpnConnection)
+            {
+                vrpnConnection.Dispose();
+            }
 
             serverStopped = true;
         }
