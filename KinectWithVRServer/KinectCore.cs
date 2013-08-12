@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Toolkit.Interaction;
@@ -347,8 +348,8 @@ namespace KinectWithVRServer
                 {
                     Vector4 boneQuat = skeleton.BoneOrientations[joint.JointType].AbsoluteRotation.Quaternion;
                     server.trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
-                                                         new Vrpn.Vector3(joint.Position.X, joint.Position.Y, joint.Position.Z),
-                                                         new Vrpn.Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
+                                                         new Vector3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
+                                                         new Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
                 }
             }
         }
