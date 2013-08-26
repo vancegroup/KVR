@@ -45,7 +45,7 @@ namespace KinectWithVRServer
 
             Console.WriteLine("Shutting down the server.  Please wait...");
             server.stopServer();
-            server.shutdownServer();
+            //server.shutdownServer();
 
             NativeInterop.FreeConsole();
         }

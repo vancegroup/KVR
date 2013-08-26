@@ -50,7 +50,9 @@ namespace KinectWithVRServer
         public void launchVoiceRecognizer()
         {
             //Setup the audio source
-            KinectAudioSource source = server.kinectCore.kinect.AudioSource;
+            //TODO: Change this so it references the list of kinects in the parent
+            //Also add the ability to use the alternat audio source
+            KinectAudioSource source = server.kinects[0].kinect.AudioSource;
             source.EchoCancellationMode = EchoCancellationMode.None; //May need to be an option somewhere
             source.AutomaticGainControlEnabled = false; //Needs to be this way for voice recognition
 
@@ -82,6 +84,7 @@ namespace KinectWithVRServer
 
             if (server.serverMasterOptions.kinectOptions.useKinectAudio)
             {
+                //TODO:  We don't actually need to get the source from the Kinect until here
                 audioStream = source.Start();
                 engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
             }

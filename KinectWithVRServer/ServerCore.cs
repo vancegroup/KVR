@@ -27,12 +27,9 @@ namespace KinectWithVRServer
         bool verbose = false;
         bool GUI = false;
         MainWindow parent;
-        public KinectCore kinectCore;
+        internal List<KinectCore> kinects = new List<KinectCore>();
         VoiceRecogCore voiceRecog;
-        //GestureRecogCore gestureRecog;
-        //public static string printerGrunt;
 
-        //public ServerCore(bool isVerbose, KinectCore kinectCore, MainWindow guiParent = null)
         public ServerCore(bool isVerbose, MasterSettings serverOptions, MainWindow guiParent = null)
         {                
             parent = guiParent;
@@ -45,14 +42,14 @@ namespace KinectWithVRServer
             }
 
             //TODO: Make this actually do something useful on the GUI
-            try
-            {
-                kinectCore = new KinectCore(this, parent);
-            }
-            catch (IndexOutOfRangeException except)
-            {
-                Debug.WriteLine("No Kinect attached: " + except.Message);
-            }
+            //try
+            //{
+            //    kinectCore = new KinectCore(this, parent);
+            //}
+            //catch (IndexOutOfRangeException except)
+            //{
+            //    Debug.WriteLine("No Kinect attached: " + except.Message);
+            //}
         }
 
         //public void launchServer(MasterSettings serverSettings)
@@ -138,13 +135,13 @@ namespace KinectWithVRServer
         /// <summary>
         /// TODO what is this?
         /// </summary>
-        public void shutdownServer()
-        {
-            if (kinectCore != null)
-            {
-                kinectCore.ShutdownSensor();
-            }
-        }
+        //public void shutdownServer()
+        //{
+        //    if (kinectCore != null)
+        //    {
+        //        kinectCore.ShutdownSensor();
+        //    }
+        //}
 
         private static void updateList<T>(ref List<T> serverlist) where T : Vrpn.IVrpnObject
         {

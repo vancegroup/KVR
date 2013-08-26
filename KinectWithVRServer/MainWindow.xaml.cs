@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -24,14 +25,12 @@ namespace KinectWithVRServer
         internal string startupFile = "";
         internal bool verbose = false;
         internal bool startOnLaunch = false;
-        //internal MasterSettings settings;
         internal ServerCore server;
-        //internal KinectCore kinect;
-        //int totalFrames = 0;
-        //int lastFrames = 0;
-        //bool isGUI = false;  //Shouldn't be needed, if this class exists, then it must be in GUI mode
         internal DateTime serverStartTime = DateTime.MaxValue;
         System.Timers.Timer uptimeUpdateTimer;
+        internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
+        private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
+        private List<KinectSettingsControl> kinectOptionGUIPages = new List<KinectSettingsControl>();
 
         public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
         {
@@ -128,6 +127,7 @@ namespace KinectWithVRServer
         }
         #endregion
 
+        #region Window Events
         private void Window_Initialized(object sender, EventArgs e)
         {
             //Setup the timer to update the GUI with the server runtime
@@ -137,9 +137,10 @@ namespace KinectWithVRServer
 
             MasterSettings tempSettings = new MasterSettings();
 
-            //FOR TESTING ONLY!!  Replace with an option on the GUI
+            //TODO: FOR TESTING ONLY!!  Replace with an option on the GUI
             tempSettings.skeletonOptions.skeletonSortMode = SkeletonSortMethod.Closest;
 
+            //TODO: Replace with an option on the skeleton tracking tab
             //Since skeleton tracking is on by default, add the buttons for the hands
             for (int i = 0; i < 6; i++)
             {
@@ -160,41 +161,12 @@ namespace KinectWithVRServer
                 }
             }
 
-            //MORE TESTING
-            //VoiceButtonCommand testCommand = new VoiceButtonCommand();
-            //testCommand.recognizedWord = "Hello";
-            //testCommand.buttonNumber = 0;
-            //testCommand.buttonType = ButtonType.Toggle;
-            //testCommand.comments = "Test";
-            //testCommand.confidence = 0.9;
-            //testCommand.initialState = false;
-            //testCommand.sendSourceAngle = false;
-            //testCommand.serverName = "ButtonServe";
-            ////testCommand.serverType = ServerType.Button;
-            //testCommand.setState = true;
-            //settings.voiceButtonCommands.Add(testCommand);
-            //VoiceTextCommand testCommand2 = new VoiceTextCommand();
-            //testCommand2.recognizedWord = "Goodbye";
-            //testCommand2.comments = "Test2";
-            //testCommand2.confidence = 0.9;
-            //testCommand2.sendSourceAngle = false;
-            //testCommand2.serverName = "ButtonServe";
-            //testCommand2.actionText = "Good Riddance";
-            ////testCommand2.serverType = ServerType.Button;
-            //settings.voiceTextCommands.Add(testCommand2);
-
             //Create the server core (this does NOT start the server)
             server = new ServerCore(verbose, tempSettings, this);
 
             //Set all the data for the data grids
             VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
             VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
-
-            //Start the Kinect to pass to the ServerCore; NOTE: This must be started BEFORE running the server core
-            //kinect = new KinectCore(server, this);
-
-            //BUG!!!  -> Because the kinect is also initialized inside the ServerCore code, the kinect is actually getting started TWICE
-            //Open the Kinect
 
             KinectStatusBlock.Text = "1";
 
@@ -211,58 +183,50 @@ namespace KinectWithVRServer
                     HelperMethods.WriteToLog("Startup settings (" + startupFile + ") failed to load.");
                 }
             }
+
+            //TODO: Handle starting Kinects based on the loaded settings file
+            //Initialize the data for the available Kinects
+            for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
+            {
+                AvailableKinectData tempData = new AvailableKinectData();
+                tempData.ConnectionID = KinectSensor.KinectSensors[i].DeviceConnectionId;
+                tempData.Status = KinectSensor.KinectSensors[i].Status;
+                if (i == 0 && tempData.Status == KinectStatus.Connected)
+                {
+                    tempData.UseKinect = true;
+                    tempData.KinectID = 0;
+                    server.kinects.Add(new KinectCore(server, this, (int)tempData.KinectID));
+                }
+                else
+                {
+                    tempData.UseKinect = false;
+                    tempData.KinectID = null;
+                }
+                availableKinects.Add(tempData);
+            }
+            kinectsAvailableDataGrid.ItemsSource = availableKinects;
+            availableKinects.CollectionChanged += availableKinects_CollectionChanged;
+            UpdatePageListing();
+            KinectSensor.KinectSensors.StatusChanged += KinectSensors_StatusChanged;
+
             if (startOnLaunch)
             {
-                //server.launchServer(settings);
                 startServerButton_Click(this, new RoutedEventArgs());
             }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            server.shutdownServer();
+            //TODO: Handle closing down all the kinects
+            //server.shutdownServer();
             //if (kinect != null)
             //{
             //    kinect.ShutdownSensor();
             //}
         }
+        #endregion
 
-        //Receives checkbox input and orders seated mode. 
-        public void SelectSeatedModeChanged(object sender, RoutedEventArgs e)
-        {
-            if ((bool)ChooseSeatedModeButton.IsChecked)
-            {
-                server.serverMasterOptions.skeletonOptions.isSeatedMode = true;
-                if (server.kinectCore != null)
-                {
-                    server.kinectCore.kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated;
-                }
-            }
-            else
-            {
-                server.serverMasterOptions.skeletonOptions.isSeatedMode = false;
-                if (server.kinectCore != null)
-                {
-                    server.kinectCore.kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Default;
-                }
-            }
-        }
-
-        //Receives checkbox input and orders near mode.
-        public void SelectNearModeChanged(object sender, RoutedEventArgs e)
-        {
-            if ((bool)ChooseNearModeButton.IsChecked)
-            {
-                server.serverMasterOptions.kinectOptions.isNearMode = true;
-                server.kinectCore.kinect.DepthStream.Range = DepthRange.Near;
-            }
-            else
-            {
-                server.serverMasterOptions.kinectOptions.isNearMode = false;
-                server.kinectCore.kinect.DepthStream.Range = DepthRange.Default;
-            }
-        }
-
+        #region Status Tab GUI Stuff
         private void startServerButton_Click(object sender, RoutedEventArgs e)
         {
             if (server != null)
@@ -292,31 +256,6 @@ namespace KinectWithVRServer
                 }
             }
         }
-
-        private void VoiceButtonDataGrid_LostFocus(object sender, RoutedEventArgs e)
-        {
-            VoiceButtonDataGrid.SelectedIndex = -1;
-        }
-
-        private void VoiceTextDataGrid_LostFocus(object sender, RoutedEventArgs e)
-        {
-            VoiceTextDataGrid.SelectedIndex = -1;
-        }
-
-        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
-
-        //Refreshes all the data on the GUI after a new settings file is loaded
-        private void UpdateGUISettings()
-        {
-            VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
-            VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
-
-            //TODO: Add the rest of the GUI updates here.
-        }
-
         void uptimeUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             //This is on another thread...
@@ -326,5 +265,139 @@ namespace KinectWithVRServer
             }), null
             );
         }
+        #endregion
+
+        #region Kinect Tab GUI Stuff
+        //Event fires whenever a Kinect on the computer changes, this is used to keep the list of available Kinects up to date
+        void KinectSensors_StatusChanged(object sender, StatusChangedEventArgs e)
+        {
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].ConnectionID == e.Sensor.DeviceConnectionId)
+                {
+                    if (e.Sensor.Status != KinectStatus.Disconnected)
+                    {
+                        availableKinects[i].Status = e.Sensor.Status;
+                        if (e.Sensor.Status != KinectStatus.Connected)
+                        {
+                            availableKinects[i].UseKinect = false;
+                        }
+                    }
+                    else
+                    {
+                        availableKinects.RemoveAt(i);
+                        
+                        //Renumber all the Kinect IDs
+                        int sensorNum = 0;
+                        for (int j = 0; j < availableKinects.Count; j++)
+                        {
+                            if (availableKinects[j].UseKinect)
+                            {
+                                availableKinects[j].KinectID = sensorNum;
+                                sensorNum++;
+                            }
+                        }
+                    }
+                    kinectsAvailableDataGrid.Items.Refresh();
+                    return;
+                }
+            }
+
+            AvailableKinectData tempData = new AvailableKinectData();
+            tempData.ConnectionID = e.Sensor.DeviceConnectionId;
+            tempData.KinectID = null;
+            tempData.UseKinect = false;
+            tempData.Status = e.Sensor.Status;
+            availableKinects.Add(tempData);
+            kinectsAvailableDataGrid.Items.Refresh();
+        }
+        //Updates the items in the Kinect settings tab listbox, this list is used to pick what is shown in the area next to the list box
+        void UpdatePageListing()
+        {
+            kinectsPageList.RemoveRange(1, kinectsPageList.Count - 1); //Clear all but the first page, which we will always show
+
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].UseKinect)
+                {
+                    kinectsPageList.Add("Kinect " + availableKinects[i].KinectID.ToString());
+                }
+            }
+
+            kinectTabListBox.ItemsSource = kinectsPageList;
+        }
+        //Changes which Kinect settings page is in view based on the selection in the list box
+        private void kinectTabListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (kinectTabListBox.SelectedIndex >= 0 && kinectTabListBox.SelectedIndex <= kinectOptionGUIPages.Count)
+            {
+                if (kinectTabListBox.SelectedIndex == 0)
+                {
+                    for (int i = 0; i < kinectOptionGUIPages.Count; i++)
+                    {
+                        kinectOptionGUIPages[i].Visibility = System.Windows.Visibility.Collapsed;
+                    }
+                    kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Visible;
+                }
+                else
+                {
+                    kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Collapsed;
+                    for (int i = 0; i < kinectOptionGUIPages.Count; i++)
+                    {
+                        if (kinectTabListBox.SelectedIndex - 1 == i)
+                        {
+                            kinectOptionGUIPages[i].Visibility = System.Windows.Visibility.Visible;
+                        }
+                        else
+                        {
+                            kinectOptionGUIPages[i].Visibility = System.Windows.Visibility.Collapsed;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Voice Recognition GUI Stuff
+        private void VoiceButtonDataGrid_LostFocus(object sender, RoutedEventArgs e)
+        {
+            VoiceButtonDataGrid.SelectedIndex = -1;
+        }
+        private void VoiceTextDataGrid_LostFocus(object sender, RoutedEventArgs e)
+        {
+            VoiceTextDataGrid.SelectedIndex = -1;
+        }
+        #endregion
+
+        #region Other Methods
+        //Refreshes all the data on the GUI after a new settings file is loaded
+        private void UpdateGUISettings()
+        {
+            VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
+            VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
+
+            //TODO: Add the rest of the GUI updates here.
+        }
+        #endregion
+
+        private void kinectsAvailableDataGrid_CurrentCellChanged(object sender, EventArgs e)
+        {
+            Debug.WriteLine(e.ToString());
+        }
+
+        private void kinectsAvailableDataGrid_SourceUpdated(object sender, DataTransferEventArgs e)
+        {
+            Debug.WriteLine(e.ToString());
+        }
+        void availableKinects_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            Debug.WriteLine(e.Action.ToString());
+        }
+
+        private void kinectsAvailableDataGrid_LostFocus(object sender, RoutedEventArgs e)
+        {
+            kinectsAvailableDataGrid.SelectedIndex = -1;
+        }
+
     }
 }

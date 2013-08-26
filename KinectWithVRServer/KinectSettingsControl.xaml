@@ -1,0 +1,136 @@
+﻿<UserControl x:Class="KinectWithVRServer.KinectSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="200" d:DesignWidth="530">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <GroupBox Header="Color Settings" Grid.RowSpan="2" Margin="2">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="Resolution:" Margin="2"/>
+                <ComboBox Name="colorResComboBox" SelectedIndex="0" Margin="2">
+                    <ComboBoxItem Content="RGB 640 x 480 (30 FPS)"/>
+                    <ComboBoxItem Content="RGB 1280 x 960 (12 FPS)"/>
+                    <ComboBoxItem Content="IR 640 x 480 (30 FPS)"/>
+                    <ComboBoxItem Content="Off"/>
+                </ComboBox>
+                <TextBlock Text="Power Line Frequency:" Margin="2"/>
+                <ComboBox Name="powerLineComboBox" SelectedIndex="0" Margin="2">
+                    <ComboBoxItem Content="60 Hz"/>
+                    <ComboBoxItem Content="50 Hz"/>
+                    <ComboBoxItem Content="Disabled"/>
+                </ComboBox>
+                <CheckBox Name="AutoColorCheckBox" Content="Auto Color" Margin="2"/>
+                <Button Name="advancedColorButton" Content="Advanced Color" Margin="2"/>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Header="Depth Settings" Grid.Column="1">
+            <StackPanel Orientation="Vertical">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Resolution:" Margin="2"/>
+                        <ComboBox SelectedIndex="0" Margin="0, 2, 0, 2">
+                            <ComboBoxItem Content="640 x 480"/>
+                            <ComboBoxItem Content="320 x 240"/>
+                            <ComboBoxItem Content="80 x 60"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Vertical">
+                        <CheckBox Content="IR On" IsChecked="True" Margin="2"/>
+                        <CheckBox Content="Near Mode" IsChecked="False" Margin="2"/>
+                    </StackPanel>
+                </Grid>
+                <CheckBox Content="Use Skeleton" Margin="0,2,0,2"/>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Header="Audio Settings" Grid.Column="1" Grid.Row="1">
+            <StackPanel Orientation="Vertical">
+                <CheckBox Content="Send Source Angle" Margin="2"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Server:" VerticalAlignment="Center"/>
+                    <TextBox Name="audioServerTextBox" Margin="2" Grid.Column="1"/>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Channel:" VerticalAlignment="Center"/>
+                    <TextBox Name="audioChannelTextBox" Margin="2" Grid.Column="1"/>
+                </Grid>
+                <TextBlock Text="Beam Mode:" Margin="2"/>
+                <ComboBox SelectedIndex="0">
+                    <ComboBoxItem Content="Loudest Source"/>
+                    <ComboBoxItem Content="Feedback Position"/>
+                    <ComboBoxItem Content="Skeleton 1"/>
+                </ComboBox>                           
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Header="Physical Settings" Grid.Column="2" Grid.RowSpan="2">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="Acceleration: (1.23, 1.23, 1.23)" Margin="2"/>
+                <TextBlock Text="Angle: 12.56°" Margin="2"/>
+                <CheckBox Content="Send Acceleration"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Server:" VerticalAlignment="Center"/>
+                    <TextBox Name="accelServerTextBox" Margin="2" Grid.Column="1"/>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Channel:" VerticalAlignment="Center"/>
+                    <TextBox Name="accelChannelTextBox" Margin="2" Grid.Column="1"/>
+                </Grid>
+                <TextBlock Text="Position (m):"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="X:" VerticalAlignment="Center"/>
+                    <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1"/>
+                    <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
+                    <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3"/>
+                    <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
+                    <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5"/>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
+                    <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1"/>
+                </Grid>
+            </StackPanel>
+        </GroupBox>
+    </Grid>
+</UserControl>

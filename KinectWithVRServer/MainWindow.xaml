@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:KinectWithVRServer"
         xmlns:core="clr-namespace:System;assembly=mscorlib"
         Initialized="Window_Initialized" Closing="Window_Closing"
-        Title="Kinect With VR (KiwiVR) Server" Height="400" Width="590">
+        Title="Kinect With VR (KiwiVR) Server" Height="472" Width="700">
     <Window.Resources>
         <!--<System:Int16 x:Key="kinectsPresent">0</System:Int16>-->
         <ObjectDataProvider x:Key="ButtonTypeEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
@@ -106,23 +106,21 @@
             
             <TabItem Name="KinectTab" Header="Kinect Settings">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <!--TODO:  Clean this up.  This is a wierd way of handling this.-->
-                    <TextBlock Name="KinectTextBlock" TextWrapping="Wrap" Margin="6,4,0,0">
-    Camera Resolution: <LineBreak/>
-                        <StackPanel>
-    <ComboBox Margin="4,4,0,6" SelectionChanged="ComboBox_SelectionChanged">
-        <ComboBoxItem Tag="highres">1280x1024</ComboBoxItem>
-        <ComboBoxItem Tag="defaultres" IsSelected="True">640x480</ComboBoxItem>
-        <ComboBoxItem Tag="lowres">320x240</ComboBoxItem>
-    </ComboBox>
-</StackPanel>
-                        <LineBreak/>Depth Setting:<LineBreak/>
-                        <CheckBox Content="Near Mode" Height="23" Name="ChooseNearModeButton" Margin="4,2,0,6" Checked="SelectNearModeChanged" Unchecked="SelectNearModeChanged"/>
-                    </TextBlock>                    
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox Name="kinectTabListBox" SelectionChanged="kinectTabListBox_SelectionChanged"/>
+                    
+                    <DataGrid Name="kinectsAvailableDataGrid" Grid.Column="2" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" SourceUpdated="kinectsAvailableDataGrid_SourceUpdated" CurrentCellChanged="kinectsAvailableDataGrid_CurrentCellChanged" LostFocus="kinectsAvailableDataGrid_LostFocus" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="Use Kinect" IsReadOnly="False" Binding="{Binding Path=UseKinect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridTextColumn Header="Kinect Number" IsReadOnly="True" Binding="{Binding KinectID}"/>
+                            <DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>
+                            <DataGridTextColumn Header="Kinect Status" IsReadOnly="True" Binding="{Binding Status}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </TabItem>
                 
@@ -215,9 +213,13 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="4,5,-4,-5" Grid.RowSpan="2">
-                        <CheckBox Content="Seated Mode" Height="23" Margin="6,2,0,0" Name="ChooseSeatedModeButton" Checked="SelectSeatedModeChanged" Unchecked="SelectSeatedModeChanged"/>
+                        <CheckBox Content="Seated Mode" Height="23" Margin="6,2,0,0" Name="ChooseSeatedModeButton"/>
                     <LineBreak/>Skeleton Tracking:<LineBreak/></TextBlock>
                 </Grid>
+            </TabItem>
+            
+            <TabItem Name="FeedbackTab" Header="Feedback">
+                <!--This tab is to allow the server to accept a VRPN tracking input to use for the audio beam angle and skeleton sorting-->
             </TabItem>
             
             <TabItem Name="ServersTab" Header="Servers">

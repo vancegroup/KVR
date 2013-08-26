@@ -5,6 +5,7 @@ using System.Threading;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Xml.Serialization;
+using Microsoft.Kinect;
 
 namespace KinectWithVRServer
 {
@@ -81,6 +82,14 @@ namespace KinectWithVRServer
                 file.Dispose();
             }
         }
+    }
+
+    public class AvailableKinectData
+    {
+        public string ConnectionID { get; set; }
+        public int? KinectID { get; set; }
+        public KinectStatus Status { get; set; }
+        public bool UseKinect { get; set; }
     }
 
     public class BoolToPressConverter : IValueConverter
