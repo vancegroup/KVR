@@ -203,12 +203,24 @@
             <TabItem Name="SkeletonTab" Header="Skeleton Settings">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="50"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="4,5,-4,-5" Grid.RowSpan="2">
-                        <CheckBox Content="Seated Mode" Height="23" Margin="6,2,0,0" Name="ChooseSeatedModeButton"/>
-                    <LineBreak/>Skeleton Tracking:<LineBreak/></TextBlock>
+                        General Settings:<CheckBox Content="Seated Mode" Height="23" Margin="6,0,0,-10" Name="ChooseSeatedModeButton"/>
+                        <LineBreak/>Sorting: <ComboBox Margin="3,0,0,-6" Name="SortSkelModeButton"/>
+                    </TextBlock>
+                    <!--Dummy bindings in following DataGrid-->
+                    <DataGrid Name="SkeletonSettingsDataGrid" Grid.Row="3" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <!--Skeleton # needs binding-->
+                            <DataGridCheckBoxColumn Header="#" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Server Name" IsReadOnly="False" Binding="{Binding SkelServerName}"/>
+                            <DataGridCheckBoxColumn Header="Transmit" IsReadOnly="False" Binding="{Binding SkelTransmit}"/>
+                            <!--When combobox variable (i.e. Right Hand) is selected, bring up dialog for further options-->
+                            <DataGridComboBoxColumn Header="Customization" />
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </TabItem>
             

@@ -407,6 +407,10 @@ namespace KinectWithVRServer
 
         #endregion
 
+        #region Skeleton Tab GUI Stuff
+
+        #endregion
+
         #region Voice Recognition GUI Stuff
         private void VoiceButtonDataGrid_LostFocus(object sender, RoutedEventArgs e)
         {
