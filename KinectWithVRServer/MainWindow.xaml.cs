@@ -202,10 +202,10 @@ namespace KinectWithVRServer
                     tempData.UseKinect = false;
                     tempData.KinectID = null;
                 }
+                tempData.PropertyChanged += useKinect_PropertyChanged;
                 availableKinects.Add(tempData);
             }
             kinectsAvailableDataGrid.ItemsSource = availableKinects;
-            availableKinects.CollectionChanged += availableKinects_CollectionChanged;
             UpdatePageListing();
             KinectSensor.KinectSensors.StatusChanged += KinectSensors_StatusChanged;
 
@@ -214,7 +214,6 @@ namespace KinectWithVRServer
                 startServerButton_Click(this, new RoutedEventArgs());
             }
         }
-
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             //TODO: Handle closing down all the kinects
@@ -285,18 +284,10 @@ namespace KinectWithVRServer
                     }
                     else
                     {
+                        availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
                         availableKinects.RemoveAt(i);
-                        
-                        //Renumber all the Kinect IDs
-                        int sensorNum = 0;
-                        for (int j = 0; j < availableKinects.Count; j++)
-                        {
-                            if (availableKinects[j].UseKinect)
-                            {
-                                availableKinects[j].KinectID = sensorNum;
-                                sensorNum++;
-                            }
-                        }
+
+                        renumberKinectIDs();
                     }
                     kinectsAvailableDataGrid.Items.Refresh();
                     return;
@@ -307,10 +298,29 @@ namespace KinectWithVRServer
             tempData.ConnectionID = e.Sensor.DeviceConnectionId;
             tempData.KinectID = null;
             tempData.UseKinect = false;
+            tempData.PropertyChanged += useKinect_PropertyChanged;
             tempData.Status = e.Sensor.Status;
             availableKinects.Add(tempData);
             kinectsAvailableDataGrid.Items.Refresh();
         }
+        //Renumbers the Kinect IDs
+        private void renumberKinectIDs()
+        {
+            int sensorNum = 0;
+            for (int j = 0; j < availableKinects.Count; j++)
+            {
+                if (availableKinects[j].UseKinect)
+                {
+                    availableKinects[j].KinectID = sensorNum;
+                    sensorNum++;
+                }
+                else
+                {
+                    availableKinects[j].KinectID = null;
+                }
+            }
+        }
+
         //Updates the items in the Kinect settings tab listbox, this list is used to pick what is shown in the area next to the list box
         void UpdatePageListing()
         {
@@ -320,11 +330,40 @@ namespace KinectWithVRServer
             {
                 if (availableKinects[i].UseKinect)
                 {
+                    //Check if the GUI page exists, and create it if it doesn't exist
+                    bool exists = false;
+                    for (int j = 0; j < kinectOptionGUIPages.Count; j++)
+                    {
+                        if (kinectOptionGUIPages[j].ConnectionID == availableKinects[i].ConnectionID)
+                        {
+                            exists = true;
+                            kinectOptionGUIPages[j].KinectNumber = availableKinects[i].KinectID;
+                            break;
+                        }
+                    }
+                    if (!exists)
+                    {
+                        kinectOptionGUIPages.Add(new KinectSettingsControl(availableKinects[i].KinectID, availableKinects[i].ConnectionID, verbose, this));
+                    }
                     kinectsPageList.Add("Kinect " + availableKinects[i].KinectID.ToString());
+                }
+                else
+                {
+                    //Check if the settings exist for the one we are removing, and set the Kinect ID to null so it will go to the end
+                    for (int j = 0; j < kinectOptionGUIPages.Count; j++)
+                    {
+                        if (kinectOptionGUIPages[j].ConnectionID == availableKinects[i].ConnectionID)
+                        {
+                            kinectOptionGUIPages[j].KinectNumber = null;
+                            break;
+                        }
+                    }
                 }
             }
 
+            kinectOptionGUIPages.Sort(new KinectSettingsControlComparer());
             kinectTabListBox.ItemsSource = kinectsPageList;
+            kinectTabListBox.Items.Refresh();
         }
         //Changes which Kinect settings page is in view based on the selection in the list box
         private void kinectTabListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -356,6 +395,16 @@ namespace KinectWithVRServer
                 }
             }
         }
+        //Updates the Kinect list when the property is changed
+        void useKinect_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "UseKinect")
+            {
+                renumberKinectIDs();
+                UpdatePageListing();
+            }
+        }
+
         #endregion
 
         #region Voice Recognition GUI Stuff
@@ -379,25 +428,5 @@ namespace KinectWithVRServer
             //TODO: Add the rest of the GUI updates here.
         }
         #endregion
-
-        private void kinectsAvailableDataGrid_CurrentCellChanged(object sender, EventArgs e)
-        {
-            Debug.WriteLine(e.ToString());
-        }
-
-        private void kinectsAvailableDataGrid_SourceUpdated(object sender, DataTransferEventArgs e)
-        {
-            Debug.WriteLine(e.ToString());
-        }
-        void availableKinects_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-        {
-            Debug.WriteLine(e.Action.ToString());
-        }
-
-        private void kinectsAvailableDataGrid_LostFocus(object sender, RoutedEventArgs e)
-        {
-            kinectsAvailableDataGrid.SelectedIndex = -1;
-        }
-
     }
 }

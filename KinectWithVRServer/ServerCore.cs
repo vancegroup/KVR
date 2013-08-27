@@ -83,11 +83,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        /// <summary>
-        /// TODO why is GUI code in the server core?
-        /// 
-        /// </summary>
-        /// <param name="ar"></param>
+
         private void voiceStartedCallback(IAsyncResult ar)
         {
             HelperMethods.WriteToLog("Voice started!", parent);
@@ -106,7 +102,7 @@ namespace KinectWithVRServer
         }
 
         /// <summary>
-        /// TODO who calls this?
+        /// Stops the server from running, but does not cleanup all the settings in case you want to turn the server back on
         /// </summary>
         public void stopServer()
         {
@@ -132,16 +128,6 @@ namespace KinectWithVRServer
                 throw new Exception("VRPN server shutdown failed!");
             }
         }
-        /// <summary>
-        /// TODO what is this?
-        /// </summary>
-        //public void shutdownServer()
-        //{
-        //    if (kinectCore != null)
-        //    {
-        //        kinectCore.ShutdownSensor();
-        //    }
-        //}
 
         private static void updateList<T>(ref List<T> serverlist) where T : Vrpn.IVrpnObject
         {
@@ -171,8 +157,6 @@ namespace KinectWithVRServer
 
             //Create the connection for all the servers
             vrpnConnection = Connection.CreateServerConnection();
-
-            /// TODO Can these be parameterized, since they're essentially the same thing? If this were C++ I'd use templates.
 
             //Set up all the analog servers
             analogServers = new List<AnalogServer>();

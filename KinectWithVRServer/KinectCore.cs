@@ -91,7 +91,8 @@ namespace KinectWithVRServer
             mapper = new CoordinateMapper(kinect);
 
             kinect.Start();
-            //Note: Audio stream must be started AFTER the skeleton stream 
+            //Note: Audio stream must be started AFTER the skeleton stream
+            //TODO: Move the audio stream start so the stream can run without the voice recognizer (for beam anagles)
         }
 
         public void ShutdownSensor()
@@ -105,6 +106,7 @@ namespace KinectWithVRServer
                 interactStream.Dispose();
                 interactStream = null;
 
+                kinect.AudioSource.Stop();
                 kinect.Stop();
             }
         }
@@ -159,7 +161,7 @@ namespace KinectWithVRServer
                         //Send the points across if the skeleton is either tracked or has a position
                         if (skel.TrackingState != SkeletonTrackingState.NotTracked)
                         {
-                            if (server.serverMasterOptions.kinectOptions.trackSkeletons)
+                            if (server.serverMasterOptions.kinectOptions[0].trackSkeletons)
                             {
                                 skelcount++;
 
@@ -266,7 +268,7 @@ namespace KinectWithVRServer
                                     
                                     int gestureIndex = -1;
                                     int serverIndex = -1;
-                                    bool sendGrip = server.isRunning && server.serverMasterOptions.kinectOptions.trackSkeletons;
+                                    bool sendGrip = server.isRunning && server.serverMasterOptions.kinectOptions[0].trackSkeletons;
 
                                     if (sendGrip)
                                     {
@@ -370,8 +372,7 @@ namespace KinectWithVRServer
                 offset.Y = (parent.ColorImageCanvas.ActualHeight - parent.ColorImage.ActualHeight) / 2;
             }
                             
-            //Render all the bones
-            /// TODO can't you make this a loop on all the enum types?
+            //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
             DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset);
             DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset);
             DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset);
@@ -401,7 +402,7 @@ namespace KinectWithVRServer
         {
             int sensorNumber = -1;
 
-            /// TODO can't you make this a simple mapping in some way?
+            //Translates the SDK joints to the FAAST joint numbers
             switch (joint)
             {
                 case JointType.Head:

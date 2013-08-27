@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -84,12 +85,40 @@ namespace KinectWithVRServer
         }
     }
 
-    public class AvailableKinectData
+    public class AvailableKinectData : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void NotifyPropertyChanged(string info)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(info));
+            }
+        }
+
         public string ConnectionID { get; set; }
-        public int? KinectID { get; set; }
+        private int? kinectID;
+        public int? KinectID
+        {
+            get { return kinectID; }
+            set
+            {
+                kinectID = value;
+                NotifyPropertyChanged("KinectID");
+            }
+        }
         public KinectStatus Status { get; set; }
-        public bool UseKinect { get; set; }
+        private bool useKinect;
+        public bool UseKinect
+        {
+            get { return useKinect; }
+            set
+            {
+                useKinect = value;
+                NotifyPropertyChanged("UseKinect");
+            }
+        }
     }
 
     public class BoolToPressConverter : IValueConverter

@@ -7,9 +7,8 @@
         xmlns:local="clr-namespace:KinectWithVRServer"
         xmlns:core="clr-namespace:System;assembly=mscorlib"
         Initialized="Window_Initialized" Closing="Window_Closing"
-        Title="Kinect With VR (KiwiVR) Server" Height="472" Width="700">
+        Title="Kinect With VR (KiwiVR) Server" Height="504" Width="700">
     <Window.Resources>
-        <!--<System:Int16 x:Key="kinectsPresent">0</System:Int16>-->
         <ObjectDataProvider x:Key="ButtonTypeEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
             <ObjectDataProvider.MethodParameters>
                 <x:Type Type="local:ButtonType"/>
@@ -105,18 +104,17 @@
             </TabItem>
             
             <TabItem Name="KinectTab" Header="Kinect Settings">
-                <Grid>
+                <Grid Name="KinectTabMasterGrid">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="4"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <ListBox Name="kinectTabListBox" SelectionChanged="kinectTabListBox_SelectionChanged"/>
-                    
-                    <DataGrid Name="kinectsAvailableDataGrid" Grid.Column="2" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" SourceUpdated="kinectsAvailableDataGrid_SourceUpdated" CurrentCellChanged="kinectsAvailableDataGrid_CurrentCellChanged" LostFocus="kinectsAvailableDataGrid_LostFocus" CanUserAddRows="False">
+                    <DataGrid Name="kinectsAvailableDataGrid" Grid.Column="2" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
                         <DataGrid.Columns>
                             <DataGridCheckBoxColumn Header="Use Kinect" IsReadOnly="False" Binding="{Binding Path=UseKinect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                            <DataGridTextColumn Header="Kinect Number" IsReadOnly="True" Binding="{Binding KinectID}"/>
+                            <DataGridTextColumn Header="Kinect Number" IsReadOnly="True" Binding="{Binding Path=KinectID, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             <DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>
                             <DataGridTextColumn Header="Kinect Status" IsReadOnly="True" Binding="{Binding Status}"/>
                         </DataGrid.Columns>
@@ -136,7 +134,6 @@
                             <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
                             <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>                            
                             <DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
-                            <!--<DataGridCheckBoxColumn Header="Set State" Binding="{Binding setState}"/>-->
                             <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
                             <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
                             <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
@@ -155,9 +152,6 @@
                             <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <!--<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="VoiceRemoveButton" Width="72" Height="24" Margin="2" Content="Remove" Click="VoiceRemoveButton_Click" />
-                    </StackPanel>-->
                 </Grid>
             </TabItem>
             

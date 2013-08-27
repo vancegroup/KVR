@@ -82,7 +82,10 @@ namespace KinectWithVRServer
             engine.SpeechHypothesized += new EventHandler<SpeechHypothesizedEventArgs>(engine_SpeechHypothesized);
             engine.SpeechRecognitionRejected += new EventHandler<SpeechRecognitionRejectedEventArgs>(engine_SpeechRecognitionRejected);
 
-            if (server.serverMasterOptions.kinectOptions.useKinectAudio)
+            //According to the speech recognition sample, this turns off adaptation of the acoustical mode, which can degrade recognizer accuracy over time
+            engine.UpdateRecognizerSetting("AdaptationOn", 0);
+
+            if (server.serverMasterOptions.kinectOptions[0].useKinectAudio)
             {
                 //TODO:  We don't actually need to get the source from the Kinect until here
                 audioStream = source.Start();
@@ -144,7 +147,7 @@ namespace KinectWithVRServer
                                         {
                                             server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
                                         }
-                                        Thread.Sleep(500);  ///TODO:  Queue up something here - Figure out a way to make this a non-blocking call
+                                        Thread.Sleep(500);  ///TODO: Change to an event timer, the trick is keeping them all cleaned up...
                                         lock (server.buttonServers[j])
                                         {
                                             server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;

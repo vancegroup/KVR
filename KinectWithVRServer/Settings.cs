@@ -6,8 +6,8 @@ namespace KinectWithVRServer
 {
     public class MasterSettings
     {
-        public KinectSettings kinectOptions;
-        public SoundSourceSettings soundOptions;
+        public List<KinectSettings> kinectOptions;
+        //public SoundSourceSettings soundOptions;
         public SkeletonSettings skeletonOptions;
         public List<AnalogServerSettings> analogServers;
         public List<ButtonServerSettings> buttonServers;
@@ -30,8 +30,8 @@ namespace KinectWithVRServer
 
         public MasterSettings()
         {
-            kinectOptions = new KinectSettings();
-            soundOptions = new SoundSourceSettings();
+            kinectOptions = new List<KinectSettings>();
+            //soundOptions = new SoundSourceSettings();
             skeletonOptions = new SkeletonSettings();
             voiceTextCommands = new ObservableCollection<VoiceTextCommand>();
             voiceButtonCommands = new ObservableCollection<VoiceButtonCommand>();
@@ -42,6 +42,10 @@ namespace KinectWithVRServer
             trackerServers = new List<TrackerServerSettings>();
         }
 
+        //TODO: Update this to handle the following...
+        //1) Multiple Kinect audio beam angles
+        //2) Multiple Kinect accelerometer data
+        //3) Find the number of unique analog servers and channels (based on 1 and 2)
         public void parseSettings()
         {
             analogServers = new List<AnalogServerSettings>();
@@ -161,7 +165,7 @@ namespace KinectWithVRServer
             }
 
             //Setup the tracker servers for the skeletal tracking
-            if (kinectOptions.trackSkeletons)
+            if (kinectOptions[0].trackSkeletons)
             {
                 trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker00" });
                 trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker01" });
@@ -176,15 +180,221 @@ namespace KinectWithVRServer
     public class KinectSettings
     {
         public bool trackSkeletons = true;
+        #region Color Settings
         public ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
+        public PowerLineFrequency lineFreq = PowerLineFrequency.SixtyHertz;
+        public bool autoWhiteBalance = true;
+        public bool autoExposure = true;
+        public BacklightCompensationMode backlightMode = BacklightCompensationMode.AverageBrightness;
+        private double brightness = 0.2156;
+        public double Brightness
+        {
+            get { return brightness; }
+            set
+            {
+                if (value < 0.0)
+                {
+                    brightness = 0.0;
+                }
+                else if (value > 1.0)
+                {
+                    brightness = 1.0;
+                }
+                else
+                {
+                    brightness = value;
+                }
+            }
+        }
+        private double contrast = 1.0;
+        public double Contrast
+        {
+            get { return contrast; }
+            set
+            {
+                if (value < 0.5)
+                {
+                    contrast = 0.5;
+                }
+                else if (value > 2.0)
+                {
+                    contrast = 2.0;
+                }
+                else
+                {
+                    contrast = value;
+                }
+            }
+        }
+        private double exposureTime = 0.0;
+        public double ExposureTime
+        {
+            get { return exposureTime; }
+            set
+            {
+                if (value < 0.0)
+                {
+                    exposureTime = 0.0;
+                }
+                else if (value > 4000.0)
+                {
+                    exposureTime = 4000.0;
+                }
+                else
+                {
+                    exposureTime = value;
+                }
+            }
+        }
+        private double frameInterval = 0.0;
+        public double FrameInterval
+        {
+            get { return frameInterval; }
+            set
+            {
+                if (value < 0.0)
+                {
+                    frameInterval = 0.0;
+                }
+                else if (value > 4000.0)
+                {
+                    frameInterval = 4000.0;
+                }
+                else
+                {
+                    frameInterval = value;
+                }
+            }
+        }
+        private double gain = 1.0;
+        public double Gain
+        {
+            get { return gain; }
+            set
+            {
+                if (value < 1.0)
+                {
+                    gain = 1.0;
+                }
+                else if (value > 16.0)
+                {
+                    gain = 16.0;
+                }
+                else
+                {
+                    gain = value;
+                }
+            }
+        }
+        private double gamma = 2.2;
+        public double Gamma
+        {
+            get { return gamma; }
+            set
+            {
+                if (value < 1.0)
+                {
+                    gamma = 1.0;
+                }
+                else if (value > 2.8)
+                {
+                    gamma = 2.8;
+                }
+                else
+                {
+                    gamma = value;
+                }
+            }
+        }
+        private double hue = 0.0;
+        public double Hue
+        {
+            get { return hue; }
+            set
+            {
+                if (value < -22.0)
+                {
+                    hue = -22.0;
+                }
+                else if (value > 22.0)
+                {
+                    hue = 22.0;
+                }
+                else
+                {
+                    hue = value;
+                }
+            }
+        }
+        private double saturation = 1.0;
+        public double Saturation
+        {
+            get { return saturation; }
+            set
+            {
+                if (value < 0.0)
+                {
+                    saturation = 0.0;
+                }
+                else if (value > 2.0)
+                {
+                    saturation = 2.0;
+                }
+                else
+                {
+                    saturation = value;
+                }
+            }
+        }
+        private double sharpness = 0.5;
+        public double Sharpness
+        {
+            get { return sharpness; }
+            set
+            {
+                if (value < 0.0)
+                {
+                    sharpness = 0.0;
+                }
+                else if (value > 1.0)
+                {
+                    sharpness = 1.0;
+                }
+                else
+                {
+                    sharpness = value;
+                }
+            }
+        }
+        private int whiteBalance = 2700;
+        public int WhiteBalance
+        {
+            get { return whiteBalance; }
+            set
+            {
+                if (value < 2700)
+                {
+                    whiteBalance = 2700;
+                }
+                else if (value > 6500)
+                {
+                    whiteBalance = 6500;
+                }
+                else
+                {
+                    whiteBalance = value;
+                }
+            }
+        }
+        #endregion
         public DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
         public bool isNearMode = false;
         //public bool isSeatedMode = false;
         //public bool previewEnabled = true;
-        public double sensorAngle = 0.0;
-        public EchoCancellationMode echoMode = EchoCancellationMode.None;
-        public bool autoGainEnabled = false;
-        public bool useKinectAudio = true; //Else use the default input
+        //public double sensorAngle = 0.0;
+        public EchoCancellationMode echoMode = EchoCancellationMode.None; //Currently not adjustable, change?
+        public bool autoGainEnabled = false;  //Currently not adjustable, change?
+        public bool useKinectAudio = true; //Only 1 Kinect can have this be true, if all are false, the default system audio input will be used
         //Noise suppression?
         //Force IR off?
         //Skeleton Picker Mode?
@@ -192,14 +402,14 @@ namespace KinectWithVRServer
 
     }
 
-    public class SoundSourceSettings
-    {
+    //public class SoundSourceSettings
+    //{
 
-    }
+    //}
 
     public class SkeletonSettings
     {
-        public bool EnableTrackingInNearRange { get; set; }
+        //public bool EnableTrackingInNearRange { get; set; } //This should just implicitly be enabled
         public bool isSeatedMode { get; set; }
         public SkeletonSortMethod skeletonSortMode { get; set; }
     }
