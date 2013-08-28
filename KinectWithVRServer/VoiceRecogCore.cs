@@ -152,11 +152,10 @@ namespace KinectWithVRServer
                                         {
                                             server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
                                         }
-                                        Thread.Sleep(500);  ///TODO: Change to an event timer, the trick is keeping them all cleaned up...
-                                        lock (server.buttonServers[j])
-                                        {
-                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.initialState;
-                                        }
+
+                                        //Run a delegate to change the state back, that way, even though it uses a blocking call, it will be blocking a thread we don't care about
+                                        ToggleBackMomentaryButtonDelegate buttonDelegate = ToggleBackMomentaryButton;
+                                        buttonDelegate.BeginInvoke(j, shortCommand.buttonNumber, shortCommand.initialState, null, null);
                                     }
                                     else if (shortCommand.buttonType == ButtonType.Setter)
                                     {
@@ -203,6 +202,15 @@ namespace KinectWithVRServer
             }
         }
 
+        private void ToggleBackMomentaryButton(int buttonServerIndex, int buttonNumber, bool state)
+        {
+            Thread.Sleep(500);
+            lock (server.buttonServers[buttonServerIndex])
+            {
+                server.buttonServers[buttonServerIndex].Buttons[buttonNumber] = state;
+            }
+        }
+
         //Note: there may be multiple recognizes installed on a computer, this picks the one for the Kinect
         //However, we do not HAVE to use that one.  This should probably be an option somewhere.
         private RecognizerInfo GetKinectRecognizer()
@@ -215,5 +223,7 @@ namespace KinectWithVRServer
             };
             return SpeechRecognitionEngine.InstalledRecognizers().Where(matchingFunc).FirstOrDefault();
         }
+
+        private delegate void ToggleBackMomentaryButtonDelegate(int buttonServerIndex, int buttonNumber, bool state);
     }
 }
