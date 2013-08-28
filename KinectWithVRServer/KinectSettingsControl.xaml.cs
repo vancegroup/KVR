@@ -49,7 +49,9 @@ namespace KinectWithVRServer
         #region Acceleration Option Methods
         private void SendAccelCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            //TODO: Set the appropriate server setting here
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAcceleration = true;
+
+            //Enable the server boxes
             accelXChannelTextBox.IsEnabled = true;
             accelYChannelTextBox.IsEnabled = true;
             accelZChannelTextBox.IsEnabled = true;
@@ -57,7 +59,9 @@ namespace KinectWithVRServer
         }
         private void SendAccelCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            //TODO: Set the appropriate server setting here
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAcceleration = false;
+
+            //Disable the server boxes
             accelXChannelTextBox.IsEnabled = false;
             accelYChannelTextBox.IsEnabled = false;
             accelZChannelTextBox.IsEnabled = false;
@@ -68,13 +72,17 @@ namespace KinectWithVRServer
         #region Audio Option Methods
         private void SendSoundAngleCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            //TODO: Set the appropriate server settings here
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAudioAngle = true;
+
+            //Enable the server boxes
             audioServerTextBox.IsEnabled = true;
             audioChannelTextBox.IsEnabled = true;
         }
         private void SendSoundAngleCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            //TODO: Set the appropriate server settings here
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAudioAngle = false;
+
+            //Disable the server boxes
             audioServerTextBox.IsEnabled = false;
             audioChannelTextBox.IsEnabled = false;
         }
@@ -82,7 +90,7 @@ namespace KinectWithVRServer
 
         private void UseSkeletonCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            //TODO: Update the appropriate server variable here
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
         }
     }
 

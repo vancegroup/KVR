@@ -25,8 +25,10 @@ namespace KinectWithVRServer
         ServerCore server;
         public int skelcount;
         private InteractionStream interactStream;
-        private List<Int64> depthTimeStamps = new List<long>();
-        private List<Int64> colorTimeStamps = new List<long>();
+        private List<double> depthTimeIntervals = new List<double>();
+        private List<double> colorTimeIntervals = new List<double>();
+        private Int64 lastDepthTime = 0;
+        private Int64 lastColorTime = 0;
         private Skeleton[] skeletons = null;
 
         //The parent has to be optional to allow for console operation
@@ -156,9 +158,6 @@ namespace KinectWithVRServer
 
                 kinect.AudioSource.Start();
             }
-
-            //Note: Audio stream must be started AFTER the skeleton stream
-            //TODO: Move the audio stream start so the stream can run without the voice recognizer (for beam anagles)
         }
 
         public void ShutdownSensor()
@@ -278,7 +277,7 @@ namespace KinectWithVRServer
                         depthImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), depthImagePixels, frame.Width * frame.BytesPerPixel, 0);
                         
                         //Display the frame rate on the GUI
-                        double tempFPS = CalculateFrameRate(frame.Timestamp, ref depthTimeStamps);
+                        double tempFPS = CalculateFrameRate(frame.Timestamp, ref lastDepthTime, ref depthTimeIntervals);
                         parent.DepthFPSTextBlock.Text = tempFPS.ToString("F1");
                     }
                 }
@@ -297,7 +296,7 @@ namespace KinectWithVRServer
                         colorImage.WritePixels(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height), colorImagePixels, frame.Width * frame.BytesPerPixel, 0);
 
                         //Display the frame rate on the GUI
-                        double tempFPS = CalculateFrameRate(frame.Timestamp, ref colorTimeStamps);
+                        double tempFPS = CalculateFrameRate(frame.Timestamp, ref lastColorTime, ref colorTimeIntervals);
                         parent.ColorFPSTextBlock.Text = tempFPS.ToString("F1");
                     }
                 }
@@ -646,31 +645,18 @@ namespace KinectWithVRServer
                 parent.ColorImageCanvas.Children.Add(circle);
             }
         }
-        private static double CalculateFrameRate(Int64 timeStamp, ref List<Int64> oldTimes)
+        private static double CalculateFrameRate(Int64 currentTimeStamp, ref Int64 lastTimeStamp, ref List<double> oldIntervals)
         {
-            double FPS = 0.0;
+            double newInterval = (double)(currentTimeStamp - lastTimeStamp);
+            lastTimeStamp = currentTimeStamp;
 
-            //TODO: Consider making the number of frames to average over a user settable value
-            if (oldTimes.Count >= 10) //Computes a running average of 10 frames for stability
+            if (oldIntervals.Count >= 10) //Computes a running average of 10 frames for stability
             {
-                oldTimes.RemoveAt(0);
+                oldIntervals.RemoveAt(0);
             }
-            oldTimes.Add(timeStamp);
+            oldIntervals.Add(newInterval);
 
-            //Calculate the time between each frame
-            if (oldTimes.Count > 1)
-            {
-                double[] tempFPS = new double[oldTimes.Count - 1];
-                for (int i = 0; i < oldTimes.Count - 1; i++)
-                {
-                    tempFPS[i] = (1.0 / (double)(oldTimes[i + 1] - oldTimes[i]) * 1000.0);
-                }
-
-                FPS = tempFPS.Average();
-            }
-            //FPS = ((double)(oldTimes.Count - 1) / (double)(oldTimes[oldTimes.Count - 1] - oldTimes[0])) * 1000.0;
-
-            return FPS;
+            return (1.0 / oldIntervals.Average() * 1000.0);
         }
 
         private Skeleton[] SortSkeletons(Skeleton[] unsortedSkeletons, SkeletonSortMethod sortMethod)

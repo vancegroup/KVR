@@ -46,16 +46,6 @@ namespace KinectWithVRServer
             {
                 GUI = true;
             }
-
-            //TODO: Make this actually do something useful on the GUI
-            //try
-            //{
-            //    kinectCore = new KinectCore(this, parent);
-            //}
-            //catch (IndexOutOfRangeException except)
-            //{
-            //    Debug.WriteLine("No Kinect attached: " + except.Message);
-            //}
         }
 
         //public void launchServer(MasterSettings serverSettings)

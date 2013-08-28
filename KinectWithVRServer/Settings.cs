@@ -430,7 +430,7 @@ namespace KinectWithVRServer
         #region Audio Source Settings
         public bool sendAudioAngle { get; set; }
         public AudioTrackingMode audioTrackMode { get; set; }
-        public int trackSkeletonNumber { get; set; }
+        public int audioBeamTrackSkeletonNumber { get; set; }
         public string audioAngleServerName { get; set; }
         public int audioAngleChannel { get; set; }
         #endregion
