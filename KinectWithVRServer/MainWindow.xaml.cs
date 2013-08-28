@@ -142,24 +142,24 @@ namespace KinectWithVRServer
 
             //TODO: Replace with an option on the skeleton tracking tab
             //Since skeleton tracking is on by default, add the buttons for the hands
-            for (int i = 0; i < 6; i++)
-            {
-                for (int j = 0; j < 2; j++) //We need a command for each hand
-                {
-                    GestureCommand gripCommand = new GestureCommand();
-                    gripCommand.buttonNumber = j;
-                    string handString = "_left";
-                    if (j == 0)
-                    {
-                        handString = "_right";
-                    }
-                    gripCommand.comments = "Skeleton" + i.ToString() + handString;
-                    gripCommand.gestureType = GestureType.Grip;
-                    gripCommand.serverName = "Tracker0" + i.ToString();
-                    gripCommand.skeletonNumber = i;
-                    tempSettings.gestureCommands.Add(gripCommand);
-                }
-            }
+            //for (int i = 0; i < 6; i++)
+            //{
+            //    for (int j = 0; j < 2; j++) //We need a command for each hand
+            //    {
+            //        GestureCommand gripCommand = new GestureCommand();
+            //        gripCommand.buttonNumber = j;
+            //        string handString = "_left";
+            //        if (j == 0)
+            //        {
+            //            handString = "_right";
+            //        }
+            //        gripCommand.comments = "Skeleton" + i.ToString() + handString;
+            //        gripCommand.gestureType = GestureType.Grip;
+            //        gripCommand.serverName = "Tracker0" + i.ToString();
+            //        gripCommand.skeletonNumber = i;
+            //        tempSettings.gestureCommands.Add(gripCommand);
+            //    }
+            //}
 
             //Create the server core (this does NOT start the server)
             server = new ServerCore(verbose, tempSettings, this);
@@ -195,6 +195,7 @@ namespace KinectWithVRServer
                 {
                     tempData.UseKinect = true;
                     tempData.KinectID = 0;
+                    server.serverMasterOptions.kinectOptions.Add(new KinectSettings(tempData.ConnectionID));
                     server.kinects.Add(new KinectCore(server, this, (int)tempData.KinectID));
                 }
                 else
@@ -207,6 +208,7 @@ namespace KinectWithVRServer
             }
             kinectsAvailableDataGrid.ItemsSource = availableKinects;
             UpdatePageListing();
+            GenerateImageSourcePickerLists();
             KinectSensor.KinectSensors.StatusChanged += KinectSensors_StatusChanged;
 
             if (startOnLaunch)
@@ -402,6 +404,7 @@ namespace KinectWithVRServer
             {
                 renumberKinectIDs();
                 UpdatePageListing();
+                GenerateImageSourcePickerLists();
             }
         }
 
@@ -432,5 +435,35 @@ namespace KinectWithVRServer
             //TODO: Add the rest of the GUI updates here.
         }
         #endregion
+
+        private void ColorSourcePickerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //TODO: Update which kinect is being shown for color, also update the writeable bitmap, if necessary
+        }
+
+        private void DepthSourcePickerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //TODO:  Update which Kinect is being shown for the depth, also update the writeable bitmap
+        }
+
+        private void GenerateImageSourcePickerLists()
+        {
+            ColorSourcePickerComboBox.Items.Clear();
+            DepthSourcePickerComboBox.Items.Clear();
+            ColorSourcePickerComboBox.Items.Add("None");
+            DepthSourcePickerComboBox.Items.Add("None");
+
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                if (server.kinects[i].kinect.ColorStream.IsEnabled)
+                {
+                    ColorSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
+                }
+                if (server.kinects[i].kinect.DepthStream.IsEnabled)
+                {
+                    DepthSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
+                }
+            }
+        }
     }
 }

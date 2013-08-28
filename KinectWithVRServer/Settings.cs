@@ -1,14 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Microsoft.Kinect;
+using System.Windows.Media.Media3D;
 
 namespace KinectWithVRServer
 {
     public class MasterSettings
     {
-        public List<KinectSettings> kinectOptions;
-        //public SoundSourceSettings soundOptions;
+        public AudioSettings audioOptions;
         public SkeletonSettings skeletonOptions;
+        public FeedbackSettings feedbackOptions;
+        public List<KinectSettings> kinectOptions;
         public List<AnalogServerSettings> analogServers;
         public List<ButtonServerSettings> buttonServers;
         public List<TextServerSettings> textServers;
@@ -31,8 +33,9 @@ namespace KinectWithVRServer
         public MasterSettings()
         {
             kinectOptions = new List<KinectSettings>();
-            //soundOptions = new SoundSourceSettings();
+            audioOptions = new AudioSettings();
             skeletonOptions = new SkeletonSettings();
+            feedbackOptions = new FeedbackSettings();
             voiceTextCommands = new ObservableCollection<VoiceTextCommand>();
             voiceButtonCommands = new ObservableCollection<VoiceButtonCommand>();
             gestureCommands = new ObservableCollection<GestureCommand>();
@@ -179,13 +182,35 @@ namespace KinectWithVRServer
 
     public class KinectSettings
     {
-        public bool trackSkeletons = true;
+        public KinectSettings(string deviceConnectionID)
+        {
+            connectionID = deviceConnectionID;
+
+            //Set everything to the default value
+            colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
+            lineFreq = PowerLineFrequency.SixtyHertz;
+            autoWhiteBalance = true;
+            autoExposure = true;
+            backlightMode = BacklightCompensationMode.AverageBrightness;
+            depthImageMode = DepthImageFormat.Resolution320x240Fps30;
+            isNearMode = false;
+            irON = true;
+            trackSkeletons = false;
+            kinectPosition = new Point3D(0, 0, 0);
+            kinectYaw = 0.0;
+            sendAcceleration = false;
+            sendAudioAngle = false;
+            audioTrackMode = AudioTrackingMode.Loudest;
+        }
+
+        public string connectionID { get; set; }
+
         #region Color Settings
-        public ColorImageFormat colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
-        public PowerLineFrequency lineFreq = PowerLineFrequency.SixtyHertz;
-        public bool autoWhiteBalance = true;
-        public bool autoExposure = true;
-        public BacklightCompensationMode backlightMode = BacklightCompensationMode.AverageBrightness;
+        public ColorImageFormat colorImageMode { get; set; }
+        public PowerLineFrequency lineFreq { get; set; }
+        public bool autoWhiteBalance { get; set; }
+        public bool autoExposure { get; set; }
+        public BacklightCompensationMode backlightMode { get; set; }
         private double brightness = 0.2156;
         public double Brightness
         {
@@ -387,31 +412,79 @@ namespace KinectWithVRServer
             }
         }
         #endregion
-        public DepthImageFormat depthImageMode = DepthImageFormat.Resolution640x480Fps30;
-        public bool isNearMode = false;
-        //public bool isSeatedMode = false;
-        //public bool previewEnabled = true;
-        //public double sensorAngle = 0.0;
-        public EchoCancellationMode echoMode = EchoCancellationMode.None; //Currently not adjustable, change?
-        public bool autoGainEnabled = false;  //Currently not adjustable, change?
-        public bool useKinectAudio = true; //Only 1 Kinect can have this be true, if all are false, the default system audio input will be used
-        //Noise suppression?
-        //Force IR off?
-        //Skeleton Picker Mode?
-        //Send hand states?
-
+        #region Depth Settings
+        public DepthImageFormat depthImageMode { get; set; }
+        public bool isNearMode { get; set; }
+        public bool irON { get; set; }
+        #endregion
+        #region Skeleton and Physical Settings
+        public bool trackSkeletons { get; set; }
+        public Point3D kinectPosition { get; set; }
+        public double kinectYaw { get; set; }
+        public bool sendAcceleration { get; set; }
+        public string accelerationServerName { get; set; }
+        public int accelXChannel { get; set; }
+        public int accelYChannel { get; set; }
+        public int accelZChannel { get; set; }
+        #endregion
+        #region Audio Source Settings
+        public bool sendAudioAngle { get; set; }
+        public AudioTrackingMode audioTrackMode { get; set; }
+        public int trackSkeletonNumber { get; set; }
+        public string audioAngleServerName { get; set; }
+        public int audioAngleChannel { get; set; }
+        #endregion
     }
 
-    //public class SoundSourceSettings
-    //{
-
-    //}
+    public class AudioSettings
+    {
+        public int sourceID { get; set; } //Anything <0 is the default source
+        public string recognizerEngineID { get; set; }
+        public EchoCancellationMode echoMode { get; set; }
+        public bool noiseSurpression { get; set; }
+        public bool autoGainEnabled { get; set; } //This should probably always be false, but I will put a setting in for it anyway
+    }
 
     public class SkeletonSettings
     {
+        public SkeletonSettings()
+        {
+            individualSkeletons = new List<PerSkeletonSettings>();
+
+            //Set defaults
+            isSeatedMode = false;
+            skeletonSortMode = SkeletonSortMethod.NoSort;
+        }
+
         //public bool EnableTrackingInNearRange { get; set; } //This should just implicitly be enabled
         public bool isSeatedMode { get; set; }
         public SkeletonSortMethod skeletonSortMode { get; set; }
+        public List<PerSkeletonSettings> individualSkeletons { get; set; }
+    }
+
+    public class PerSkeletonSettings
+    {
+        public bool useSkeleton {get; set;}
+        public string serverName {get; set;}
+        public bool useRightHandGrip { get; set; }
+        public bool useLeftHandGrip { get; set; }
+        public string rightGripServerName { get; set; }
+        public string leftGripServerName { get; set; }
+        public int rightGripButtonNumber { get; set; }
+        public int leftGripButtonNumber { get; set; }
+    }
+
+    public class FeedbackSettings
+    {
+        public FeedbackSettings()
+        {
+            //Set the default values
+            useFeedback = false;
+        }
+
+        public bool useFeedback { get; set; }
+        public string feedbackServerName { get; set; }
+        public int feedbackSensorNumber { get; set; }
     }
 
     public class AnalogServerSettings
@@ -452,8 +525,6 @@ namespace KinectWithVRServer
         public double confidence { get; set; }
         public bool sendSourceAngle { get; set; }
         public string recognizedWord { get; set; }
-        
-        //public AnalogCommand sourceAngleCommand;
     }
 
     public class VoiceTextCommand : VoiceCommand
@@ -494,14 +565,9 @@ namespace KinectWithVRServer
         }
         public GestureType gestureType { get; set; }
         public int buttonNumber { get; set; }
-        public int skeletonNumber { get; set; }
+        //public int skeletonNumber { get; set; }
         //This will likely need to be added to to handle recorded gestures
     }
-
-    //public class AnalogCommand : Command
-    //{
-    //    int channel;
-    //}
 
 
     //(*)Need to hide CommandType and ServerType from visible columns
@@ -509,6 +575,7 @@ namespace KinectWithVRServer
     public enum ServerType { Button, Analog, Tracker, Text }
     public enum ButtonType { Setter, Toggle, Momentary }
     public enum SkeletonSortMethod {NoSort, Closest, Farthest}
-    public enum GestureType { Grip, Recorded }
+    public enum GestureType { Recorded }
     public enum PressState { Pressed, Released }
+    public enum AudioTrackingMode { Loudest, Feedback, SkeletonX }
 }

@@ -133,4 +133,11 @@ namespace KinectWithVRServer
             return ((PressState)value == PressState.Pressed) ? true : false;
         }
     }
+
+    internal class KinectSkeleton
+    {
+        internal Skeleton skeleton { get; set; }
+        internal bool rightHandClosed { get; set; }
+        internal bool leftHandClosed { get; set; }
+    }
 }

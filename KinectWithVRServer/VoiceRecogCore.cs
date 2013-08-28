@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -49,23 +50,27 @@ namespace KinectWithVRServer
 
         public void launchVoiceRecognizer()
         {
-            //Setup the audio source
-            //TODO: Change this so it references the list of kinects in the parent
-            //Also add the ability to use the alternat audio source
-            KinectAudioSource source = server.kinects[0].kinect.AudioSource;
-            source.EchoCancellationMode = EchoCancellationMode.None; //May need to be an option somewhere
-            source.AutomaticGainControlEnabled = false; //Needs to be this way for voice recognition
-
-            RecognizerInfo recognizer = GetKinectRecognizer();
+            //Get the info of the voice recognizer engine the user wants to use
+            //RecognizerInfo recognizer = GetKinectRecognizer();
+            RecognizerInfo recognizer = null;
+            ReadOnlyCollection<RecognizerInfo> allRecognizers = SpeechRecognitionEngine.InstalledRecognizers();
+            for (int i = 0; i < allRecognizers.Count; i++)
+            {
+                if (allRecognizers[i].Id == server.serverMasterOptions.audioOptions.recognizerEngineID)
+                {
+                    recognizer = allRecognizers[i];
+                    break;
+                }
+            }
             if (recognizer == null)
             {
                 throw new Exception("Couldn't find voice recognizer core.");
             }
 
             //Wait 4 seconds for the Kinect to be ready, may not be necessary, but the sample does this
-            Thread.Sleep(4000);
+            //Thread.Sleep(4000);
 
-            engine = new SpeechRecognitionEngine(recognizer.Id);
+            engine = new SpeechRecognitionEngine(server.serverMasterOptions.audioOptions.recognizerEngineID);
             Choices vocab = new Choices();
             for (int i = 0; i < server.serverMasterOptions.voiceCommands.Count; i++)
             {
@@ -85,9 +90,9 @@ namespace KinectWithVRServer
             //According to the speech recognition sample, this turns off adaptation of the acoustical mode, which can degrade recognizer accuracy over time
             engine.UpdateRecognizerSetting("AdaptationOn", 0);
 
-            if (server.serverMasterOptions.kinectOptions[0].useKinectAudio)
+            if (server.serverMasterOptions.audioOptions.sourceID >= 0 && server.serverMasterOptions.audioOptions.sourceID < server.kinects.Count)
             {
-                //TODO:  We don't actually need to get the source from the Kinect until here
+                KinectAudioSource source = server.kinects[server.serverMasterOptions.audioOptions.sourceID].kinect.AudioSource;
                 audioStream = source.Start();
                 engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
             }
@@ -183,8 +188,6 @@ namespace KinectWithVRServer
                                 }
                             }
                         }
-
-                        //TODO: Send the audio source angle here
 
                         //Write out to the log
                         HelperMethods.WriteToLog("Recognized the word \"" + e.Result.Text + "\", with the confidence of " + e.Result.Confidence.ToString("F2") + ".", parent);

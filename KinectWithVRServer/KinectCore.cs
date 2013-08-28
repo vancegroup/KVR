@@ -14,6 +14,7 @@ namespace KinectWithVRServer
     class KinectCore
     {
         internal KinectSensor kinect;
+        internal int kinectID;
         MainWindow parent;
         WriteableBitmap depthImage;
         short[] depthImagePixels;
@@ -29,55 +30,79 @@ namespace KinectWithVRServer
         private Skeleton[] skeletons = null;
 
         //The parent has to be optional to allow for console operation
-        public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int KinectNumber = 0)
+        public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int? kinectNumber = null)
         {
-            if (KinectSensor.KinectSensors.Count > KinectNumber)
+            if (kinectNumber != null)
             {
-                kinect = KinectSensor.KinectSensors[KinectNumber];
+                server = mainServer;
+                if (server == null)
+                {
+                    throw new Exception("Server does not exist.");
+                }
+
+                parent = thisParent;
+                if (parent != null)
+                {
+                    isGUI = true;
+                }
+
+                if (KinectSensor.KinectSensors.Count > kinectNumber)
+                {
+                    //Get the sensor index in the global list
+                    int globalIndex = -1;
+                    for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
+                    {
+                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == server.serverMasterOptions.kinectOptions[(int)kinectNumber].connectionID)
+                        {
+                            globalIndex = i;
+                            break;
+                        }
+                    }
+                    kinect = KinectSensor.KinectSensors[globalIndex];
+                    kinectID = (int)kinectNumber;
+                }
+                else
+                {
+                    throw new System.IndexOutOfRangeException("Specified Kinect sensor does not exist");
+                }
+
+                if (isGUI)
+                {
+                    LaunchKinect();
+                }
+                else
+                {
+                    launchKinectDelegate kinectDelegate = LaunchKinect;
+                    IAsyncResult result = kinectDelegate.BeginInvoke(null, null);
+                    kinectDelegate.EndInvoke(result);  //Even though this is blocking, the events should be on a different thread now.
+                }
             }
             else
             {
-                throw new System.IndexOutOfRangeException("Specified Kinect sensor does not exist");
+                throw new NullReferenceException("To create a KinectCore object, the KinectNumber must be valid.");
             }
-
-            server = mainServer;
-            if (server == null)
-            {
-                throw new Exception("Server does not exist.");
-            }
-
-            parent = thisParent;
-            if (parent != null)
-            {
-                isGUI = true;
-            }
-
-            if (isGUI)
-            {
-                LaunchKinect();
-            }
-            else
-            {
-                launchKinectDelegate kinectDelegate = LaunchKinect;
-                IAsyncResult result = kinectDelegate.BeginInvoke(null, null);
-                kinectDelegate.EndInvoke(result);  //Even though this is blocking, the events should be on a different thread now.
-            }
-
         }
 
         private void LaunchKinect()
         {
             //Setup default properties
-            kinect.ColorStream.Enable();
-            kinect.DepthStream.Enable();
-            kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
-            interactStream = new InteractionStream(kinect, new DummyInteractionClient());
-            kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
-            kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
-            kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
-            kinect.SkeletonStream.EnableTrackingInNearRange = true;
-            interactStream.InteractionFrameReady += new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+            if (server.serverMasterOptions.kinectOptions[kinectID].colorImageMode != ColorImageFormat.Undefined)
+            {
+                kinect.ColorStream.Enable(server.serverMasterOptions.kinectOptions[kinectID].colorImageMode);
+                kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
+            }
+            if (server.serverMasterOptions.kinectOptions[kinectID].depthImageMode != DepthImageFormat.Undefined)
+            {
+                kinect.DepthStream.Enable();
+                kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
+                interactStream = new InteractionStream(kinect, new DummyInteractionClient());
+                kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
+                kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
+                kinect.SkeletonStream.EnableTrackingInNearRange = true;
+                interactStream.InteractionFrameReady += new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+            }
 
+            //TODO: This needs to be able to pick if the Kinect image streams are being displayed or not
             if (isGUI)
             {
                 //Setup the images for the display
@@ -91,6 +116,47 @@ namespace KinectWithVRServer
             mapper = new CoordinateMapper(kinect);
 
             kinect.Start();
+
+            //Start the audio streams, if necessary -- NOTE: This must be after the skeleton stream is started (which it is here)
+            if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle || server.serverMasterOptions.audioOptions.sourceID == kinectID)
+            {
+                if (server.serverMasterOptions.audioOptions.sourceID == kinectID)
+                {
+                    kinect.AudioSource.EchoCancellationMode = server.serverMasterOptions.audioOptions.echoMode;
+                    kinect.AudioSource.AutomaticGainControlEnabled = server.serverMasterOptions.audioOptions.autoGainEnabled;
+                    kinect.AudioSource.NoiseSuppression = server.serverMasterOptions.audioOptions.noiseSurpression;
+                    if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
+                    {
+                        if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
+                        {
+                            kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
+                        }
+                        else
+                        {
+                            kinect.AudioSource.BeamAngleMode = BeamAngleMode.Automatic;
+                        }
+                        kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
+                    }
+                }
+                else if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
+                {
+                    kinect.AudioSource.EchoCancellationMode = EchoCancellationMode.None;
+                    kinect.AudioSource.AutomaticGainControlEnabled = false;
+                    kinect.AudioSource.NoiseSuppression = true;
+                    if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
+                    {
+                        kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
+                    }
+                    else
+                    {
+                        kinect.AudioSource.BeamAngleMode = BeamAngleMode.Automatic;
+                    }
+                    kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
+                }
+
+                kinect.AudioSource.Start();
+            }
+
             //Note: Audio stream must be started AFTER the skeleton stream
             //TODO: Move the audio stream start so the stream can run without the voice recognizer (for beam anagles)
         }
@@ -259,6 +325,7 @@ namespace KinectWithVRServer
                             }
                         }
 
+                        //TODO: Move the transmitting of the grip to the merge and transmit method in the serverCore so we can check for disagreements between various viewpoints
                         if (skeletonIndex >= 0)
                         {
                             foreach (InteractionHandPointer hand in info.HandPointers)
@@ -268,7 +335,7 @@ namespace KinectWithVRServer
                                     
                                     int gestureIndex = -1;
                                     int serverIndex = -1;
-                                    bool sendGrip = server.isRunning && server.serverMasterOptions.kinectOptions[0].trackSkeletons;
+                                    bool sendGrip = server.isRunning && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons;
 
                                     if (sendGrip)
                                     {
@@ -277,11 +344,11 @@ namespace KinectWithVRServer
                                         {
                                             //Technically, there should be TWO gesture commands per skeletons, but we only need one for now
                                             //TODO: Make this more robust
-                                            if (server.serverMasterOptions.gestureCommands[i].skeletonNumber == skeletonIndex)
-                                            {
-                                                gestureIndex = skeletonIndex;
-                                                break;
-                                            }
+                                            //if (server.serverMasterOptions.gestureCommands[i].skeletonNumber == skeletonIndex)
+                                            //{
+                                            //    gestureIndex = skeletonIndex;
+                                            //    break;
+                                            //}
                                         }
 
                                         //Figure out which tracking server the grip is to be transmitted on
@@ -335,6 +402,22 @@ namespace KinectWithVRServer
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+        void AudioSource_SoundSourceAngleChanged(object sender, SoundSourceAngleChangedEventArgs e)
+        {
+            if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle && server.isRunning)
+            {
+                for (int i = 0; i < server.serverMasterOptions.analogServers.Count; i++)
+                {
+                    if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptions[kinectID].audioAngleServerName)
+                    {
+                        lock (server.analogServers[i])
+                        {
+                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].audioAngleChannel].Value = e.Angle;
                         }
                     }
                 }
@@ -568,7 +651,7 @@ namespace KinectWithVRServer
             double FPS = 0.0;
 
             //TODO: Consider making the number of frames to average over a user settable value
-            if (oldTimes.Count >= 10) //Computes a running average of 50 frames for stability
+            if (oldTimes.Count >= 10) //Computes a running average of 10 frames for stability
             {
                 oldTimes.RemoveAt(0);
             }

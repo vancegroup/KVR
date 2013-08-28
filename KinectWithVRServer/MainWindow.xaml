@@ -49,6 +49,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -58,9 +59,14 @@
             <Label Content="Color:"/>
             <Image Name="ColorImage" Grid.Row="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"/>
             <Canvas Name="ColorImageCanvas" Grid.Row="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
-
+            <ComboBox Name="ColorSourcePickerComboBox" SelectionChanged="ColorSourcePickerComboBox_SelectionChanged" Grid.Row="2" Margin="2" SelectedIndex="0">
+                <ComboBoxItem Content="None"/>
+            </ComboBox>
             <Label Content="Depth:" Grid.Column="1"/>
             <Image Name="DepthImage" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <ComboBox Name="DepthSourcePickerComboBox" SelectionChanged="DepthSourcePickerComboBox_SelectionChanged" Grid.Row="2" Grid.Column="1" Margin="2" SelectedIndex="0">
+                <ComboBoxItem Content="None"/>
+            </ComboBox>
             <Label Content="Info:" Grid.Column="2"/>
         </Grid>
         <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>

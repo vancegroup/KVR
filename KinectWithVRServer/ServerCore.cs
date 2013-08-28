@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
+using Microsoft.Kinect;
 using Vrpn;
 
 namespace KinectWithVRServer
@@ -12,11 +13,15 @@ namespace KinectWithVRServer
         /// Flag used to indicate whether we've entered the main loop, and modified to stop the loop.
         /// Probably a race condition - you probably want to either use like a semaphore, or at least atomic data structures.
         /// </summary>
-        bool running = false;
-        bool serverStopped = true;
+        private volatile bool forceStop = false;
+        private volatile ServerRunState serverState = ServerRunState.Stopped;  //Only modify this inside a lock on the runningLock object!
+        public ServerRunState ServerState
+        {
+            get { return serverState; }
+        }
         public bool isRunning
         {
-            get { return running; }
+            get { return (serverState == ServerRunState.Running); }
         }
         Vrpn.Connection vrpnConnection;
         internal MasterSettings serverMasterOptions;
@@ -24,6 +29,7 @@ namespace KinectWithVRServer
         internal List<Vrpn.AnalogServer> analogServers;
         internal List<Vrpn.TextSender> textServers;
         internal List<Vrpn.TrackerServer> trackerServers;
+        internal List<List<Skeleton>> perKinectSkeletons;
         bool verbose = false;
         bool GUI = false;
         MainWindow parent;
@@ -55,6 +61,10 @@ namespace KinectWithVRServer
         //public void launchServer(MasterSettings serverSettings)
         public void launchServer()
         {
+            //These don't need a lock to be thread safe since they are volatile
+            forceStop = false;
+            serverState = ServerRunState.Starting;
+
             //serverMasterOptions = serverSettings;
             serverMasterOptions.parseSettings();
 
@@ -106,7 +116,7 @@ namespace KinectWithVRServer
         /// </summary>
         public void stopServer()
         {
-            running = false;
+            forceStop = true ;
 
             if (voiceRecog != null)
             {
@@ -116,14 +126,14 @@ namespace KinectWithVRServer
             int count = 0;
             while (count < 30)
             {
-                if (serverStopped)
+                if (serverState == ServerRunState.Stopped)
                 {
                     break;
                 }
                 count++;
                 Thread.Sleep(100);
             }
-            if (count >= 30 && !serverStopped)
+            if (count >= 30 && serverState != ServerRunState.Stopped)
             {
                 throw new Exception("VRPN server shutdown failed!");
             }
@@ -153,8 +163,6 @@ namespace KinectWithVRServer
 
         private void runServerCore()
         {
-            serverStopped = false;
-
             //Create the connection for all the servers
             vrpnConnection = Connection.CreateServerConnection();
 
@@ -203,10 +211,10 @@ namespace KinectWithVRServer
             }
 
             //The server isn't really running until everything is setup here.
-            running = true;
+            serverState = ServerRunState.Running;
 
             //Run the server
-            while (running)
+            while (!forceStop)
             {
                 //Update the analog servers
                 updateList(ref analogServers);
@@ -222,6 +230,7 @@ namespace KinectWithVRServer
 
             //Cleanup everything
             //Dispose the analog servers
+            serverState = ServerRunState.Stopping;
             disposeList(ref analogServers);
             disposeList(ref buttonServers);
             disposeList(ref textServers);
@@ -231,10 +240,22 @@ namespace KinectWithVRServer
                 vrpnConnection.Dispose();
             }
 
-            serverStopped = true;
+            serverState = ServerRunState.Stopped;
+        }
+
+        //Merges all the skeletons together and transmits the new master skeletons VIA vrpn
+        internal void mergeAndTransmitSkeletons()
+        {
+            List<Skeleton> masterSkeletons = new List<Skeleton>();
+
+            //Merge all skeletons here
+
+            //Transmit all skeletons here
         }
 
         private delegate void runServerCoreDelegate();
         private delegate void launchVoiceRecognizerDelegate();
     }
+
+    enum ServerRunState {Starting, Running, Stopping, Stopped}
 }
