@@ -94,6 +94,25 @@ namespace KinectWithVRServer
             parent.server.serverMasterOptions.kinectOptions[(int)KinectID].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
         }
 
+        private void irOnCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = (bool)irOnCheckBox.IsChecked;
+            parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = !(bool)irOnCheckBox.IsChecked;
+        }
+
+        private void nearModeCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = (bool)nearModeCheckBox.IsChecked;
+            if ((bool)nearModeCheckBox.IsChecked)
+            {
+                parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Near;
+            }
+            else
+            {
+                parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Default;
+            }
+        }
+
         private void colorResComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Microsoft.Kinect.ColorImageFormat newFormat = Microsoft.Kinect.ColorImageFormat.Undefined;
@@ -130,7 +149,7 @@ namespace KinectWithVRServer
         {
             Microsoft.Kinect.DepthImageFormat newFormat = Microsoft.Kinect.DepthImageFormat.Undefined;
 
-            switch (colorResComboBox.SelectedIndex)
+            switch (depthResComboBox.SelectedIndex)
             {
                 case (0):
                     {

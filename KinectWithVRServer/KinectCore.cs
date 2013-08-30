@@ -159,6 +159,7 @@ namespace KinectWithVRServer
             {
                 kinect.DepthStream.Enable();
                 kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
+                kinect.SkeletonStream.EnableTrackingInNearRange = true; //Explicitly enable depth tracking in near mode (this can be true when the depth mode is near or default, but if it is false, there is not skeleton data in near mode)
                 interactStream = new InteractionStream(kinect, new DummyInteractionClient());
                 kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
                 kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
@@ -166,7 +167,6 @@ namespace KinectWithVRServer
                 interactStream.InteractionFrameReady += new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
             }
 
-            //TODO: This needs to be able to pick if the Kinect image streams are being displayed or not
             if (isGUI)
             {
                 //Setup the images for the display

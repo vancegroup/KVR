@@ -51,8 +51,8 @@
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Vertical">
-                            <CheckBox Content="IR On" IsChecked="True" Margin="2"/>
-                            <CheckBox Content="Near Mode" IsChecked="False" Margin="2"/>
+                            <CheckBox Name="irOnCheckBox" Content="IR On" IsChecked="True" Margin="2" Checked="irOnCheckBox_CheckChanged" Unchecked="irOnCheckBox_CheckChanged"/>
+                            <CheckBox Name="nearModeCheckBox" Content="Near Mode" IsChecked="False" Margin="2" Checked="nearModeCheckBox_CheckChanged" Unchecked="nearModeCheckBox_CheckChanged"/>
                         </StackPanel>
                     </Grid>
                     <CheckBox Name="UseSkeletonCheckBox" Content="Use Skeleton" Margin="0,2,0,2" Checked="UseSkeletonCheckBox_CheckChanged" Unchecked="UseSkeletonCheckBox_CheckChanged"/>
