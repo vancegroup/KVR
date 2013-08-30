@@ -32,7 +32,7 @@ namespace KinectWithVRServer
         System.Timers.Timer uptimeUpdateTimer;
         internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
-        private List<KinectSettingsControl> kinectOptionGUIPages = new List<KinectSettingsControl>();
+        internal List<KinectSettingsControl> kinectOptionGUIPages = new List<KinectSettingsControl>();
 
         public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
         {
@@ -220,12 +220,15 @@ namespace KinectWithVRServer
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            //TODO: Handle closing down all the kinects
-            //server.shutdownServer();
-            //if (kinect != null)
-            //{
-            //    kinect.ShutdownSensor();
-            //}
+            if (server.isRunning)
+            {
+                server.stopServer();
+            }
+
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                server.kinects[i].ShutdownSensor();
+            }
         }
         #endregion
 
@@ -580,7 +583,7 @@ namespace KinectWithVRServer
                 }
             }
 
-            //TODO:  Update the writeable bitmap
+            //TODO:  Update the writeable bitmap, if necessary
         }
         private void GenerateImageSourcePickerLists()
         {

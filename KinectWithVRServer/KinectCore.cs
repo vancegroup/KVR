@@ -30,6 +30,7 @@ namespace KinectWithVRServer
         private Int64 lastDepthTime = 0;
         private Int64 lastColorTime = 0;
         private Skeleton[] skeletons = null;
+        private System.Timers.Timer accelerationUpdateTimer;
 
         //The parent has to be optional to allow for console operation
         public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int? kinectNumber = null)
@@ -120,6 +121,7 @@ namespace KinectWithVRServer
             kinect.Start();
 
             //Start the audio streams, if necessary -- NOTE: This must be after the skeleton stream is started (which it is here)
+            //TODO: What if the settings are changed after the Kinect is started?
             if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle || server.serverMasterOptions.audioOptions.sourceID == kinectID)
             {
                 if (server.serverMasterOptions.audioOptions.sourceID == kinectID)
@@ -158,16 +160,74 @@ namespace KinectWithVRServer
 
                 kinect.AudioSource.Start();
             }
+
+            StartAccelTimer();
+        }
+
+        private void StartAccelTimer()
+        {
+            accelerationUpdateTimer = new System.Timers.Timer();
+            accelerationUpdateTimer.AutoReset = true;
+            accelerationUpdateTimer.Interval = 33.333;
+            accelerationUpdateTimer.Elapsed += accelerationUpdateTimer_Elapsed;
+            accelerationUpdateTimer.Start();
+        }
+
+        //Updates the acceleration on the GUI and the server
+        //While 30 times per second is probably a bit fast for the GUI, something on the VRPN side may need it this fast
+        void accelerationUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            Vector4 acceleration = kinect.AccelerometerGetCurrentReading();
+
+            //Update the GUI
+            if (isGUI && parent.kinectOptionGUIPages[kinectID].IsVisible)
+            {
+                //Note: This method is on a different thread from the rest of the KinectCore because of the timer, thus the need for the invoke
+                parent.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    parent.kinectOptionGUIPages[kinectID].AccelXTextBlock.Text = acceleration.X.ToString("F2");
+                    parent.kinectOptionGUIPages[kinectID].AccelYTextBlock.Text = acceleration.Y.ToString("F2");
+                    parent.kinectOptionGUIPages[kinectID].AccelZTextBlock.Text = acceleration.Z.ToString("F2");
+                    parent.kinectOptionGUIPages[kinectID].AngleTextBlock.Text = kinect.ElevationAngle.ToString();
+                }), null
+                );
+            }
+
+            //Update the VRPN server
+            if (server.isRunning && server.serverMasterOptions.kinectOptions[kinectID].sendAcceleration)
+            {
+                for (int i = 0; i < server.analogServers.Count; i++)
+                {
+                    if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptions[kinectID].accelerationServerName)
+                    {
+                        lock (server.analogServers[i])
+                        {
+                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelXChannel].Value = acceleration.X;
+                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelYChannel].Value = acceleration.Y;
+                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelZChannel].Value = acceleration.Z;
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         public void ShutdownSensor()
         {
             if (kinect != null)
             {
+                //TODO: Should these really be "new" when we are REMOVING them from the event queue?
                 kinect.ColorFrameReady -= new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
                 kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
                 kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
                 interactStream.InteractionFrameReady -= new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+                if (accelerationUpdateTimer != null)
+                {
+                    accelerationUpdateTimer.Stop();
+                    accelerationUpdateTimer.Elapsed -= accelerationUpdateTimer_Elapsed;
+                    accelerationUpdateTimer.Dispose();
+                }
+
                 interactStream.Dispose();
                 interactStream = null;
 

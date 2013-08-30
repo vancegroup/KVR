@@ -87,8 +87,20 @@
             </GroupBox>
             <GroupBox Header="Physical Settings" Grid.Column="2" Grid.RowSpan="2">
                 <StackPanel Orientation="Vertical">
-                    <TextBlock Text="Acceleration: (1.23, 1.23, 1.23)" Margin="2"/>
-                    <TextBlock Text="Angle: 12.56°" Margin="2"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Acceleration: (" Margin="2,2,0,2"/>
+                        <TextBlock Name="AccelXTextBlock" Text="0.00" Margin="0,2,0,2"/>
+                        <TextBlock Text=", " Margin="0,2,0,2"/>
+                        <TextBlock Name="AccelYTextBlock" Text="0.00" Margin="0,2,0,2"/>
+                        <TextBlock Text=", " Margin="0,2,0,2"/>
+                        <TextBlock Name="AccelZTextBlock" Text="0.00" Margin="0,2,0,2"/>
+                        <TextBlock Text=")" Margin="0,2,0,2"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Angle: " Margin="2,2,0,2"/>
+                        <TextBlock Name="AngleTextBlock" Text="00" Margin="0,2,0,2"/>
+                        <TextBlock Text="°" Margin="0,2,0,2"/>
+                    </StackPanel>
                     <CheckBox Name="SendAccelCheckBox" Content="Send Acceleration" Checked="SendAccelCheckBox_Checked" Unchecked="SendAccelCheckBox_Unchecked"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
