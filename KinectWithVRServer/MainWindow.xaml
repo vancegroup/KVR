@@ -130,7 +130,38 @@
                 
             <TabItem Name="VoiceTab" Header="Voice Commands">
                 <Grid>
-                    <Grid.RowDefinitions>
+                                        <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Name="KinectSpecVoiceBlock" HorizontalAlignment="Stretch" Height="27" VerticalAlignment="Center" TextWrapping="Wrap" Margin="6,6,0,0" Width="Auto">
+                        <CheckBox Content="Enable Voice Recognition" Name="EnableVoiceRecog" Margin="3,0,0,-3"/> <Separator/> Selected Kinect for Audio: <ComboBox Name="VoiceKinectChoiceBox" Margin="3,0,0,-6"></ComboBox>
+                    </TextBlock>
+                    <DataGrid Name="VoiceButtonDataGrid" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
+                        <DataGrid.Columns>
+                            <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
+                            <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>                            
+                            <DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
+                            <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
+                            <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
+                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                            <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
+                            <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
+                            <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DataGrid Name="VoiceTextDataGrid" Grid.Row="2" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
+                            <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
+                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                            <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
+                            <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
+                            <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <!--<Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -157,7 +188,7 @@
                             <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
                             <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
                         </DataGrid.Columns>
-                    </DataGrid>
+                    </DataGrid>-->
                 </Grid>
             </TabItem>
             

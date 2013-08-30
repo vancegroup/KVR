@@ -85,6 +85,67 @@ namespace KinectWithVRServer
                 throw new NullReferenceException("To create a KinectCore object, the KinectNumber must be valid.");
             }
         }
+        public void ShutdownSensor()
+        {
+            if (kinect != null)
+            {
+                //TODO: Should these really be "new" when we are REMOVING them from the event queue?
+                kinect.ColorFrameReady -= new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
+                kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
+                kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
+                interactStream.InteractionFrameReady -= new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+                if (accelerationUpdateTimer != null)
+                {
+                    accelerationUpdateTimer.Stop();
+                    accelerationUpdateTimer.Elapsed -= accelerationUpdateTimer_Elapsed;
+                    accelerationUpdateTimer.Dispose();
+                }
+
+                interactStream.Dispose();
+                interactStream = null;
+
+                kinect.AudioSource.Stop();
+                kinect.Stop();
+            }
+        }
+
+        public void ChangeColorResolution(ColorImageFormat newResolution)
+        {
+            kinect.ColorStream.Disable();
+            if (newResolution != ColorImageFormat.Undefined)
+            {
+                kinect.ColorStream.Enable(newResolution);
+                if (newResolution == ColorImageFormat.InfraredResolution640x480Fps30)
+                {
+                    colorImage = new WriteableBitmap(kinect.ColorStream.FrameWidth, kinect.ColorStream.FrameHeight, 96.0, 96.0, PixelFormats.Gray16, null);
+                }
+                else
+                {
+                    colorImage = new WriteableBitmap(kinect.ColorStream.FrameWidth, kinect.ColorStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
+                }
+
+                //Re-link the writeable bitmap to the GUI if necessary
+                if (isGUI && parent.ColorStreamConnectionID == kinect.DeviceConnectionId)
+                {
+                    parent.ColorImage.Source = colorImage;
+                }
+            }
+        }
+        public void ChangeDepthResolution(DepthImageFormat newResolution)
+        {
+            kinect.DepthStream.Disable();
+            if (newResolution != DepthImageFormat.Undefined)
+            {
+                kinect.DepthStream.Enable(newResolution);
+                depthImage = new WriteableBitmap(kinect.DepthStream.FrameWidth, kinect.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Gray16, null);
+
+                //Re-link the writeable bitmap to the GUI if necessary
+                if (isGUI && parent.DepthStreamConnectionID == kinect.DeviceConnectionId)
+                {
+                    parent.DepthImage.Source = depthImage;
+                }
+            }
+        }
 
         private void LaunchKinect()
         {
@@ -163,7 +224,6 @@ namespace KinectWithVRServer
 
             StartAccelTimer();
         }
-
         private void StartAccelTimer()
         {
             accelerationUpdateTimer = new System.Timers.Timer();
@@ -172,11 +232,11 @@ namespace KinectWithVRServer
             accelerationUpdateTimer.Elapsed += accelerationUpdateTimer_Elapsed;
             accelerationUpdateTimer.Start();
         }
-
         //Updates the acceleration on the GUI and the server
         //While 30 times per second is probably a bit fast for the GUI, something on the VRPN side may need it this fast
-        void accelerationUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        private void accelerationUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            //TODO: Because this happens asynchronously, it is possible for this to get hit AFTER the kinect shuts down.  FIX!
             Vector4 acceleration = kinect.AccelerometerGetCurrentReading();
 
             //Update the GUI
@@ -209,30 +269,6 @@ namespace KinectWithVRServer
                         break;
                     }
                 }
-            }
-        }
-
-        public void ShutdownSensor()
-        {
-            if (kinect != null)
-            {
-                //TODO: Should these really be "new" when we are REMOVING them from the event queue?
-                kinect.ColorFrameReady -= new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
-                kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
-                kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
-                interactStream.InteractionFrameReady -= new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
-                if (accelerationUpdateTimer != null)
-                {
-                    accelerationUpdateTimer.Stop();
-                    accelerationUpdateTimer.Elapsed -= accelerationUpdateTimer_Elapsed;
-                    accelerationUpdateTimer.Dispose();
-                }
-
-                interactStream.Dispose();
-                interactStream = null;
-
-                kinect.AudioSource.Stop();
-                kinect.Stop();
             }
         }
 
@@ -286,7 +322,7 @@ namespace KinectWithVRServer
                         //Send the points across if the skeleton is either tracked or has a position
                         if (skel.TrackingState != SkeletonTrackingState.NotTracked)
                         {
-                            if (server.serverMasterOptions.kinectOptions[0].trackSkeletons)
+                            if (server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
                             {
                                 skelcount++;
 
@@ -294,7 +330,7 @@ namespace KinectWithVRServer
                                 {
                                     SendSkeletonVRPN(skel, index);
                                 }
-                                if (isGUI)
+                                if (isGUI && parent.ColorStreamConnectionID == kinect.DeviceConnectionId)
                                 {
                                     RenderSkeletonOnColor(skel, renderColor);
                                 }
@@ -305,7 +341,7 @@ namespace KinectWithVRServer
                     }
 
                     //Pass the data to the interaction stream for processing
-                    if (interactStream != null)
+                    if (interactStream != null && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
                     {
                         Vector4 accelReading = kinect.AccelerometerGetCurrentReading();
                         interactStream.ProcessSkeleton(skeletons, accelReading, skelFrame.Timestamp);
@@ -325,7 +361,7 @@ namespace KinectWithVRServer
                 if (frame != null)
                 {
                     //Pass the data to the interaction frame for processing
-                    if (interactStream != null)
+                    if (interactStream != null && parent.server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
                     {
                         interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
                     }
@@ -482,7 +518,6 @@ namespace KinectWithVRServer
                 }
             }
         }
-
         private void SendSkeletonVRPN(Skeleton skeleton, int id)
         {
             foreach (Joint joint in skeleton.Joints)

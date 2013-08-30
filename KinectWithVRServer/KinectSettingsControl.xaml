@@ -19,7 +19,7 @@
             <GroupBox Header="Color Settings" Grid.RowSpan="2" Margin="2">
                 <StackPanel Orientation="Vertical">
                     <TextBlock Text="Resolution:" Margin="2"/>
-                    <ComboBox Name="colorResComboBox" SelectedIndex="0" Margin="2">
+                    <ComboBox Name="colorResComboBox" SelectedIndex="0" Margin="2" SelectionChanged="colorResComboBox_SelectionChanged">
                         <ComboBoxItem Content="RGB 640 x 480 (30 FPS)"/>
                         <ComboBoxItem Content="RGB 1280 x 960 (12 FPS)"/>
                         <ComboBoxItem Content="IR 640 x 480 (30 FPS)"/>
@@ -44,7 +44,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Vertical">
                             <TextBlock Text="Resolution:" Margin="2"/>
-                            <ComboBox SelectedIndex="0" Margin="0, 2, 0, 2">
+                            <ComboBox Name="depthResComboBox" SelectedIndex="0" Margin="0, 2, 0, 2" SelectionChanged="depthResComboBox_SelectionChanged">
                                 <ComboBoxItem Content="640 x 480"/>
                                 <ComboBoxItem Content="320 x 240"/>
                                 <ComboBoxItem Content="80 x 60"/>

@@ -22,17 +22,18 @@ namespace KinectWithVRServer
         internal int? KinectID;
         internal string ConnectionID = "";
         MainWindow parent = null;
-        bool isVerbose = false;
+        bool isVerbose = false;  //TODO: This variable may not be needed...
 
         public KinectSettingsControl(int? kinectNumber, string connectionID, bool verboseOutput, MainWindow thisParent) //Parent is not optional since this GUI has to go somewhere
         {
             if (thisParent != null)
             {
-                InitializeComponent();
-
                 ConnectionID = connectionID;
                 parent = thisParent;
                 KinectID = kinectNumber;
+                isVerbose = verboseOutput;
+
+                InitializeComponent();
 
                 this.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
                 this.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
@@ -91,6 +92,71 @@ namespace KinectWithVRServer
         private void UseSkeletonCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
             parent.server.serverMasterOptions.kinectOptions[(int)KinectID].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
+        }
+
+        private void colorResComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Microsoft.Kinect.ColorImageFormat newFormat = Microsoft.Kinect.ColorImageFormat.Undefined;
+
+            switch (colorResComboBox.SelectedIndex)
+            {
+                case (0):
+                {
+                    newFormat = Microsoft.Kinect.ColorImageFormat.RgbResolution640x480Fps30;
+                    break;
+                }
+                case (1):
+                {
+                    newFormat = Microsoft.Kinect.ColorImageFormat.RgbResolution1280x960Fps12;
+                    break;
+                }
+                case (2):
+                {
+                    newFormat = Microsoft.Kinect.ColorImageFormat.InfraredResolution640x480Fps30;
+                    break;
+                }
+                case (3):
+                {
+                    newFormat = Microsoft.Kinect.ColorImageFormat.Undefined;
+                    break;
+                }
+            }
+
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].colorImageMode = newFormat;
+            parent.server.kinects[(int)KinectID].ChangeColorResolution(newFormat);
+        }
+
+        private void depthResComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Microsoft.Kinect.DepthImageFormat newFormat = Microsoft.Kinect.DepthImageFormat.Undefined;
+
+            switch (colorResComboBox.SelectedIndex)
+            {
+                case (0):
+                    {
+                        newFormat = Microsoft.Kinect.DepthImageFormat.Resolution640x480Fps30;
+                        break;
+                    }
+                case (1):
+                    {
+                        newFormat = Microsoft.Kinect.DepthImageFormat.Resolution320x240Fps30;
+                        break;
+                    }
+                case (2):
+                    {
+                        newFormat = Microsoft.Kinect.DepthImageFormat.Resolution80x60Fps30;
+                        break;
+                    }
+                case (3):
+                    {
+                        //Note: This case should never be hit.  In order for skeleton tracking to work, we must have the depth image so turning it off is currently not available from the GUI
+                        newFormat = Microsoft.Kinect.DepthImageFormat.Undefined;
+                        break;
+                    }
+            }
+
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].depthImageMode = newFormat;
+            parent.server.kinects[(int)KinectID].ChangeDepthResolution(newFormat);
         }
     }
 

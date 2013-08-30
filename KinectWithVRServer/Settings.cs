@@ -168,6 +168,7 @@ namespace KinectWithVRServer
             }
 
             //Setup the tracker servers for the skeletal tracking
+            //TODO: Fix this so it generates the tracker servers correctly
             if (kinectOptions[0].trackSkeletons)
             {
                 trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker00" });
