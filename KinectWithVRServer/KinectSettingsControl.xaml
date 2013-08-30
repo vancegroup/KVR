@@ -142,11 +142,11 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="X:" VerticalAlignment="Center"/>
-                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0"/>
+                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
                         <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
-                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0"/>
+                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
                         <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
-                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0"/>
+                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
                     </Grid>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -154,7 +154,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1"/>
+                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
                     </Grid>
                 </StackPanel>
             </GroupBox>

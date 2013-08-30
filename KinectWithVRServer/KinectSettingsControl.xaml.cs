@@ -23,6 +23,9 @@ namespace KinectWithVRServer
         internal string ConnectionID = "";
         MainWindow parent = null;
         bool isVerbose = false;  //TODO: This variable may not be needed...
+        private Key[] numberKeys = {Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9,
+                                    Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, 
+                                    Key.Return, Key.Enter, Key.OemPeriod, Key.Delete, Key.Back, Key.Left, Key.Right, Key.Tab};
 
         public KinectSettingsControl(int? kinectNumber, string connectionID, bool verboseOutput, MainWindow thisParent) //Parent is not optional since this GUI has to go somewhere
         {
@@ -176,6 +179,69 @@ namespace KinectWithVRServer
 
             parent.server.serverMasterOptions.kinectOptions[(int)KinectID].depthImageMode = newFormat;
             parent.server.kinects[(int)KinectID].ChangeDepthResolution(newFormat);
+        }
+
+        private void xPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(xPosTextBox.Text, out temp))
+            {
+                if (parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition == null)
+                {
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                }
+                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition;
+                tempPoint.X = temp;
+                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = tempPoint;
+            }
+        }
+
+        private void yPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(yPosTextBox.Text, out temp))
+            {
+                if (parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition == null)
+                {
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                }
+                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition;
+                tempPoint.Y = temp;
+                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = tempPoint;
+            }
+        }
+
+        private void zPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(zPosTextBox.Text, out temp))
+            {
+                if (parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition == null)
+                {
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                }
+                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition;
+                tempPoint.Z = temp;
+                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = tempPoint;
+            }
+        }
+
+        //Rejects any points that are not numbers or control characters
+        private void numberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!numberKeys.Contains(e.Key))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void yawPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(yawPosTextBox.Text, out temp))
+            {
+                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectYaw = temp;
+            }
         }
     }
 
