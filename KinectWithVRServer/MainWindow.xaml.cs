@@ -27,6 +27,8 @@ namespace KinectWithVRServer
         internal bool startOnLaunch = false;
         internal ServerCore server;
         internal DateTime serverStartTime = DateTime.MaxValue;
+        internal string ColorStreamConnectionID = "";
+        internal string DepthStreamConnectionID = "";
         System.Timers.Timer uptimeUpdateTimer;
         internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
@@ -195,7 +197,7 @@ namespace KinectWithVRServer
                 {
                     tempData.UseKinect = true;
                     tempData.KinectID = 0;
-                    server.serverMasterOptions.kinectOptions.Add(new KinectSettings(tempData.ConnectionID));
+                    server.serverMasterOptions.kinectOptions.Add(new KinectSettings(tempData.ConnectionID, (int)tempData.KinectID));
                     server.kinects.Add(new KinectCore(server, this, (int)tempData.KinectID));
                 }
                 else
@@ -322,7 +324,6 @@ namespace KinectWithVRServer
                 }
             }
         }
-
         //Updates the items in the Kinect settings tab listbox, this list is used to pick what is shown in the area next to the list box
         void UpdatePageListing()
         {
@@ -339,7 +340,7 @@ namespace KinectWithVRServer
                         if (kinectOptionGUIPages[j].ConnectionID == availableKinects[i].ConnectionID)
                         {
                             exists = true;
-                            kinectOptionGUIPages[j].KinectNumber = availableKinects[i].KinectID;
+                            kinectOptionGUIPages[j].KinectID = availableKinects[i].KinectID;
                             break;
                         }
                     }
@@ -351,12 +352,12 @@ namespace KinectWithVRServer
                 }
                 else
                 {
-                    //Check if the settings exist for the one we are removing, and set the Kinect ID to null so it will go to the end
+                    //Check if the GUI exist for the one we are removing, and set the Kinect ID to null so it will go to the end
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
                         if (kinectOptionGUIPages[j].ConnectionID == availableKinects[i].ConnectionID)
                         {
-                            kinectOptionGUIPages[j].KinectNumber = null;
+                            kinectOptionGUIPages[j].KinectID = null;
                             break;
                         }
                     }
@@ -403,11 +404,116 @@ namespace KinectWithVRServer
             if (e.PropertyName == "UseKinect")
             {
                 renumberKinectIDs();
+                reorderKinectSettings();
+                launchAndKillKinects();
                 UpdatePageListing();
                 GenerateImageSourcePickerLists();
+
+                //FOR DEBUGGING ONLY!!!!
+                WriteOutKinectOrders();
             }
         }
+        //Reorder the Kinect Settings
+        private void reorderKinectSettings()
+        {
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].UseKinect)
+                {
+                    bool found = false;
+                    for (int j = 0; j < server.serverMasterOptions.kinectOptions.Count; j++)
+                    {
+                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptions[j].connectionID)
+                        {
+                            server.serverMasterOptions.kinectOptions[j].kinectID = (int)availableKinects[i].KinectID;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        server.serverMasterOptions.kinectOptions.Add(new KinectSettings(availableKinects[i].ConnectionID, (int)availableKinects[i].KinectID));
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < server.serverMasterOptions.kinectOptions.Count; j++)
+                    {
+                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptions[j].connectionID)
+                        {
+                            server.serverMasterOptions.kinectOptions.RemoveAt(j);
+                        }
+                    }
+                }
+            }
+            server.serverMasterOptions.kinectOptions.Sort(new KinectSettingsComparer());
+        }
+        //Updates which Kinects are running based on the selections in the available Kinects data grid
+        private void launchAndKillKinects()
+        {
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].UseKinect)
+                {
+                    //If the Kinect is to be used, check and see if it exists, and launch it if it doesn't
+                    bool kinectFound = false;
+                    for (int j = 0; j < server.kinects.Count; j++)
+                    {
+                        if (server.kinects[j].kinect.DeviceConnectionId == availableKinects[i].ConnectionID)
+                        {
+                            server.kinects[j].kinectID = (int)availableKinects[i].KinectID;
+                            kinectFound = true;
+                            break;
+                        }
+                    }
+                    if (!kinectFound)
+                    {
+                        server.kinects.Add(new KinectCore(server, this, availableKinects[i].KinectID));
+                    }
+                }
+                else
+                {
+                    //If the Jinect is not to be used, check and see if it exists, and destroy it if it does
+                    for (int j = 0; j < server.kinects.Count; j++)
+                    {
+                        if (server.kinects[j].kinect.DeviceConnectionId == availableKinects[i].ConnectionID)
+                        {
+                            server.kinects[j].ShutdownSensor();
+                            server.kinects.RemoveAt(j);
+                            break;
+                        }
+                    }
+                }
+            }
+            server.kinects.Sort(new KinectCoreComparer());
+        }
+        //TODO: REMOVE (FOR DEBUGGING ONLY)
+        private void WriteOutKinectOrders()
+        {
+            Debug.WriteLine("Available Kinects:");
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                Debug.WriteLine(availableKinects[i].KinectID.ToString() + ":   " + availableKinects[i].ConnectionID);
+            }
 
+            Debug.WriteLine("Running Kinects:");
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                Debug.WriteLine(server.kinects[i].kinectID.ToString() + ":   " + server.kinects[i].kinect.DeviceConnectionId);
+            }
+
+            Debug.WriteLine("Kinect Setting:");
+            for (int i = 0; i < server.serverMasterOptions.kinectOptions.Count; i++)
+            {
+                Debug.WriteLine(server.serverMasterOptions.kinectOptions[i].kinectID.ToString() + ":   " + server.serverMasterOptions.kinectOptions[i].connectionID);
+            }
+
+            Debug.WriteLine("GUI Pages:");
+            for (int i = 0; i < kinectOptionGUIPages.Count; i++)
+            {
+                Debug.WriteLine(kinectOptionGUIPages[i].KinectID.ToString() + ":   " + kinectOptionGUIPages[i].ConnectionID);
+            }
+        }
         #endregion
 
         #region Skeleton Tab GUI Stuff
@@ -434,18 +540,48 @@ namespace KinectWithVRServer
 
             //TODO: Add the rest of the GUI updates here.
         }
-        #endregion
-
         private void ColorSourcePickerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //TODO: Update which kinect is being shown for color, also update the writeable bitmap, if necessary
-        }
+            if (ColorSourcePickerComboBox.SelectedItem != null)
+            {
+                if (ColorSourcePickerComboBox.SelectedItem.ToString().ToLower() == "none")
+                {
+                    ColorStreamConnectionID = "";
+                }
+                else
+                {
+                    string temp = ColorSourcePickerComboBox.SelectedItem.ToString().ToLower().Replace("kinect ", "");
+                    int kinectIndex = -1;
+                    if (int.TryParse(temp, out kinectIndex))
+                    {
+                        ColorStreamConnectionID = server.kinects[kinectIndex].kinect.DeviceConnectionId;
+                    }
+                }
 
+                //TODO: Update the writeable bitmap, if necessary
+            }
+        }
         private void DepthSourcePickerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //TODO:  Update which Kinect is being shown for the depth, also update the writeable bitmap
-        }
+            if (DepthSourcePickerComboBox.SelectedItem != null)
+            {
+                if (DepthSourcePickerComboBox.SelectedItem.ToString().ToLower() == "none")
+                {
+                    DepthStreamConnectionID = "";
+                }
+                else
+                {
+                    string temp = DepthSourcePickerComboBox.SelectedItem.ToString().ToLower().Replace("kinect ", "");
+                    int kinectIndex = -1;
+                    if (int.TryParse(temp, out kinectIndex))
+                    {
+                        DepthStreamConnectionID = server.kinects[kinectIndex].kinect.DeviceConnectionId;
+                    }
+                }
+            }
 
+            //TODO:  Update the writeable bitmap
+        }
         private void GenerateImageSourcePickerLists()
         {
             ColorSourcePickerComboBox.Items.Clear();
@@ -453,17 +589,40 @@ namespace KinectWithVRServer
             ColorSourcePickerComboBox.Items.Add("None");
             DepthSourcePickerComboBox.Items.Add("None");
 
+            bool colorFound = false;
+            bool depthFound = false;
             for (int i = 0; i < server.kinects.Count; i++)
             {
                 if (server.kinects[i].kinect.ColorStream.IsEnabled)
                 {
                     ColorSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
+                    if (server.kinects[i].kinect.DeviceConnectionId == ColorStreamConnectionID)
+                    {
+                        ColorSourcePickerComboBox.SelectedIndex = i;
+                        colorFound = true;
+                    }
                 }
                 if (server.kinects[i].kinect.DepthStream.IsEnabled)
                 {
                     DepthSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
+                    if (server.kinects[i].kinect.DeviceConnectionId == DepthStreamConnectionID)
+                    {
+                        DepthSourcePickerComboBox.SelectedIndex = i;
+                        depthFound = true;
+                    }
                 }
             }
+
+            if (!colorFound)
+            {
+                ColorSourcePickerComboBox.SelectedIndex = 0;
+            }
+            if (!depthFound)
+            {
+                DepthSourcePickerComboBox.SelectedIndex = 0;
+            }
         }
+        #endregion
+
     }
 }

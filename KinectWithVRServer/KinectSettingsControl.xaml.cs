@@ -19,7 +19,7 @@ namespace KinectWithVRServer
     /// </summary>
     public partial class KinectSettingsControl : UserControl
     {
-        internal int? KinectNumber;
+        internal int? KinectID;
         internal string ConnectionID = "";
         MainWindow parent = null;
         bool isVerbose = false;
@@ -30,9 +30,9 @@ namespace KinectWithVRServer
             {
                 InitializeComponent();
 
-                KinectNumber = kinectNumber;
                 ConnectionID = connectionID;
                 parent = thisParent;
+                KinectID = kinectNumber;
 
                 this.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
                 this.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
@@ -49,7 +49,7 @@ namespace KinectWithVRServer
         #region Acceleration Option Methods
         private void SendAccelCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAcceleration = true;
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAcceleration = true;
 
             //Enable the server boxes
             accelXChannelTextBox.IsEnabled = true;
@@ -59,7 +59,7 @@ namespace KinectWithVRServer
         }
         private void SendAccelCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAcceleration = false;
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAcceleration = false;
 
             //Disable the server boxes
             accelXChannelTextBox.IsEnabled = false;
@@ -72,7 +72,7 @@ namespace KinectWithVRServer
         #region Audio Option Methods
         private void SendSoundAngleCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAudioAngle = true;
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAudioAngle = true;
 
             //Enable the server boxes
             audioServerTextBox.IsEnabled = true;
@@ -80,7 +80,7 @@ namespace KinectWithVRServer
         }
         private void SendSoundAngleCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].sendAudioAngle = false;
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAudioAngle = false;
 
             //Disable the server boxes
             audioServerTextBox.IsEnabled = false;
@@ -90,7 +90,7 @@ namespace KinectWithVRServer
 
         private void UseSkeletonCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectNumber].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
+            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
         }
     }
 
@@ -100,9 +100,9 @@ namespace KinectWithVRServer
         //This is so the index in the array of pages will match the Kinect number, with unused ones at the end
         public int Compare(KinectSettingsControl x, KinectSettingsControl y)
         {
-            if (x.KinectNumber == null)
+            if (x.KinectID == null)
             {
-                if (y.KinectNumber == null)
+                if (y.KinectID == null)
                 {
                     return 0; //If both are the null, they are equal
                 }
@@ -113,14 +113,14 @@ namespace KinectWithVRServer
             }
             else
             {
-                if (y.KinectNumber == null)
+                if (y.KinectID == null)
                 {
                     return -1; //If y is null and x isn't, then y is greater
                 }
                 else
                 {
-                    int tempX = (int)x.KinectNumber;
-                    int tempY = (int)y.KinectNumber;
+                    int tempX = (int)x.KinectID;
+                    int tempY = (int)y.KinectID;
                     return tempX.CompareTo(tempY);
                 }
             }

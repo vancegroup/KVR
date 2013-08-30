@@ -270,7 +270,7 @@ namespace KinectWithVRServer
                         interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
                     }
 
-                    if (isGUI)
+                    if (isGUI && parent.DepthStreamConnectionID == kinect.DeviceConnectionId)
                     {
                         depthImagePixels = new short[frame.PixelDataLength];
                         frame.CopyPixelDataTo(depthImagePixels);
@@ -289,7 +289,7 @@ namespace KinectWithVRServer
             {
                 if (frame != null)
                 {
-                    if (isGUI)
+                    if (isGUI && parent.ColorStreamConnectionID == kinect.DeviceConnectionId)
                     {
                         colorImagePixels = new byte[frame.PixelDataLength];
                         frame.CopyPixelDataTo(colorImagePixels);
@@ -712,6 +712,14 @@ namespace KinectWithVRServer
         }
 
         private delegate void launchKinectDelegate();
+    }
+
+    internal class KinectCoreComparer : IComparer<KinectCore>
+    {
+        public int Compare(KinectCore x, KinectCore y)
+        {
+            return x.kinectID.CompareTo(y.kinectID);
+        }
     }
 
     public class DummyInteractionClient : IInteractionClient

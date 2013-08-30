@@ -182,9 +182,10 @@ namespace KinectWithVRServer
 
     public class KinectSettings
     {
-        public KinectSettings(string deviceConnectionID)
+        public KinectSettings(string deviceConnectionID, int kinectNumber)
         {
             connectionID = deviceConnectionID;
+            kinectID = kinectNumber;
 
             //Set everything to the default value
             colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
@@ -204,6 +205,7 @@ namespace KinectWithVRServer
         }
 
         public string connectionID { get; set; }
+        public int kinectID { get; set; }
 
         #region Color Settings
         public ColorImageFormat colorImageMode { get; set; }
@@ -569,6 +571,14 @@ namespace KinectWithVRServer
         //This will likely need to be added to to handle recorded gestures
     }
 
+    public class KinectSettingsComparer : IComparer<KinectSettings>
+    {
+        //This just redirects the compare to a comparison on the KinectID property
+        public int Compare(KinectSettings x, KinectSettings y)
+        {
+            return x.kinectID.CompareTo(y.kinectID);
+        }
+    }
 
     //(*)Need to hide CommandType and ServerType from visible columns
     public enum CommandType { Voice, Gesture/*, Analog */}
