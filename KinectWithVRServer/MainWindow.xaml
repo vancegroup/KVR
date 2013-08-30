@@ -130,14 +130,23 @@
                 
             <TabItem Name="VoiceTab" Header="Voice Commands">
                 <Grid>
-                                        <Grid.RowDefinitions>
+                    <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Name="KinectSpecVoiceBlock" HorizontalAlignment="Stretch" Height="27" VerticalAlignment="Center" TextWrapping="Wrap" Margin="6,6,0,0" Width="Auto">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="Audio Source:" Margin="2"/>
+                        <ComboBox Name="VoiceKinectComboBox" Margin="2" Height="23" Width="110" SelectionChanged="VoiceKinectComboBox_SelectionChanged">
+                            <ComboBoxItem Content="System Default"/>
+                        </ComboBox>
+                        <TextBlock Text="Recognition Engine:" Margin="20,2,2,2" VerticalAlignment="Center"/>
+                        <ComboBox Name="VoiceRecognitionEngineComboBox" Margin="2" SelectedIndex="0" Height="23" Width="350" SelectionChanged="VoiceRecognitionEngineComboBox_SelectionChanged">
+                        </ComboBox>
+                    </StackPanel>
+                    <!--<TextBlock Grid.Row="0" Name="KinectSpecVoiceBlock" HorizontalAlignment="Stretch" Height="27" VerticalAlignment="Center" TextWrapping="Wrap" Margin="6,6,0,0" Width="Auto">
                         <CheckBox Content="Enable Voice Recognition" Name="EnableVoiceRecog" Margin="3,0,0,-3"/> <Separator/> Selected Kinect for Audio: <ComboBox Name="VoiceKinectChoiceBox" Margin="3,0,0,-6"></ComboBox>
-                    </TextBlock>
+                    </TextBlock>-->
                     <DataGrid Name="VoiceButtonDataGrid" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
                         <DataGrid.Columns>
                             <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>

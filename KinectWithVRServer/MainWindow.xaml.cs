@@ -33,6 +33,7 @@ namespace KinectWithVRServer
         internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
         internal List<KinectSettingsControl> kinectOptionGUIPages = new List<KinectSettingsControl>();
+        private string voiceRecogSourceConnectionID = "";
 
         public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
         {
@@ -212,6 +213,11 @@ namespace KinectWithVRServer
             UpdatePageListing();
             GenerateImageSourcePickerLists();
             KinectSensor.KinectSensors.StatusChanged += KinectSensors_StatusChanged;
+
+            //Populate and setup the voice recognition lists
+            GenerateVoiceRecogEngineList();
+            GenerateAudioSourceList();
+            VoiceKinectComboBox.SelectedIndex = 0;
 
             if (startOnLaunch)
             {
@@ -411,9 +417,9 @@ namespace KinectWithVRServer
                 launchAndKillKinects();
                 UpdatePageListing();
                 GenerateImageSourcePickerLists();
-
+                GenerateAudioSourceList();
                 //FOR DEBUGGING ONLY!!!!
-                WriteOutKinectOrders();
+                //WriteOutKinectOrders();
             }
         }
         //Reorder the Kinect Settings
@@ -627,7 +633,63 @@ namespace KinectWithVRServer
                 DepthSourcePickerComboBox.SelectedIndex = 0;
             }
         }
+        private void GenerateAudioSourceList()
+        {
+            bool sourceFound = false;
+
+            VoiceKinectComboBox.Items.Clear();
+
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                VoiceKinectComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
+                if (server.kinects[i].kinect.DeviceConnectionId == voiceRecogSourceConnectionID)
+                {
+                    VoiceKinectComboBox.SelectedIndex = i;
+                    sourceFound = true;
+                }
+            }
+            VoiceKinectComboBox.Items.Add("System Default");
+
+            if (!sourceFound)
+            {
+                VoiceKinectComboBox.SelectedIndex = VoiceKinectComboBox.Items.Count - 1;
+            }
+        }
+        private void GenerateVoiceRecogEngineList()
+        {
+            ReadOnlyCollection<Microsoft.Speech.Recognition.RecognizerInfo> allRecognizers = Microsoft.Speech.Recognition.SpeechRecognitionEngine.InstalledRecognizers();
+            VoiceRecognitionEngineComboBox.Items.Clear();
+            for (int i = 0; i < allRecognizers.Count; i++)
+            {
+                VoiceRecognitionEngineComboBox.Items.Add(allRecognizers[i].Name);
+                if (allRecognizers[i].Name.ToLower().Contains("kinect"))
+                {
+                    VoiceRecognitionEngineComboBox.SelectedIndex = i;
+                }
+            }
+        }
         #endregion
+
+        private void VoiceKinectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //TODO: This may need a check to see if the audio is started or not, and start it if need be
+            if (VoiceKinectComboBox.SelectedIndex == VoiceKinectComboBox.Items.Count - 1)
+            {
+                server.serverMasterOptions.audioOptions.sourceID = -1;
+                voiceRecogSourceConnectionID = "";
+            }
+            else
+            {
+                server.serverMasterOptions.audioOptions.sourceID = VoiceKinectComboBox.SelectedIndex;
+                voiceRecogSourceConnectionID = server.serverMasterOptions.kinectOptions[VoiceKinectComboBox.SelectedIndex].connectionID;
+            }
+        }
+
+        private void VoiceRecognitionEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ReadOnlyCollection<Microsoft.Speech.Recognition.RecognizerInfo> allRecognizers = Microsoft.Speech.Recognition.SpeechRecognitionEngine.InstalledRecognizers();
+            server.serverMasterOptions.audioOptions.recognizerEngineID = allRecognizers[VoiceRecognitionEngineComboBox.SelectedIndex].Id;
+        }
 
     }
 }
