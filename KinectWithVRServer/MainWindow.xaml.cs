@@ -550,6 +550,7 @@ namespace KinectWithVRServer
                 if (ColorSourcePickerComboBox.SelectedItem.ToString().ToLower() == "none")
                 {
                     ColorStreamConnectionID = "";
+                    ColorImage.Visibility = System.Windows.Visibility.Hidden;
                 }
                 else
                 {
@@ -558,10 +559,10 @@ namespace KinectWithVRServer
                     if (int.TryParse(temp, out kinectIndex))
                     {
                         ColorStreamConnectionID = server.kinects[kinectIndex].kinect.DeviceConnectionId;
+                        ColorImage.Source = server.kinects[kinectIndex].colorImage;
+                        ColorImage.Visibility = System.Windows.Visibility.Visible;
                     }
                 }
-
-                //TODO: Update the writeable bitmap, if necessary
             }
         }
         private void DepthSourcePickerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -571,6 +572,7 @@ namespace KinectWithVRServer
                 if (DepthSourcePickerComboBox.SelectedItem.ToString().ToLower() == "none")
                 {
                     DepthStreamConnectionID = "";
+                    DepthImage.Visibility = System.Windows.Visibility.Hidden;
                 }
                 else
                 {
@@ -579,11 +581,11 @@ namespace KinectWithVRServer
                     if (int.TryParse(temp, out kinectIndex))
                     {
                         DepthStreamConnectionID = server.kinects[kinectIndex].kinect.DeviceConnectionId;
+                        DepthImage.Source = server.kinects[kinectIndex].depthImage;
+                        DepthImage.Visibility = System.Windows.Visibility.Visible;
                     }
                 }
             }
-
-            //TODO:  Update the writeable bitmap, if necessary
         }
         private void GenerateImageSourcePickerLists()
         {
@@ -601,7 +603,7 @@ namespace KinectWithVRServer
                     ColorSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
                     if (server.kinects[i].kinect.DeviceConnectionId == ColorStreamConnectionID)
                     {
-                        ColorSourcePickerComboBox.SelectedIndex = i;
+                        ColorSourcePickerComboBox.SelectedIndex = i + 1;
                         colorFound = true;
                     }
                 }
@@ -610,7 +612,7 @@ namespace KinectWithVRServer
                     DepthSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
                     if (server.kinects[i].kinect.DeviceConnectionId == DepthStreamConnectionID)
                     {
-                        DepthSourcePickerComboBox.SelectedIndex = i;
+                        DepthSourcePickerComboBox.SelectedIndex = i + 1;
                         depthFound = true;
                     }
                 }

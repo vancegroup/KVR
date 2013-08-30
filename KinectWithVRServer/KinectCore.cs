@@ -16,10 +16,10 @@ namespace KinectWithVRServer
         internal KinectSensor kinect;
         internal int kinectID;
         MainWindow parent;
-        WriteableBitmap depthImage;
+        public WriteableBitmap depthImage;
         short[] depthImagePixels;
         byte[] colorImagePixels;
-        WriteableBitmap colorImage;
+        public WriteableBitmap colorImage;
         CoordinateMapper mapper;
         bool isGUI = false;
         ServerCore server;
