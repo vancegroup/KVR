@@ -67,7 +67,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Server:" VerticalAlignment="Center"/>
-                        <TextBox Name="audioServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False"/>
+                        <TextBox Name="audioServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="audioServerTextBox_TextChanged"/>
                     </Grid>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -75,7 +75,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Channel:" VerticalAlignment="Center"/>
-                        <TextBox Name="audioChannelTextBox" Margin="2" Grid.Column="1" IsEnabled="False"/>
+                        <TextBox Name="audioChannelTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="audioChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
                     </Grid>
                     <TextBlock Text="Beam Mode:" Margin="2"/>
                     <ComboBox SelectedIndex="0">
@@ -108,7 +108,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Server:" VerticalAlignment="Center"/>
-                        <TextBox Name="accelServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False"/>
+                        <TextBox Name="accelServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="accelServerTextBox_TextChanged"/>
                     </Grid>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -125,11 +125,11 @@
                         </Grid.RowDefinitions>
                         <TextBlock Text="Channels:" VerticalAlignment="Center" Grid.ColumnSpan="6"/>
                         <TextBlock Text="X:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="0"/>
-                        <TextBox Name="accelXChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="1" IsEnabled="False"/>
+                        <TextBox Name="accelXChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="1" IsEnabled="False" TextChanged="accelXChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
                         <TextBlock Text="Y:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="2"/>
-                        <TextBox Name="accelYChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="3" IsEnabled="False"/>
+                        <TextBox Name="accelYChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="3" IsEnabled="False" TextChanged="accelYChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
                         <TextBlock Text="Z:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="4"/>
-                        <TextBox Name="accelZChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="5" IsEnabled="False"/>
+                        <TextBox Name="accelZChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="5" IsEnabled="False" TextChanged="accelZChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
                         </Grid>
                     <TextBlock Text="Position (m):"/>
                     <Grid>
@@ -142,11 +142,11 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="X:" VerticalAlignment="Center"/>
-                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
+                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
                         <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
-                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
+                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
                         <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
-                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
+                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
                     </Grid>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -154,7 +154,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="numberTextBox_PreviewKeyDown"/>
+                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
                     </Grid>
                 </StackPanel>
             </GroupBox>

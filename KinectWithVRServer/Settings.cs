@@ -49,6 +49,7 @@ namespace KinectWithVRServer
         //1) Multiple Kinect audio beam angles
         //2) Multiple Kinect accelerometer data
         //3) Find the number of unique analog servers and channels (based on 1 and 2)
+        //TODO: Can the parser check if all the settings are valid too?
         public void parseSettings()
         {
             analogServers = new List<AnalogServerSettings>();
