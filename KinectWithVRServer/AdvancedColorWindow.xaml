@@ -1,0 +1,34 @@
+﻿<Window x:Class="KinectWithVRServer.AdvancedColorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Advanced Color Settings" Height="222" Width="352">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Margin="3,6,3,6">
+            Contrast<LineBreak/>
+            <Slider Name="ContrastSlider" Width="100" Margin="6,0,0,3" SelectionStart="0.5" SelectionEnd="2.0"/><TextBox Name="ContrastManSet" Width="45" Margin="0,0,0,3"/><LineBreak/>
+            Saturation<LineBreak/>
+            <Slider Name="SaturationSlider" Width="100" Margin="6,0,0,3"/><TextBox Name="SaturationManSet" Width="45" Margin="0,0,0,3"/><LineBreak/>
+            Gamma<LineBreak/>
+            <Slider Name="GammaSlider" Width="100" Margin="6,0,0,3"/><TextBox Name="GammaManSet" Width="45" Margin="0,0,0,3"/><LineBreak/>
+            Sharpness<LineBreak/>
+            <Slider Name="SharpnessSlider" Width="100" Margin="6,0,0,0"/><TextBox Name="SharpnessManSet" Width="45" Margin="0,0,0,0"/><LineBreak/>
+        </TextBlock>
+        <TextBlock Grid.Column="1">
+            <Separator Width="1" Height="176" Margin="0,3,0,0"/>
+        </TextBlock>
+        <TextBlock Grid.Column="2" Margin="3,6,3,6">
+            White balance<LineBreak/>
+            <Slider Name="WhiteBalSlider" Width="100" Margin="6,0,0,3" SelectionStart="0.5" SelectionEnd="2.0"/><TextBox Name="WhiteBalManSet" Width="45" Margin="0,0,0,3"/><LineBreak/>
+            <CheckBox Content="Auto" Margin="5,0,0,3"/><LineBreak/>
+            Brightness<LineBreak/>
+            <Slider Name="BrightSlider" Width="100" Margin="6,1,0,3" SelectionStart="0.5" SelectionEnd="2.0"/><TextBox Name="BrightManSet" Width="45" Margin="0,0,0,3"/><LineBreak/>
+            Backlight compensation<LineBreak/>
+            <ComboBox Name="BacklightCompComboBox" Margin="5,2,0,0"/>
+        </TextBlock>
+    </Grid>
+</Window>

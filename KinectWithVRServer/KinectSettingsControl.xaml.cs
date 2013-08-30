@@ -220,6 +220,11 @@ namespace KinectWithVRServer
             parent.server.serverMasterOptions.kinectOptions[(int)KinectID].colorImageMode = newFormat;
             parent.server.kinects[(int)KinectID].ChangeColorResolution(newFormat);
         }
+        private void advancedColorButton_Click(object sender, RoutedEventArgs e)
+        {
+            AdvancedColorWindow colorWindow = new AdvancedColorWindow();
+            colorWindow.Show();
+        }
         #endregion
 
         #region Kinect Position Option Methods

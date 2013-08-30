@@ -236,37 +236,50 @@ namespace KinectWithVRServer
         //While 30 times per second is probably a bit fast for the GUI, something on the VRPN side may need it this fast
         private void accelerationUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            //TODO: Because this happens asynchronously, it is possible for this to get hit AFTER the kinect shuts down.  FIX!
-            Vector4 acceleration = kinect.AccelerometerGetCurrentReading();
-
-            //Update the GUI
-            if (isGUI && parent.kinectOptionGUIPages[kinectID].IsVisible)
+            bool dataValid = false;
+            Vector4 acceleration = new Vector4();
+            int elevationAngle = 0;
+            lock (kinect)
             {
-                //Note: This method is on a different thread from the rest of the KinectCore because of the timer, thus the need for the invoke
-                parent.Dispatcher.BeginInvoke((Action)(() =>
+                if (kinect.IsRunning)
                 {
-                    parent.kinectOptionGUIPages[kinectID].AccelXTextBlock.Text = acceleration.X.ToString("F2");
-                    parent.kinectOptionGUIPages[kinectID].AccelYTextBlock.Text = acceleration.Y.ToString("F2");
-                    parent.kinectOptionGUIPages[kinectID].AccelZTextBlock.Text = acceleration.Z.ToString("F2");
-                    parent.kinectOptionGUIPages[kinectID].AngleTextBlock.Text = kinect.ElevationAngle.ToString();
-                }), null
-                );
+                    acceleration = kinect.AccelerometerGetCurrentReading();
+                    elevationAngle = kinect.ElevationAngle;
+                    dataValid = true;
+                }
             }
 
-            //Update the VRPN server
-            if (server.isRunning && server.serverMasterOptions.kinectOptions[kinectID].sendAcceleration)
+            //Update the GUI
+            if (dataValid)
             {
-                for (int i = 0; i < server.analogServers.Count; i++)
+                if (isGUI && parent.kinectOptionGUIPages[kinectID].IsVisible)
                 {
-                    if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptions[kinectID].accelerationServerName)
+                    //Note: This method is on a different thread from the rest of the KinectCore because of the timer, thus the need for the invoke
+                    parent.Dispatcher.BeginInvoke((Action)(() =>
                     {
-                        lock (server.analogServers[i])
+                        parent.kinectOptionGUIPages[kinectID].AccelXTextBlock.Text = acceleration.X.ToString("F2");
+                        parent.kinectOptionGUIPages[kinectID].AccelYTextBlock.Text = acceleration.Y.ToString("F2");
+                        parent.kinectOptionGUIPages[kinectID].AccelZTextBlock.Text = acceleration.Z.ToString("F2");
+                        parent.kinectOptionGUIPages[kinectID].AngleTextBlock.Text = elevationAngle.ToString();
+                    }), null
+                    );
+                }
+
+                //Update the VRPN server
+                if (server.isRunning && server.serverMasterOptions.kinectOptions[kinectID].sendAcceleration)
+                {
+                    for (int i = 0; i < server.analogServers.Count; i++)
+                    {
+                        if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptions[kinectID].accelerationServerName)
                         {
-                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelXChannel].Value = acceleration.X;
-                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelYChannel].Value = acceleration.Y;
-                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelZChannel].Value = acceleration.Z;
+                            lock (server.analogServers[i])
+                            {
+                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelXChannel].Value = acceleration.X;
+                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelYChannel].Value = acceleration.Y;
+                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelZChannel].Value = acceleration.Z;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }

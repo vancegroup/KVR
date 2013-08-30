@@ -32,7 +32,7 @@
                         <ComboBoxItem Content="Disabled"/>
                     </ComboBox>
                     <CheckBox Name="AutoColorCheckBox" Content="Auto Color" Margin="2"/>
-                    <Button Name="advancedColorButton" Content="Advanced Color" Margin="2"/>
+                    <Button Name="advancedColorButton" Content="Advanced Color" Margin="2" Click="advancedColorButton_Click"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Header="Depth Settings" Grid.Column="1">
