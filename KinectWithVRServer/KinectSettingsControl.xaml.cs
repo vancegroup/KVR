@@ -167,20 +167,53 @@ namespace KinectWithVRServer
         }
         private void nearModeCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = (bool)nearModeCheckBox.IsChecked;
             if ((bool)nearModeCheckBox.IsChecked)
             {
-                parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Near;
+                try
+                {
+                    parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Near;
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = true;
+                }
+                catch (InvalidOperationException)
+                {
+                    //Must be a XBox Kinect, so disable the near mode option and the force IR off mode
+                    parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Default;
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = false;
+                    nearModeCheckBox.IsChecked = false;
+                    nearModeCheckBox.IsEnabled = false;
+                    irOnCheckBox.IsEnabled = false;
+                }
             }
             else
             {
                 parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Default;
+                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = false;
             }
         }
         private void irOnCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = (bool)irOnCheckBox.IsChecked;
-            parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = !(bool)irOnCheckBox.IsChecked;
+            if ((bool)irOnCheckBox.IsChecked)
+            {
+                parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = false;
+                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = true;
+            }
+            else if (!(bool)irOnCheckBox.IsChecked)
+            {
+                try
+                {
+                    parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = true;
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = false;
+                }
+                catch (InvalidOperationException)
+                {
+                    //Must be a XBox Kinect, so disable near mode and IR off
+                    parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = false;
+                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = true;
+                    nearModeCheckBox.IsEnabled = false;
+                    irOnCheckBox.IsChecked = true;
+                    irOnCheckBox.IsEnabled = false;
+                }
+            }
         }
         private void UseSkeletonCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
