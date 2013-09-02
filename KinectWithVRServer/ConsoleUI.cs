@@ -23,8 +23,8 @@ namespace KinectWithVRServer
             }
 
             ServerCore server = new ServerCore(isVerbose, settings);
+            //TODO: Launch Kinects here
             server.launchServer(); //This will still try to launch with default settings even if the settings load fails
-
 
             bool running = true;
             //int i = 0;

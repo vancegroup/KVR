@@ -55,32 +55,44 @@ namespace KinectWithVRServer
             forceStop = false;
             serverState = ServerRunState.Starting;
 
-            //serverMasterOptions = serverSettings;
-            serverMasterOptions.parseSettings();
-
-            runServerCoreDelegate serverDelegate = runServerCore;
-            serverDelegate.BeginInvoke(null, null);
-
-            //Start voice recognition, if necessary
-            if (serverMasterOptions.voiceCommands.Count > 0)
+            string errorMessage = "";
+            if (serverMasterOptions.parseSettings(out errorMessage))
             {
-                voiceRecog = new VoiceRecogCore(this, verbose, parent);
-                launchVoiceRecognizerDelegate voiceDelegate = voiceRecog.launchVoiceRecognizer;
-                //Dispatcher newDispatch = new Dispatcher();
+                //Start the Kinect audio streams
+                for (int i = 0; i < kinects.Count; i++)
+                {
+                    kinects[i].StartKinectAudio(); //TODO: This will crash if the Kinects are in another thread (i.e. console mode)
+                }
 
-                voiceDelegate.BeginInvoke(new AsyncCallback(voiceStartedCallback), null);
-                //voiceRecog.launchVoiceRecognizer();
+                runServerCoreDelegate serverDelegate = runServerCore;
+                serverDelegate.BeginInvoke(null, null);
+
+                //Start voice recognition, if necessary
+                if (serverMasterOptions.voiceCommands.Count > 0)
+                {
+                    voiceRecog = new VoiceRecogCore(this, verbose, parent);
+                    launchVoiceRecognizerDelegate voiceDelegate = voiceRecog.launchVoiceRecognizer;
+                    //Dispatcher newDispatch = new Dispatcher();
+
+                    voiceDelegate.BeginInvoke(new AsyncCallback(voiceStartedCallback), null);
+                    //voiceRecog.launchVoiceRecognizer();
+                }
+                else
+                {
+                    //Because the voice callback will not be called, we need to call this stuff here
+                    if (GUI)
+                    {
+                        parent.startServerButton.Content = "Stop";
+                        parent.startServerButton.IsEnabled = true;
+                        parent.ServerStatusItem.Content = "Running";
+                        parent.ServerStatusTextBlock.Text = "Running";
+                    }
+                }
             }
             else
             {
-                //Because the voice callback will not be called, we need to call this stuff here
-                if (GUI)
-                {
-                    parent.startServerButton.Content = "Stop";
-                    parent.startServerButton.IsEnabled = true;
-                    parent.ServerStatusItem.Content = "Running";
-                    parent.ServerStatusTextBlock.Text = "Running";
-                }
+                HelperMethods.ShowErrorMessage("Error", "Settings parsing failed!  See the log for more details.", parent);
+                HelperMethods.WriteToLog(errorMessage, parent);
             }
         }
 
@@ -162,7 +174,8 @@ namespace KinectWithVRServer
             {
                 lock (serverMasterOptions.analogServers[i])
                 {
-                    analogServers.Add(new AnalogServer(serverMasterOptions.analogServers[i].serverName, vrpnConnection, serverMasterOptions.analogServers[i].channelCount));
+                    //Note: This uses maxChannelUsed NOT trueChannelCount in case non-consecutive channels are used
+                    analogServers.Add(new AnalogServer(serverMasterOptions.analogServers[i].serverName, vrpnConnection, serverMasterOptions.analogServers[i].maxChannelUsed + 1));
                     analogServers[i].MuteWarnings = !verbose;
                 }
             }
@@ -173,7 +186,8 @@ namespace KinectWithVRServer
             {
                 lock (serverMasterOptions.buttonServers[i])
                 {
-                    buttonServers.Add(new ButtonServer(serverMasterOptions.buttonServers[i].serverName, vrpnConnection, serverMasterOptions.buttonServers[i].buttonCount));
+                    //Note: This uses maxButtonUsed NOT trueButtonCount in case non-consecutive buttons are used
+                    buttonServers.Add(new ButtonServer(serverMasterOptions.buttonServers[i].serverName, vrpnConnection, serverMasterOptions.buttonServers[i].maxButtonUsed + 1));
                     buttonServers[i].MuteWarnings = !verbose;
                 }
             }

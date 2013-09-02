@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Xml.Serialization;
@@ -46,6 +47,29 @@ namespace KinectWithVRServer
             else //Console mode
             {
                 Console.Write(stringTemp);
+            }
+        }
+
+        internal static void ShowErrorMessage(string title, string text, MainWindow parent = null)
+        {
+            if (parent != null)
+            {
+                if (parent.Dispatcher.Thread.ManagedThreadId == Thread.CurrentThread.ManagedThreadId)
+                {
+                    MessageBox.Show(parent, text, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    parent.Dispatcher.BeginInvoke((Action)(() =>
+                    {
+                        MessageBox.Show(parent, text, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }), null
+                    );
+                }
+            }
+            else
+            {
+                WriteToLog(title + ": " + text);
             }
         }
 

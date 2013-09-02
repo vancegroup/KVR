@@ -154,7 +154,7 @@
                             <DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
                             <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
                             <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
-                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                            <!--<DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>-->
                             <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
                             <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
                             <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
@@ -164,40 +164,12 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
                             <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
-                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
+                            <!--<DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>-->
                             <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
                             <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
                             <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <!--<Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <DataGrid Name="VoiceButtonDataGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
-                        <DataGrid.Columns>
-                            <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
-                            <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>                            
-                            <DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
-                            <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
-                            <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
-                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
-                            <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
-                            <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
-                            <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                    <DataGrid Name="VoiceTextDataGrid" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
-                            <DataGridTextColumn Header="Recognized Word" Binding="{Binding recognizedWord}"/>
-                            <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
-                            <DataGridTextColumn Header="Server Name" Binding="{Binding serverName}"/>
-                            <DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>
-                            <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>-->
                 </Grid>
             </TabItem>
             

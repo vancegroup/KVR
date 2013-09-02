@@ -89,7 +89,7 @@ namespace KinectWithVRServer
         {
             if (kinect != null)
             {
-                //TODO: Should these really be "new" when we are REMOVING them from the event queue?
+                //The "new" syntax is sort of odd, but these really do remove the handlers from the specified events
                 kinect.ColorFrameReady -= new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
                 kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
                 kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
@@ -106,6 +106,51 @@ namespace KinectWithVRServer
 
                 kinect.AudioSource.Stop();
                 kinect.Stop();
+            }
+        }
+        public void StartKinectAudio()
+        {
+            if (kinect.IsRunning)
+            {
+                //Start the audio streams, if necessary -- NOTE: This must be after the skeleton stream is started (which it should be here)
+                if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle || server.serverMasterOptions.audioOptions.sourceID == kinectID)
+                {
+                    if (server.serverMasterOptions.audioOptions.sourceID == kinectID)
+                    {
+                        kinect.AudioSource.EchoCancellationMode = server.serverMasterOptions.audioOptions.echoMode;
+                        kinect.AudioSource.AutomaticGainControlEnabled = server.serverMasterOptions.audioOptions.autoGainEnabled;
+                        kinect.AudioSource.NoiseSuppression = server.serverMasterOptions.audioOptions.noiseSurpression;
+                        if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
+                        {
+                            if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
+                            {
+                                kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
+                            }
+                            else
+                            {
+                                kinect.AudioSource.BeamAngleMode = BeamAngleMode.Automatic;
+                            }
+                            kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
+                        }
+                    }
+                    else if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
+                    {
+                        kinect.AudioSource.EchoCancellationMode = EchoCancellationMode.None;
+                        kinect.AudioSource.AutomaticGainControlEnabled = false;
+                        kinect.AudioSource.NoiseSuppression = true;
+                        if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
+                        {
+                            kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
+                        }
+                        else
+                        {
+                            kinect.AudioSource.BeamAngleMode = BeamAngleMode.Automatic;
+                        }
+                        kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
+                    }
+
+                    kinect.AudioSource.Start();
+                }
             }
         }
 
@@ -181,47 +226,6 @@ namespace KinectWithVRServer
 
             kinect.Start();
 
-            //Start the audio streams, if necessary -- NOTE: This must be after the skeleton stream is started (which it is here)
-            //TODO: What if the settings are changed after the Kinect is started?
-            if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle || server.serverMasterOptions.audioOptions.sourceID == kinectID)
-            {
-                if (server.serverMasterOptions.audioOptions.sourceID == kinectID)
-                {
-                    kinect.AudioSource.EchoCancellationMode = server.serverMasterOptions.audioOptions.echoMode;
-                    kinect.AudioSource.AutomaticGainControlEnabled = server.serverMasterOptions.audioOptions.autoGainEnabled;
-                    kinect.AudioSource.NoiseSuppression = server.serverMasterOptions.audioOptions.noiseSurpression;
-                    if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
-                    {
-                        if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
-                        {
-                            kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
-                        }
-                        else
-                        {
-                            kinect.AudioSource.BeamAngleMode = BeamAngleMode.Automatic;
-                        }
-                        kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
-                    }
-                }
-                else if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
-                {
-                    kinect.AudioSource.EchoCancellationMode = EchoCancellationMode.None;
-                    kinect.AudioSource.AutomaticGainControlEnabled = false;
-                    kinect.AudioSource.NoiseSuppression = true;
-                    if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
-                    {
-                        kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
-                    }
-                    else
-                    {
-                        kinect.AudioSource.BeamAngleMode = BeamAngleMode.Automatic;
-                    }
-                    kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
-                }
-
-                kinect.AudioSource.Start();
-            }
-
             StartAccelTimer();
         }
         private void StartAccelTimer()
@@ -277,6 +281,7 @@ namespace KinectWithVRServer
                                 server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelXChannel].Value = acceleration.X;
                                 server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelYChannel].Value = acceleration.Y;
                                 server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelZChannel].Value = acceleration.Z;
+                                server.analogServers[i].Report();
                             }
                             break;
                         }
@@ -526,6 +531,7 @@ namespace KinectWithVRServer
                         lock (server.analogServers[i])
                         {
                             server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].audioAngleChannel].Value = e.Angle;
+                            server.analogServers[i].Report();
                         }
                     }
                 }

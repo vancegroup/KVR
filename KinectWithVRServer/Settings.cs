@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Microsoft.Kinect;
 using System.Windows.Media.Media3D;
 
@@ -50,135 +51,464 @@ namespace KinectWithVRServer
         //2) Multiple Kinect accelerometer data
         //3) Find the number of unique analog servers and channels (based on 1 and 2)
         //TODO: Can the parser check if all the settings are valid too?
-        public void parseSettings()
+        public bool parseSettings(out string errorMessage)
         {
+            bool settingsValid = true;
+            errorMessage = "";
+
             analogServers = new List<AnalogServerSettings>();
             buttonServers = new List<ButtonServerSettings>();
             textServers = new List<TextServerSettings>();
             trackerServers = new List<TrackerServerSettings>();
-            
-            bool sendAngle = false;
+
+            #region Parse the Skeleton servers
+            for (int i = 0; i < skeletonOptions.individualSkeletons.Count; i++)
+            {
+                if (skeletonOptions.individualSkeletons[i].useSkeleton)
+                {
+                    //Add the skeleton servers
+                    if (isServerNameValid(skeletonOptions.individualSkeletons[i].serverName))
+                    {
+                        bool serverFound = false;
+                        for (int j = 0; j < trackerServers.Count; j++) //This allows for multiple skeletons to be assigned to the same tracker, although I don't know why you would want to do that...
+                        {
+                            if (trackerServers[j].serverName == skeletonOptions.individualSkeletons[i].serverName)
+                            {
+                                serverFound = true;
+                            }
+                        }
+
+                        if (!serverFound)
+                        {
+                            trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = skeletonOptions.individualSkeletons[i].serverName });
+                        }
+                    }
+                    else
+                    {
+                        settingsValid = false;
+                        errorMessage += "Skeleton " + i.ToString() + " server name (\"" + skeletonOptions.individualSkeletons[i].serverName + "\") is invalid.\r\n";
+                    }
+
+                    //Parse the right hand grip
+                    if (skeletonOptions.individualSkeletons[i].useRightHandGrip)
+                    {
+                        if (isServerNameValid(skeletonOptions.individualSkeletons[i].rightGripServerName))
+                        {
+                            bool found = false;
+                            for (int j = 0; j < buttonServers.Count; j++)
+                            {
+                                if (buttonServers[j].serverName == skeletonOptions.individualSkeletons[i].rightGripServerName)
+                                {
+                                    found = true;
+                                    if (isServerChannelValid(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
+                                    {
+                                        if (!buttonServers[j].uniqueChannels.Contains(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
+                                        {
+                                            buttonServers[j].uniqueChannels.Add(skeletonOptions.individualSkeletons[i].rightGripButtonNumber);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        settingsValid = false;
+                                        errorMessage += "Skeleton " + i.ToString() + " right-hand grip server channel (" + skeletonOptions.individualSkeletons[i].rightGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                    }
+                                }
+                            }
+
+                            //If the button server doesn't exist, create it!
+                            if (!found)
+                            {
+                                ButtonServerSettings temp = new ButtonServerSettings();
+                                temp.serverName = skeletonOptions.individualSkeletons[i].rightGripServerName;
+                                temp.uniqueChannels = new List<int>();
+
+                                if (isServerChannelValid(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
+                                {
+                                    temp.uniqueChannels.Add(skeletonOptions.individualSkeletons[i].rightGripButtonNumber);
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Skeleton " + i.ToString() + " right-hand grip server channel (" + skeletonOptions.individualSkeletons[i].rightGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                }
+
+                                buttonServers.Add(temp);
+                            }
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Skeleton " + i.ToString() + " right-hand grip server name (\"" + skeletonOptions.individualSkeletons[i].rightGripServerName + "\") is invalid.\r\n";
+                        }
+                    }
+
+                    //Parse the left hand grip
+                    if (skeletonOptions.individualSkeletons[i].useLeftHandGrip)
+                    {
+                        if (isServerNameValid(skeletonOptions.individualSkeletons[i].leftGripServerName))
+                        {
+                            bool found = false;
+                            for (int j = 0; j < buttonServers.Count; j++)
+                            {
+                                if (buttonServers[j].serverName == skeletonOptions.individualSkeletons[i].leftGripServerName)
+                                {
+                                    found = true;
+                                    if (isServerChannelValid(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
+                                    {
+                                        if (!buttonServers[j].uniqueChannels.Contains(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
+                                        {
+                                            buttonServers[j].uniqueChannels.Add(skeletonOptions.individualSkeletons[i].leftGripButtonNumber);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        settingsValid = false;
+                                        errorMessage += "Skeleton " + i.ToString() + " left-hand grip server channel (" + skeletonOptions.individualSkeletons[i].leftGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                    }
+                                }
+                            }
+
+                            //If the button server doesn't exist, create it!
+                            if (!found)
+                            {
+                                ButtonServerSettings temp = new ButtonServerSettings();
+                                temp.serverName = skeletonOptions.individualSkeletons[i].leftGripServerName;
+                                temp.uniqueChannels = new List<int>();
+
+                                if (isServerChannelValid(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
+                                {
+                                    temp.uniqueChannels.Add(skeletonOptions.individualSkeletons[i].leftGripButtonNumber);
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Skeleton " + i.ToString() + " left-hand grip server channel (" + skeletonOptions.individualSkeletons[i].leftGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                }
+
+                                buttonServers.Add(temp);
+                            }
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Skeleton " + i.ToString() + " left-hand grip server name (\"" + skeletonOptions.individualSkeletons[i].leftGripServerName + "\") is invalid.\r\n";
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region Parse the Voice Commands
             for (int i = 0; i < voiceCommands.Count; i++)
             {
                 if (voiceCommands[i].serverType == ServerType.Button)
                 {
                     bool found = false;
 
-                    //Set if we need to turn on the sound angle server
-                    if (voiceCommands[i].sendSourceAngle)
+                    if (isServerNameValid(voiceCommands[i].serverName))
                     {
-                        sendAngle = true;
-                    }
-
-                    //Check if the button server already exists
-                    for (int j = 0; j < buttonServers.Count; j++)
-                    {
-                        if (buttonServers[j].serverName == voiceCommands[i].serverName)
+                        //Check if the button server already exists
+                        for (int j = 0; j < buttonServers.Count; j++)
                         {
-                            //The button server exists, so lets see if it is using a unique button channel
-                            found = true;
-                            if (!buttonServers[j].uniqueChannels.Contains(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
+                            if (buttonServers[j].serverName == voiceCommands[i].serverName)
                             {
-                                buttonServers[j].uniqueChannels.Add(((VoiceButtonCommand)voiceCommands[i]).buttonNumber);
+                                //The button server exists, so lets see if it is using a unique button channel
+                                found = true;
+                                if (isServerChannelValid(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
+                                {
+                                    if (!buttonServers[j].uniqueChannels.Contains(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
+                                    {
+                                        buttonServers[j].uniqueChannels.Add(((VoiceButtonCommand)voiceCommands[i]).buttonNumber);
+                                    }
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Voice command \"" + voiceCommands[i].recognizedWord + "\" server channel (\"" + ((VoiceButtonCommand)voiceCommands[i]).buttonNumber + "\") is invalid.\r\n";
+                                }
                             }
                         }
-                    }
 
-                    //The button server did not exist, time to create it!
-                    if (!found)
+                        //The button server did not exist, time to create it!
+                        if (!found)
+                        {
+                            ButtonServerSettings temp = new ButtonServerSettings();
+                            temp.serverName = voiceCommands[i].serverName;
+                            temp.uniqueChannels = new List<int>();
+                            if (isServerChannelValid(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
+                            {
+                                temp.uniqueChannels.Add(((VoiceButtonCommand)voiceCommands[i]).buttonNumber);
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Voice command \"" + voiceCommands[i].recognizedWord + "\" server channel (\"" + ((VoiceButtonCommand)voiceCommands[i]).buttonNumber + "\") is invalid.\r\n";
+                            }
+                            buttonServers.Add(temp);
+                        }
+                    }
+                    else
                     {
-                        ButtonServerSettings temp = new ButtonServerSettings();
-                        temp.serverName = voiceCommands[i].serverName;
-                        temp.uniqueChannels = new List<int>();
-                        temp.uniqueChannels.Add(((VoiceButtonCommand)voiceCommands[i]).buttonNumber);
-                        buttonServers.Add(temp);
+                        settingsValid = false;
+                        errorMessage += "Voice command \"" + voiceCommands[i].recognizedWord + "\" server name (\"" + voiceCommands[i].serverName + "\") is invalid.\r\n";
                     }
                 }
                 else if (voiceCommands[i].serverType == ServerType.Text)
                 {
                     bool found = false;
 
-                    //Se if we need to turn on the sound angle server
-                    if (voiceCommands[i].sendSourceAngle)
+                    if (isServerNameValid(voiceCommands[i].serverName))
                     {
-                        sendAngle = true;
-                    }
-
-                    //Check if the button server already exists
-                    for (int j = 0; j < textServers.Count; j++)
-                    {
-                        if (textServers[j].serverName == voiceCommands[i].serverName)
+                        //Check if the button server already exists
+                        for (int j = 0; j < textServers.Count; j++)
                         {
-                            //The text server exists!  We don't need to check channels on text servers
-                            found = true;
+                            if (textServers[j].serverName == voiceCommands[i].serverName)
+                            {
+                                //The text server exists!  We don't need to check channels on text servers
+                                found = true;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            TextServerSettings temp = new TextServerSettings();
+                            temp.serverName = voiceCommands[i].serverName;
+                            textServers.Add(temp);
                         }
                     }
-
-                    if (!found)
+                    else
                     {
-                        TextServerSettings temp = new TextServerSettings();
-                        temp.serverName = voiceCommands[i].serverName;
-                        textServers.Add(temp);
+                        settingsValid = false;
+                        errorMessage += "Voice command \"" + voiceCommands[i].recognizedWord + "\" server name (\"" + voiceCommands[i].serverName + "\") is invalid.\r\n";
                     }
                 }
             }
+            #endregion
 
-            //Setup the analog server for the sound angle
-            if (sendAngle)
+            //TODO: Implement gesture parsing and error handling
+            #region Parse the Gesture Commands
+            //for (int i = 0; i < gestureCommands.Count; i++)
+            //{
+            //    bool found = false;
+
+            //    for (int j = 0; j < buttonServers.Count; j++)
+            //    {
+            //        if (buttonServers[j].serverName == gestureCommands[i].serverName)
+            //        {
+            //            //The button server exists, so lets see if it is using a unique button channel
+            //            found = true;
+            //            if (!buttonServers[j].uniqueChannels.Contains(((GestureCommand)gestureCommands[i]).buttonNumber))
+            //            {
+            //                buttonServers[j].uniqueChannels.Add(((GestureCommand)gestureCommands[i]).buttonNumber);
+            //            }
+            //        }
+            //    }
+
+            //    if (!found)
+            //    {
+            //        ButtonServerSettings temp = new ButtonServerSettings();
+            //        temp.serverName = gestureCommands[i].serverName;
+            //        temp.uniqueChannels = new List<int>();
+            //        temp.uniqueChannels.Add(((GestureCommand)gestureCommands[i]).buttonNumber);
+            //        buttonServers.Add(temp);
+            //    }
+            //}
+            #endregion
+
+            #region Parse the per Kinect (acceleration and audio angle) settings
+            for (int i = 0; i < kinectOptions.Count; i++)
             {
-                AnalogServerSettings angleServer = new AnalogServerSettings();
-                angleServer.serverName = "KinectSoundAngle";
-                angleServer.uniqueChannels = new List<int>(1);
-                angleServer.uniqueChannels.Add(0);
-                angleServer.channelCount = 1;
-                analogServers.Add(angleServer);
-            }
-
-            //Gesture Parsing
-            for (int i = 0; i < gestureCommands.Count; i++)
-            {
-                bool found = false;
-
-                for (int j = 0; j < buttonServers.Count; j++)
+                //Parse the acceleration options
+                if (kinectOptions[i].sendAcceleration)
                 {
-                    if (buttonServers[j].serverName == gestureCommands[i].serverName)
+                    if (isServerNameValid(kinectOptions[i].accelerationServerName))
                     {
-                        //The button server exists, so lets see if it is using a unique button channel
-                        found = true;
-                        if (!buttonServers[j].uniqueChannels.Contains(((GestureCommand)gestureCommands[i]).buttonNumber))
+                        bool found = false;
+
+                        for (int j = 0; j < analogServers.Count; j++)
                         {
-                            buttonServers[j].uniqueChannels.Add(((GestureCommand)gestureCommands[i]).buttonNumber);
+                            if (analogServers[j].serverName == kinectOptions[i].accelerationServerName)
+                            {
+                                found = true;
+
+                                //Check the X acceleration channel
+                                if (isServerChannelValid(kinectOptions[i].accelXChannel))
+                                {
+                                    //If the channel doesn't exist, create it
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelXChannel))
+                                    {
+                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].accelXChannel);
+                                    }
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Kinect " + i.ToString() + " X acceleration channel (" + kinectOptions[i].accelXChannel.ToString() + ") is invalid.\r\n";
+                                }
+
+                                //Check the Y acceleration channel
+                                if (isServerChannelValid(kinectOptions[i].accelYChannel))
+                                {
+                                    //If the channel doesn't exist, create it
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelYChannel))
+                                    {
+                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].accelYChannel);
+                                    }
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Kinect " + i.ToString() + " Y acceleration channel (" + kinectOptions[i].accelYChannel.ToString() + ") is invalid.\r\n";
+                                }
+
+                                //Check the Z acceleration channel
+                                if (isServerChannelValid(kinectOptions[i].accelZChannel))
+                                {
+                                    //If the channel doesn't exist, create it
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelZChannel))
+                                    {
+                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].accelZChannel);
+                                    }
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Kinect " + i.ToString() + " Z acceleration channel (" + kinectOptions[i].accelZChannel.ToString() + ") is invalid.\r\n";
+                                }
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            AnalogServerSettings temp = new AnalogServerSettings();
+                            temp.serverName = kinectOptions[i].accelerationServerName;
+                            temp.uniqueChannels = new List<int>();
+
+                            //Add the X channel, if it is valid (it is the first one added, so it must be unique)
+                            if (isServerChannelValid(kinectOptions[i].accelXChannel))
+                            {
+                                temp.uniqueChannels.Add(kinectOptions[i].accelXChannel);
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + i.ToString() + " X acceleration channel (" + kinectOptions[i].accelXChannel.ToString() + ") is invalid.\r\n";
+                            }
+
+                            //Add the Y channel, if it is valid and unique
+                            if (isServerChannelValid(kinectOptions[i].accelYChannel))
+                            {
+                                if (!temp.uniqueChannels.Contains(kinectOptions[i].accelYChannel))
+                                {
+                                    temp.uniqueChannels.Add(kinectOptions[i].accelYChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + i.ToString() + " Y acceleration channel (" + kinectOptions[i].accelYChannel.ToString() + ") is invalid.\r\n";
+                            }
+
+                            //Add the Z channel, if it is valid and unique
+                            if (isServerChannelValid(kinectOptions[i].accelZChannel))
+                            {
+                                if (!temp.uniqueChannels.Contains(kinectOptions[i].accelZChannel))
+                                {
+                                    temp.uniqueChannels.Add(kinectOptions[i].accelZChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + i.ToString() + " Z acceleration channel (" + kinectOptions[i].accelZChannel.ToString() + ") is invalid.\r\n";
+                            }
+
+                            analogServers.Add(temp);
                         }
                     }
+                    else
+                    {
+                        settingsValid = false;
+                        errorMessage += "Kinect " + i.ToString() + " acceleration server name (\"" + kinectOptions[i].accelerationServerName + "\") is invalid.\r\n";
+                    }
                 }
 
-                if (!found)
+                //Parse audio source angle options
+                if (kinectOptions[i].sendAudioAngle)
                 {
-                    ButtonServerSettings temp = new ButtonServerSettings();
-                    temp.serverName = gestureCommands[i].serverName;
-                    temp.uniqueChannels = new List<int>();
-                    temp.uniqueChannels.Add(((GestureCommand)gestureCommands[i]).buttonNumber);
-                    buttonServers.Add(temp);
+                    if (isServerNameValid(kinectOptions[i].audioAngleServerName))
+                    {
+                        bool found = false;
+
+                        for (int j = 0; j < analogServers.Count; j++)
+                        {
+                            if (analogServers[j].serverName == kinectOptions[i].audioAngleServerName)
+                            {
+                                found = true;
+
+                                if (isServerChannelValid(kinectOptions[i].audioAngleChannel))
+                                {
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].audioAngleChannel))
+                                    {
+                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].audioAngleChannel);
+                                    }
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Kinect " + i.ToString() + " audio angle server channel (" + kinectOptions[i].audioAngleChannel.ToString() + ") is invalid.\r\n";
+                                }
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            AnalogServerSettings temp = new AnalogServerSettings();
+                            temp.serverName = kinectOptions[i].audioAngleServerName;
+                            temp.uniqueChannels = new List<int>();
+                            if (isServerChannelValid(kinectOptions[i].audioAngleChannel))
+                            {
+                                temp.uniqueChannels.Add(kinectOptions[i].audioAngleChannel);
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + i.ToString() + " audio angle server channel (" + kinectOptions[i].audioAngleChannel.ToString() + ") is invalid.\r\n";
+                            }
+                            analogServers.Add(temp);
+                        }
+                    }
+                    else
+                    {
+                        settingsValid = false;
+                        errorMessage += "Kinect " + i.ToString() + " audio angle server name (\"" + kinectOptions[i].audioAngleServerName + "\") is invalid.\r\n";
+                    }
                 }
             }
+            #endregion
 
-            //Count unique channels for each button server
-            for (int i = 0; i < buttonServers.Count; i++)
-            {
-                buttonServers[i].buttonCount = buttonServers[i].uniqueChannels.Count;
-            }
+            return settingsValid;
+        }
 
-            //Setup the tracker servers for the skeletal tracking
-            //TODO: Fix this so it generates the tracker servers correctly
-            if (kinectOptions[0].trackSkeletons)
-            {
-                trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker00" });
-                trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker01" });
-                trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker02" });
-                trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker03" });
-                trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker04" });
-                trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = "Tracker05" });
-            }
+        private bool isServerNameValid(string serverName)
+        {
+            bool valid = true;
+
+            valid = serverName != null && serverName != "";
+            //TODO: This checks if the servername is alphanumeric, are there any other valid characters?
+            valid = valid && System.Text.RegularExpressions.Regex.IsMatch(serverName, @"^[a-zA-Z0-9]+$");
+
+            return valid;
+        }
+
+        private bool isServerChannelValid(int channel)
+        {
+            bool valid = true;
+
+            //TODO: DO button servers and analog servers have the same channel number limits?
+            valid = channel >= 0 && channel < 256;
+
+            return valid;
         }
     }
 
@@ -494,14 +824,68 @@ namespace KinectWithVRServer
     public class AnalogServerSettings
     {
         public string serverName { get; set;}
-        public int channelCount { get; set; }
+        public int trueChannelCount
+        {
+            get
+            {
+                if (uniqueChannels != null)
+                {
+                    return uniqueChannels.Count;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+        public int maxChannelUsed
+        {
+            get
+            {
+                if (uniqueChannels != null)
+                {
+                    return uniqueChannels.Max<int>();
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
         public List<int> uniqueChannels { get; set; }
     }
 
     public class ButtonServerSettings
     {
         public string serverName { get; set; }
-        public int buttonCount { get; set; }
+        public int trueButtonCount 
+        {
+            get
+            {
+                if (uniqueChannels != null)
+                {
+                    return uniqueChannels.Count;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+        public int maxButtonUsed
+        {
+            get
+            {
+                if (uniqueChannels != null)
+                {
+                    return uniqueChannels.Max<int>();
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
         public List<int> uniqueChannels { get; set; }
     }
 
@@ -527,7 +911,6 @@ namespace KinectWithVRServer
     {
         public ServerType serverType { get; set; }
         public double confidence { get; set; }
-        public bool sendSourceAngle { get; set; }
         public string recognizedWord { get; set; }
     }
 
@@ -569,7 +952,6 @@ namespace KinectWithVRServer
         }
         public GestureType gestureType { get; set; }
         public int buttonNumber { get; set; }
-        //public int skeletonNumber { get; set; }
         //This will likely need to be added to to handle recorded gestures
     }
 
