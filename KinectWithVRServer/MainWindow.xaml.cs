@@ -672,7 +672,6 @@ namespace KinectWithVRServer
 
         private void VoiceKinectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //TODO: This may need a check to see if the audio is started or not, and start it if need be
             if (VoiceKinectComboBox.SelectedIndex == VoiceKinectComboBox.Items.Count - 1)
             {
                 server.serverMasterOptions.audioOptions.sourceID = -1;

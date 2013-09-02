@@ -100,7 +100,7 @@ namespace KinectWithVRServer
                                 if (buttonServers[j].serverName == skeletonOptions.individualSkeletons[i].rightGripServerName)
                                 {
                                     found = true;
-                                    if (isServerChannelValid(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
+                                    if (isServerButtonNumberValid(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
                                     {
                                         if (!buttonServers[j].uniqueChannels.Contains(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
                                         {
@@ -122,7 +122,7 @@ namespace KinectWithVRServer
                                 temp.serverName = skeletonOptions.individualSkeletons[i].rightGripServerName;
                                 temp.uniqueChannels = new List<int>();
 
-                                if (isServerChannelValid(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
+                                if (isServerButtonNumberValid(skeletonOptions.individualSkeletons[i].rightGripButtonNumber))
                                 {
                                     temp.uniqueChannels.Add(skeletonOptions.individualSkeletons[i].rightGripButtonNumber);
                                 }
@@ -153,7 +153,7 @@ namespace KinectWithVRServer
                                 if (buttonServers[j].serverName == skeletonOptions.individualSkeletons[i].leftGripServerName)
                                 {
                                     found = true;
-                                    if (isServerChannelValid(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
+                                    if (isServerButtonNumberValid(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
                                     {
                                         if (!buttonServers[j].uniqueChannels.Contains(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
                                         {
@@ -175,7 +175,7 @@ namespace KinectWithVRServer
                                 temp.serverName = skeletonOptions.individualSkeletons[i].leftGripServerName;
                                 temp.uniqueChannels = new List<int>();
 
-                                if (isServerChannelValid(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
+                                if (isServerButtonNumberValid(skeletonOptions.individualSkeletons[i].leftGripButtonNumber))
                                 {
                                     temp.uniqueChannels.Add(skeletonOptions.individualSkeletons[i].leftGripButtonNumber);
                                 }
@@ -214,7 +214,7 @@ namespace KinectWithVRServer
                             {
                                 //The button server exists, so lets see if it is using a unique button channel
                                 found = true;
-                                if (isServerChannelValid(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
+                                if (isServerButtonNumberValid(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
                                 {
                                     if (!buttonServers[j].uniqueChannels.Contains(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
                                     {
@@ -235,7 +235,7 @@ namespace KinectWithVRServer
                             ButtonServerSettings temp = new ButtonServerSettings();
                             temp.serverName = voiceCommands[i].serverName;
                             temp.uniqueChannels = new List<int>();
-                            if (isServerChannelValid(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
+                            if (isServerButtonNumberValid(((VoiceButtonCommand)voiceCommands[i]).buttonNumber))
                             {
                                 temp.uniqueChannels.Add(((VoiceButtonCommand)voiceCommands[i]).buttonNumber);
                             }
@@ -332,7 +332,7 @@ namespace KinectWithVRServer
                                 found = true;
 
                                 //Check the X acceleration channel
-                                if (isServerChannelValid(kinectOptions[i].accelXChannel))
+                                if (isServerAnalogChannelValid(kinectOptions[i].accelXChannel))
                                 {
                                     //If the channel doesn't exist, create it
                                     if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelXChannel))
@@ -347,7 +347,7 @@ namespace KinectWithVRServer
                                 }
 
                                 //Check the Y acceleration channel
-                                if (isServerChannelValid(kinectOptions[i].accelYChannel))
+                                if (isServerAnalogChannelValid(kinectOptions[i].accelYChannel))
                                 {
                                     //If the channel doesn't exist, create it
                                     if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelYChannel))
@@ -362,7 +362,7 @@ namespace KinectWithVRServer
                                 }
 
                                 //Check the Z acceleration channel
-                                if (isServerChannelValid(kinectOptions[i].accelZChannel))
+                                if (isServerAnalogChannelValid(kinectOptions[i].accelZChannel))
                                 {
                                     //If the channel doesn't exist, create it
                                     if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelZChannel))
@@ -385,7 +385,7 @@ namespace KinectWithVRServer
                             temp.uniqueChannels = new List<int>();
 
                             //Add the X channel, if it is valid (it is the first one added, so it must be unique)
-                            if (isServerChannelValid(kinectOptions[i].accelXChannel))
+                            if (isServerAnalogChannelValid(kinectOptions[i].accelXChannel))
                             {
                                 temp.uniqueChannels.Add(kinectOptions[i].accelXChannel);
                             }
@@ -396,7 +396,7 @@ namespace KinectWithVRServer
                             }
 
                             //Add the Y channel, if it is valid and unique
-                            if (isServerChannelValid(kinectOptions[i].accelYChannel))
+                            if (isServerAnalogChannelValid(kinectOptions[i].accelYChannel))
                             {
                                 if (!temp.uniqueChannels.Contains(kinectOptions[i].accelYChannel))
                                 {
@@ -410,7 +410,7 @@ namespace KinectWithVRServer
                             }
 
                             //Add the Z channel, if it is valid and unique
-                            if (isServerChannelValid(kinectOptions[i].accelZChannel))
+                            if (isServerAnalogChannelValid(kinectOptions[i].accelZChannel))
                             {
                                 if (!temp.uniqueChannels.Contains(kinectOptions[i].accelZChannel))
                                 {
@@ -446,7 +446,7 @@ namespace KinectWithVRServer
                             {
                                 found = true;
 
-                                if (isServerChannelValid(kinectOptions[i].audioAngleChannel))
+                                if (isServerAnalogChannelValid(kinectOptions[i].audioAngleChannel))
                                 {
                                     if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].audioAngleChannel))
                                     {
@@ -466,7 +466,7 @@ namespace KinectWithVRServer
                             AnalogServerSettings temp = new AnalogServerSettings();
                             temp.serverName = kinectOptions[i].audioAngleServerName;
                             temp.uniqueChannels = new List<int>();
-                            if (isServerChannelValid(kinectOptions[i].audioAngleChannel))
+                            if (isServerAnalogChannelValid(kinectOptions[i].audioAngleChannel))
                             {
                                 temp.uniqueChannels.Add(kinectOptions[i].audioAngleChannel);
                             }
@@ -501,13 +501,17 @@ namespace KinectWithVRServer
             return valid;
         }
 
-        private bool isServerChannelValid(int channel)
+        private bool isServerAnalogChannelValid(int channel)
         {
             bool valid = true;
+            valid = channel >= 0 && channel < 128;
+            return valid;
+        }
 
-            //TODO: DO button servers and analog servers have the same channel number limits?
-            valid = channel >= 0 && channel < 256;
-
+        private bool isServerButtonNumberValid(int buttonNumber)
+        {
+            bool valid = true;
+            valid = buttonNumber >= 0 && buttonNumber < 256;
             return valid;
         }
     }

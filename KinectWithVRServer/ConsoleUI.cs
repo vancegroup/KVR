@@ -30,11 +30,9 @@ namespace KinectWithVRServer
             server.launchServer(); //This will still try to launch with default settings even if the settings load fails
 
             bool running = true;
-            //int i = 0;
             while (running)
             {
                 Thread.Sleep(100);
-                //Console.WriteLine("Running loop " + i.ToString() + "th time.");
                 if (Console.KeyAvailable)
                 {
                     ConsoleKeyInfo key = Console.ReadKey(false);
@@ -43,12 +41,10 @@ namespace KinectWithVRServer
                         running = false;
                     }
                 }
-                //i++;
             }
 
             Console.WriteLine("Shutting down the server.  Please wait...");
             server.stopServer();
-            //server.shutdownServer();
 
             NativeInterop.FreeConsole();
         }

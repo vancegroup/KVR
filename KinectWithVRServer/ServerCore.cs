@@ -29,7 +29,7 @@ namespace KinectWithVRServer
         internal List<Vrpn.AnalogServer> analogServers;
         internal List<Vrpn.TextSender> textServers;
         internal List<Vrpn.TrackerServer> trackerServers;
-        internal List<List<Skeleton>> perKinectSkeletons;
+        internal List<List<Skeleton>> perKinectSkeletons; //TODO: use this to merge the skeletons
         bool verbose = false;
         bool GUI = false;
         MainWindow parent;
