@@ -20,7 +20,7 @@ namespace KinectWithVRServer
         short[] depthImagePixels;
         byte[] colorImagePixels;
         public WriteableBitmap colorImage;
-        CoordinateMapper mapper;
+        internal CoordinateMapper mapper;
         bool isGUI = false;
         ServerCore server;
         public int skelcount;
@@ -29,8 +29,9 @@ namespace KinectWithVRServer
         private List<double> colorTimeIntervals = new List<double>();
         private Int64 lastDepthTime = 0;
         private Int64 lastColorTime = 0;
-        private Skeleton[] skeletons = null;
+        //private Skeleton[] skeletons = null;
         private System.Timers.Timer accelerationUpdateTimer;
+        internal KinectSkeletonsData skeletonData;
 
         //The parent has to be optional to allow for console operation
         public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int? kinectNumber = null)
@@ -205,6 +206,14 @@ namespace KinectWithVRServer
                 kinect.DepthStream.Enable();
                 kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
                 kinect.SkeletonStream.EnableTrackingInNearRange = true; //Explicitly enable depth tracking in near mode (this can be true when the depth mode is near or default, but if it is false, there is not skeleton data in near mode)
+            
+                //Create the coordinate mapper
+                mapper = new CoordinateMapper(kinect);
+                
+                //Create the skeleton data container
+                skeletonData = new KinectSkeletonsData(kinect.DeviceConnectionId);
+                skeletonData.PropertyChanged += server.PerKinectSkeletons_PropertyChanged;
+                
                 interactStream = new InteractionStream(kinect, new DummyInteractionClient());
                 kinect.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
                 kinect.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
@@ -221,9 +230,6 @@ namespace KinectWithVRServer
                 parent.ColorImage.Source = colorImage;
             }
 
-            //Create the coordinate mapper
-            mapper = new CoordinateMapper(kinect);
-
             kinect.Start();
 
             StartAccelTimer();
@@ -236,8 +242,7 @@ namespace KinectWithVRServer
             accelerationUpdateTimer.Elapsed += accelerationUpdateTimer_Elapsed;
             accelerationUpdateTimer.Start();
         }
-        //Updates the acceleration on the GUI and the server
-        //While 30 times per second is probably a bit fast for the GUI, something on the VRPN side may need it this fast
+        //Updates the acceleration on the GUI and the server, 30 FPS may be a little fast for the GUI, but for VRPN, it probably needs to be at least that fast
         private void accelerationUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             bool dataValid = false;
@@ -294,81 +299,42 @@ namespace KinectWithVRServer
         {
             using (SkeletonFrame skelFrame = e.OpenSkeletonFrame())
             {
-                if (skelFrame != null)
+                if (skelFrame != null && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
                 {
-                    if (isGUI)
-                    {
-                        parent.ColorImageCanvas.Children.Clear();
-                    }
-
-                    skeletons = new Skeleton[skelFrame.SkeletonArrayLength]; 
+                    Skeleton[] skeletons = new Skeleton[6];
                     skelFrame.CopySkeletonDataTo(skeletons);
-                    int index = 0;
+                    Vector4 acceleration = kinect.AccelerometerGetCurrentReading();
 
-                    skeletons = SortSkeletons(skeletons, server.serverMasterOptions.skeletonOptions.skeletonSortMode);
-                    skelcount = 0;
-
-                    foreach (Skeleton skel in skeletons)
+                    if (interactStream != null)
                     {
-                        //Pick a color for the bones and joints based off the player ID
-                        Color renderColor = Colors.White;
-                        if (index == 0)
-                        {
-                            renderColor = Colors.Red;
-                        }
-                        else if (index == 1)
-                        {
-                            renderColor = Colors.Blue;
-                        }
-                        else if (index == 2)
-                        {
-                            renderColor = Colors.Green;
-                        }
-                        else if (index == 3)
-                        {
-                            renderColor = Colors.Yellow;
-                        }
-                        else if (index == 4)
-                        {
-                            renderColor = Colors.Cyan;
-                        }
-                        else if (index == 5)
-                        {
-                            renderColor = Colors.Fuchsia;
-                        }
-
-                        //Send the points across if the skeleton is either tracked or has a position
-                        if (skel.TrackingState != SkeletonTrackingState.NotTracked)
-                        {
-                            if (server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
-                            {
-                                skelcount++;
-
-                                if (server.isRunning)
-                                {
-                                    SendSkeletonVRPN(skel, index);
-                                }
-                                if (isGUI && parent.ColorStreamConnectionID == kinect.DeviceConnectionId)
-                                {
-                                    RenderSkeletonOnColor(skel, renderColor);
-                                }
-                            }
-                        }
-
-                        index++;
+                        interactStream.ProcessSkeleton(skeletons, acceleration, skelFrame.Timestamp);
                     }
 
-                    //Pass the data to the interaction stream for processing
-                    if (interactStream != null && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
+                    //Transform the skeletons based on the Kinect settings
+                    Matrix3D gravityBasedKinectRotation = findRotation(new Vector3D(acceleration.X, acceleration.Y, acceleration.Z), new Vector3D(0, -1, 0));
+                    for (int i = 0; i < skeletons.Length; i++)
                     {
-                        Vector4 accelReading = kinect.AccelerometerGetCurrentReading();
-                        interactStream.ProcessSkeleton(skeletons, accelReading, skelFrame.Timestamp);
+                        if (skeletons[i].TrackingState != SkeletonTrackingState.NotTracked) //Don't bother to transform untracked skeletons
+                        {
+                            skeletons[i] = makeTransformedSkeleton(skeletons[i], gravityBasedKinectRotation, server.serverMasterOptions.kinectOptions[kinectID].kinectPosition, server.serverMasterOptions.kinectOptions[kinectID].kinectYaw);
+                        }
                     }
-                }
 
-                if (isGUI)
-                {
-                    parent.TrackedSkeletonsTextBlock.Text = skelcount.ToString();
+                    //Add the skeletons to the list to be merged
+                    lock (skeletonData.actualSkeletons)
+                    {
+                        //skeletonData.actualSkeletons.Clear();
+                        for (int i = 0; i < skeletons.Length; i++)
+                        {
+                            skeletonData.actualSkeletons[i].skeleton = skeletons[i];
+                        }
+                    }
+
+                    lock (skeletonData)
+                    {
+                        //The skeleton data is constaintly going to change, so lets just call the update everytime we get new data
+                        skeletonData.needsUpdate = true;
+                    }
                 }
             }
         }
@@ -379,7 +345,7 @@ namespace KinectWithVRServer
                 if (frame != null)
                 {
                     //Pass the data to the interaction frame for processing
-                    if (interactStream != null && parent.server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
+                    if (interactStream != null/* && parent.server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons*/)
                     {
                         interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
                     }
@@ -420,102 +386,63 @@ namespace KinectWithVRServer
         {
             using (InteractionFrame interactFrame = e.OpenInteractionFrame())
             {
-                if (interactFrame != null && skeletons != null)
+                if (interactFrame != null && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
                 {
+                    bool changeMade = false;
                     UserInfo[] tempUserInfo = new UserInfo[6];
                     interactFrame.CopyInteractionDataTo(tempUserInfo);
 
-                    foreach (UserInfo info in tempUserInfo)
+                    foreach (UserInfo interactionInfo in tempUserInfo)
                     {
-                        int skeletonIndex = -1;
-
-                        for (int i = 0; i < skeletons.Length; i++)
+                        foreach (InteractionHandPointer hand in interactionInfo.HandPointers)
                         {
-                            if (info.SkeletonTrackingId == skeletons[i].TrackingId)
+                            if (hand.HandEventType == InteractionHandEventType.Grip)
                             {
-                                skeletonIndex = i;
-                                break;
-                            }
-                        }
-
-                        //TODO: Move the transmitting of the grip to the merge and transmit method in the serverCore so we can check for disagreements between various viewpoints
-                        if (skeletonIndex >= 0)
-                        {
-                            foreach (InteractionHandPointer hand in info.HandPointers)
-                            {
-                                if (hand.HandEventType != InteractionHandEventType.None)
+                                for (int i = 0; i < skeletonData.actualSkeletons.Count; i++)
                                 {
-                                    
-                                    int gestureIndex = -1;
-                                    int serverIndex = -1;
-                                    bool sendGrip = server.isRunning && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons;
-
-                                    if (sendGrip)
-                                    {
-                                        //Figure out which gesture command the grip is
-                                        for (int i = 0; i < server.serverMasterOptions.gestureCommands.Count; i++)
-                                        {
-                                            //Technically, there should be TWO gesture commands per skeletons, but we only need one for now
-                                            //TODO: Make this more robust
-                                            //if (server.serverMasterOptions.gestureCommands[i].skeletonNumber == skeletonIndex)
-                                            //{
-                                            //    gestureIndex = skeletonIndex;
-                                            //    break;
-                                            //}
-                                        }
-
-                                        //Figure out which tracking server the grip is to be transmitted on
-                                        for (int i = 0; i < server.buttonServers.Count; i++)
-                                        {
-                                            if (server.serverMasterOptions.buttonServers[i].serverName == server.serverMasterOptions.gestureCommands[gestureIndex].serverName)
-                                            {
-                                                serverIndex = i;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    if (hand.HandEventType == InteractionHandEventType.Grip)
+                                    if (skeletonData.actualSkeletons[i].skeleton.TrackingId == interactionInfo.SkeletonTrackingId)
                                     {
                                         if (hand.HandType == InteractionHandType.Left)
                                         {
-                                            if (sendGrip)
-                                            {
-                                                server.buttonServers[serverIndex].Buttons[1] = true;
-                                            }
-                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " left hand closed!", parent);
+                                            skeletonData.actualSkeletons[i].leftHandClosed = true;
+                                            changeMade = true;
                                         }
                                         else if (hand.HandType == InteractionHandType.Right)
                                         {
-                                            if (sendGrip)
-                                            {
-                                                server.buttonServers[serverIndex].Buttons[0] = true;
-                                            }
-                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " right hand closed!", parent);
+                                            skeletonData.actualSkeletons[i].rightHandClosed = true;
+                                            changeMade = true;
                                         }
+                                        break;
                                     }
-                                    else if (hand.HandEventType == InteractionHandEventType.GripRelease)
+                                }
+                            }
+                            else if (hand.HandEventType == InteractionHandEventType.GripRelease)
+                            {
+                                for (int i = 0; i < skeletonData.actualSkeletons.Count; i++)
+                                {
+                                    if (skeletonData.actualSkeletons[i].skeleton.TrackingId == interactionInfo.SkeletonTrackingId)
                                     {
                                         if (hand.HandType == InteractionHandType.Left)
                                         {
-                                            if (sendGrip)
-                                            {
-                                                server.buttonServers[serverIndex].Buttons[1] = false;
-                                            }
-                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " left hand opened!", parent);
+                                            skeletonData.actualSkeletons[i].leftHandClosed = false;
+                                            changeMade = true;
                                         }
                                         else if (hand.HandType == InteractionHandType.Right)
                                         {
-                                            if (sendGrip)
-                                            {
-                                                server.buttonServers[serverIndex].Buttons[0] = false;
-                                            }
-                                            HelperMethods.WriteToLog("Skeleton " + skeletonIndex + " right hand opened!", parent);
+                                            skeletonData.actualSkeletons[i].rightHandClosed = false;
+                                            changeMade = true;
                                         }
+                                        break;
                                     }
                                 }
                             }
                         }
+                    }
+
+                    lock (skeletonData)
+                    {
+                        //The grab isn't going to update very often, so lets just force an update when it is actually needed
+                        skeletonData.needsUpdate = changeMade;
                     }
                 }
             }
@@ -537,228 +464,81 @@ namespace KinectWithVRServer
                 }
             }
         }
-        private void SendSkeletonVRPN(Skeleton skeleton, int id)
-        {
-            foreach (Joint joint in skeleton.Joints)
-            {
-                //I could include inferred joints as well, should I? 
-                if (joint.TrackingState != JointTrackingState.NotTracked)
-                {
-                    Vector4 boneQuat = skeleton.BoneOrientations[joint.JointType].AbsoluteRotation.Quaternion;
-                    lock (server.trackerServers[id])
-                    {
-                        server.trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
-                                                             new Vector3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
-                                                             new Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
-                    }
-                }
-            }
-        }
-        private void RenderSkeletonOnColor(Skeleton skeleton, Color renderColor)
-        {
-            //Calculate the offset
-            Point offset = new Point(0.0, 0.0);
-            if (parent.ColorImageCanvas.ActualWidth != parent.ColorImage.ActualWidth)
-            {
-                offset.X = (parent.ColorImageCanvas.ActualWidth - parent.ColorImage.ActualWidth) / 2;
-            }
 
-            if (parent.ColorImageCanvas.ActualHeight != parent.ColorImage.ActualHeight)
-            {
-                offset.Y = (parent.ColorImageCanvas.ActualHeight - parent.ColorImage.ActualHeight) / 2;
-            }
-                            
-            //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
-            DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ElbowLeft], skeleton.Joints[JointType.WristLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.WristLeft], skeleton.Joints[JointType.HandLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ShoulderRight], skeleton.Joints[JointType.ElbowRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ElbowRight], skeleton.Joints[JointType.WristRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.WristRight], skeleton.Joints[JointType.HandRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.Spine], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.Spine], skeleton.Joints[JointType.HipCenter], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.HipLeft], skeleton.Joints[JointType.KneeLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.KneeLeft], skeleton.Joints[JointType.AnkleLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.AnkleLeft], skeleton.Joints[JointType.FootLeft], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.HipRight], skeleton.Joints[JointType.KneeRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.KneeRight], skeleton.Joints[JointType.AnkleRight], renderColor, 2.0, offset);
-            DrawBoneOnColor(skeleton.Joints[JointType.AnkleRight], skeleton.Joints[JointType.FootRight], renderColor, 2.0, offset);
+        #region Methods to transform the skeletons
+        private Skeleton makeTransformedSkeleton(Skeleton inputSkel, Matrix3D angleRotation, Point3D kinectLocation, double kinectYaw)
+        {
+            Skeleton adjSkel = new Skeleton();
+
+            AxisAngleRotation3D yawRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), -kinectYaw);
+            RotateTransform3D tempTrans = new RotateTransform3D(yawRotation);
+            Matrix3D yawMatrix = tempTrans.Value;
+            Matrix3D masterMatrix = Matrix3D.Multiply(yawMatrix, angleRotation);
+
+            //Make sure the ancillary properties are copied over
+            adjSkel.TrackingState = inputSkel.TrackingState;
+            adjSkel.ClippedEdges = inputSkel.ClippedEdges;
+            adjSkel.TrackingId = inputSkel.TrackingId;
+            //Don't copy bone orientations, it appears they are calculated on the fly from the joint positions
             
-            foreach (Joint joint in skeleton.Joints)
+            //Transform the skeleton position
+            SkeletonPoint tempPosition = transform(inputSkel.Position, masterMatrix);
+            tempPosition.X += (float)kinectLocation.X;
+            tempPosition.Y += (float)kinectLocation.Y;
+            tempPosition.Z += (float)kinectLocation.Z;
+            adjSkel.Position = tempPosition;
+
+            //Transform all the joint positions
+            for (int j = 0; j < inputSkel.Joints.Count; j++)
             {
-                DrawJointPointOnColor(joint, renderColor, 2.0, offset);
+                Joint tempJoint = adjSkel.Joints[(JointType)j];
+                tempJoint.TrackingState = inputSkel.Joints[(JointType)j].TrackingState;
+                SkeletonPoint tempPoint = transform(inputSkel.Joints[(JointType)j].Position, masterMatrix);
+                tempPoint.X += (float)kinectLocation.X;
+                tempPoint.Y += (float)kinectLocation.Y;
+                tempPoint.Z += (float)kinectLocation.Z;
+                tempJoint.Position = tempPoint;
+                adjSkel.Joints[(JointType)j] = tempJoint;
             }
+
+            return adjSkel;
         }
-        private int GetSkeletonSensorNumber(JointType joint)
+        private Matrix3D findRotation(Vector3D u, Vector3D v)
         {
-            int sensorNumber = -1;
+            Matrix3D rotationMatrix = new Matrix3D();
+            Quaternion rotationQuat = new Quaternion();
 
-            //Translates the SDK joints to the FAAST joint numbers
-            switch (joint)
-            {
-                case JointType.Head:
-                {
-                    sensorNumber = 0;
-                    break;
-                }
-                case JointType.ShoulderCenter:
-                {
-                    sensorNumber = 1;
-                    break;
-                }
-                case JointType.Spine:
-                {
-                    sensorNumber = 2;
-                    break;
-                }
-                case JointType.HipCenter:
-                {
-                    sensorNumber = 3;
-                    break;
-                }
-                //There is no 4, in order to match with FAAST
-                case JointType.ShoulderLeft:
-                {
-                    sensorNumber = 5;
-                    break;
-                }
-                case JointType.ElbowLeft:
-                {
-                    sensorNumber = 6;
-                    break;
-                }
-                case JointType.WristLeft:
-                {
-                    sensorNumber = 7;
-                    break;
-                }
-                case JointType.HandLeft:
-                {
-                    sensorNumber = 8;
-                    break;
-                }
-                //There is no 9 or 10, in order to match with FAAST
-                case JointType.ShoulderRight:
-                {
-                    sensorNumber = 11;
-                    break;
-                }
-                case JointType.ElbowRight:
-                {
-                    sensorNumber = 12;
-                    break;
-                }
-                case JointType.WristRight:
-                {
-                    sensorNumber = 13;
-                    break;
-                }
-                case JointType.HandRight:
-                {
-                    sensorNumber = 14;
-                    break;
-                }
-                //There is no 15, in order to match with FAAST
-                case JointType.HipLeft:
-                {
-                    sensorNumber = 16;
-                    break;
-                }
-                case JointType.KneeLeft:
-                {
-                    sensorNumber = 17;
-                    break;
-                }
-                case JointType.AnkleLeft:
-                {
-                    sensorNumber = 18;
-                    break;
-                }
-                case JointType.FootLeft:
-                {
-                    sensorNumber = 19;
-                    break;
-                }
-                case JointType.HipRight:
-                {
-                    sensorNumber =20;
-                    break;
-                }
-                case JointType.KneeRight:
-                {
-                    sensorNumber = 21;
-                    break;
-                }
-                case JointType.AnkleRight:
-                {
-                    sensorNumber = 22;
-                    break;
-                }
-                case JointType.FootRight:
-                {
-                    sensorNumber = 23;
-                    break;
-                }
-            }
+            Vector3D cross = Vector3D.CrossProduct(u, v);
+            rotationQuat.X = cross.X;
+            rotationQuat.Y = cross.Y;
+            rotationQuat.Z = cross.Z;
+            rotationQuat.W = Math.Sqrt(u.LengthSquared * v.LengthSquared) + Vector3D.DotProduct(u, v);
+            rotationQuat.Normalize();
 
-            return sensorNumber;
+            QuaternionRotation3D tempRotation = new QuaternionRotation3D(rotationQuat);
+            RotateTransform3D tempTransform = new RotateTransform3D(tempRotation);
+            rotationMatrix = tempTransform.Value;  //Going through RotateTransform3D is kind of a hacky way to do this...
+
+            return rotationMatrix;
         }
-        private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset)
+        private Vector3D transformAndConvert(SkeletonPoint position, Matrix3D rotation)
         {
-            if (startJoint.TrackingState == JointTrackingState.Tracked && endJoint.TrackingState == JointTrackingState.Tracked)
-            {
-                //Map the joint from the skeleton to the color image
-                ColorImagePoint startPoint = mapper.MapSkeletonPointToColorPoint(startJoint.Position, kinect.ColorStream.Format);
-                ColorImagePoint endPoint = mapper.MapSkeletonPointToColorPoint(endJoint.Position, kinect.ColorStream.Format);
-
-                //Calculate the coordinates on the image (the offset of the image is added in the next section)
-                Point imagePointStart = new Point(0.0, 0.0);
-                imagePointStart.X = ((double)startPoint.X / (double)kinect.ColorStream.FrameWidth) * parent.ColorImage.ActualWidth;
-                imagePointStart.Y = ((double)startPoint.Y / (double)kinect.ColorStream.FrameHeight) * parent.ColorImage.ActualHeight;
-                Point imagePointEnd = new Point(0.0, 0.0);
-                imagePointEnd.X = ((double)endPoint.X / (double)kinect.ColorStream.FrameWidth) * parent.ColorImage.ActualWidth;
-                imagePointEnd.Y = ((double)endPoint.Y / (double)kinect.ColorStream.FrameHeight) * parent.ColorImage.ActualHeight;
-
-                //Generate the line for the bone
-                Line line = new Line();
-                line.Stroke = new SolidColorBrush(boneColor);
-                line.StrokeThickness = thickness;
-                line.X1 = imagePointStart.X + offset.X;
-                line.X2 = imagePointEnd.X + offset.X;
-                line.Y1 = imagePointStart.Y + offset.Y;
-                line.Y2 = imagePointEnd.Y + offset.Y;
-                parent.ColorImageCanvas.Children.Add(line);
-            }
+            Vector3D adjustedVector = new Vector3D(position.X, position.Y, position.Z);
+            adjustedVector = Vector3D.Multiply(adjustedVector, rotation);
+            return adjustedVector;
         }
-        private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset)
+        private SkeletonPoint transform(SkeletonPoint position, Matrix3D rotation)
         {
-            if (joint.TrackingState == JointTrackingState.Tracked)
-            {
-                //Map the joint from the skeleton to the color image
-                ColorImagePoint point = mapper.MapSkeletonPointToColorPoint(joint.Position, kinect.ColorStream.Format);
-
-                //Calculate the coordinates on the image (the offset is also added in this section)
-                Point imagePoint = new Point(0.0, 0.0);
-                imagePoint.X = ((double)point.X / (double)kinect.ColorStream.FrameWidth) * parent.ColorImage.ActualWidth + offset.X;
-                imagePoint.Y = ((double)point.Y / (double)kinect.ColorStream.FrameHeight) * parent.ColorImage.ActualHeight + offset.Y;
-
-                //Generate the circle for the joint
-                Ellipse circle = new Ellipse();
-                circle.Fill = new SolidColorBrush(jointColor);
-                circle.StrokeThickness = 0.0;
-                circle.Margin = new Thickness(imagePoint.X - radius, imagePoint.Y - radius, 0, 0);
-                circle.HorizontalAlignment = HorizontalAlignment.Left;
-                circle.VerticalAlignment = VerticalAlignment.Top;
-                circle.Height = radius * 2;
-                circle.Width = radius * 2;
-                parent.ColorImageCanvas.Children.Add(circle);
-            }
+            Vector3D adjustedVector = new Vector3D(position.X, position.Y, position.Z);
+            adjustedVector = Vector3D.Multiply(adjustedVector, rotation);
+            SkeletonPoint adjustedPoint = new SkeletonPoint();
+            adjustedPoint.X = (float)adjustedVector.X;
+            adjustedPoint.Y = (float)adjustedVector.Y;
+            adjustedPoint.Z = (float)adjustedVector.Z;
+            return adjustedPoint;
         }
+        #endregion
+
         private static double CalculateFrameRate(Int64 currentTimeStamp, ref Int64 lastTimeStamp, ref List<double> oldIntervals)
         {
             double newInterval = (double)(currentTimeStamp - lastTimeStamp);
@@ -771,58 +551,6 @@ namespace KinectWithVRServer
             oldIntervals.Add(newInterval);
 
             return (1.0 / oldIntervals.Average() * 1000.0);
-        }
-
-        private Skeleton[] SortSkeletons(Skeleton[] unsortedSkeletons, SkeletonSortMethod sortMethod)
-        {
-            if (sortMethod == SkeletonSortMethod.NoSort)
-            {
-                return unsortedSkeletons;
-            }
-            else
-            {
-                //Seperate the tracked and untracked skeletons
-                List<Skeleton> trackedSkeletons = new List<Skeleton>();
-                List<Skeleton> untrackedSkeletons = new List<Skeleton>();
-                for (int i = 0; i < unsortedSkeletons.Length; i++)
-                {
-                    if (unsortedSkeletons[i].TrackingState == SkeletonTrackingState.NotTracked)
-                    {
-                        untrackedSkeletons.Add(unsortedSkeletons[i]);
-                    }
-                    else
-                    {
-                        trackedSkeletons.Add(unsortedSkeletons[i]);
-                    }
-                }
-
-                if (sortMethod == SkeletonSortMethod.Closest || sortMethod == SkeletonSortMethod.Farthest)
-                {
-                    //We only care about the tracked skeletons, so only sort those
-                    for (int i = 1; i < trackedSkeletons.Count; i++)
-                    {
-                        int insertIndex = i;
-                        Skeleton tempSkeleton = trackedSkeletons[i];
-
-                        while (insertIndex > 0 && tempSkeleton.Position.Z < trackedSkeletons[insertIndex - 1].Position.Z)
-                        {
-                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                            insertIndex--;
-                        }
-                        trackedSkeletons[insertIndex] = tempSkeleton;
-                    }
-
-                    if (sortMethod == SkeletonSortMethod.Farthest)
-                    {
-                        trackedSkeletons.Reverse();
-                    }
-                }
-
-                //Add the untracked skeletons to the tracked ones before sending everything back
-                trackedSkeletons.AddRange(untrackedSkeletons);
-
-                return trackedSkeletons.ToArray();
-            }
         }
 
         private delegate void launchKinectDelegate();

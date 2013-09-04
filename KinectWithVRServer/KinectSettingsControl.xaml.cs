@@ -23,9 +23,6 @@ namespace KinectWithVRServer
         internal string ConnectionID = "";
         MainWindow parent = null;
         bool isVerbose = false;  //TODO: This variable may not be needed...
-        private Key[] numberKeys = {Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9,
-                                    Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, 
-                                    Key.Return, Key.Enter, Key.Delete, Key.Back, Key.Left, Key.Right, Key.Tab};
 
         public KinectSettingsControl(int? kinectNumber, string connectionID, bool verboseOutput, MainWindow thisParent) //Parent is not optional since this GUI has to go somewhere
         {
@@ -317,7 +314,7 @@ namespace KinectWithVRServer
         //Rejects any points that are not numbers or control characters or a period
         private void floatNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!numberKeys.Contains(e.Key) && e.Key != Key.OemPeriod)
+            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod)
             {
                 e.Handled = true;
             }
@@ -325,7 +322,7 @@ namespace KinectWithVRServer
         //Rejects any points that are not numbers or control charactes
         private void intNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!numberKeys.Contains(e.Key))
+            if (!HelperMethods.NumberKeys.Contains(e.Key))
             {
                 e.Handled = true;
             }

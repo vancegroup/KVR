@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.Kinect;
+using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
 namespace KinectWithVRServer
@@ -787,7 +788,7 @@ namespace KinectWithVRServer
     {
         public SkeletonSettings()
         {
-            individualSkeletons = new List<PerSkeletonSettings>();
+            individualSkeletons = new ObservableCollection<PerSkeletonSettings>();
 
             //Set defaults
             isSeatedMode = false;
@@ -797,11 +798,12 @@ namespace KinectWithVRServer
         //public bool EnableTrackingInNearRange { get; set; } //This should just implicitly be enabled
         public bool isSeatedMode { get; set; }
         public SkeletonSortMethod skeletonSortMode { get; set; }
-        public List<PerSkeletonSettings> individualSkeletons { get; set; }
+        public ObservableCollection<PerSkeletonSettings> individualSkeletons { get; set; }
     }
 
     public class PerSkeletonSettings
     {
+        public int skeletonNumber { get; set; }
         public bool useSkeleton {get; set;}
         public string serverName {get; set;}
         public bool useRightHandGrip { get; set; }
@@ -810,6 +812,7 @@ namespace KinectWithVRServer
         public string leftGripServerName { get; set; }
         public int rightGripButtonNumber { get; set; }
         public int leftGripButtonNumber { get; set; }
+        public Color renderColor { get; set; }
     }
 
     public class FeedbackSettings
@@ -823,6 +826,7 @@ namespace KinectWithVRServer
         public bool useFeedback { get; set; }
         public string feedbackServerName { get; set; }
         public int feedbackSensorNumber { get; set; }
+        public JointType sensorJointType { get; set; }
     }
 
     public class AnalogServerSettings
@@ -972,7 +976,8 @@ namespace KinectWithVRServer
     public enum CommandType { Voice, Gesture/*, Analog */}
     public enum ServerType { Button, Analog, Tracker, Text }
     public enum ButtonType { Setter, Toggle, Momentary }
-    public enum SkeletonSortMethod {NoSort, Closest, Farthest}
+    public enum SkeletonSortMethod { NoSort = 0, OriginXClosest = 1, OriginXFarthest = 2, OriginYClosest = 3, OriginYFarthest = 4, OriginZClosest = 5, OriginZFarthest = 6, OriginEuclidClosest = 7, OriginEuclidFarthest = 8, 
+                                     FeedbackXClosest = 9, FeedbackXFarthest = 10, FeedbackYClosest = 11, FeedbackYFarthest = 12, FeedbackZClosest = 13, FeedbackZFarthest = 14, FeedbackEuclidClosest = 15, FeedbackEuclidFarthest = 16 }
     public enum GestureType { Recorded }
     public enum PressState { Pressed, Released }
     public enum AudioTrackingMode { Loudest, Feedback, SkeletonX }

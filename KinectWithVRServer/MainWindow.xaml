@@ -172,8 +172,8 @@
                     </DataGrid>
                 </Grid>
             </TabItem>
-            
-            <TabItem Name="GestureTab" Header="Gesture Commands">
+            <!--The gesture t ab is disabled until such time as gestures are put into the server-->
+            <!--<TabItem Name="GestureTab" Header="Gesture Commands">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="41"/>
@@ -216,34 +216,99 @@
                         Enter server name:<LineBreak/><TextBox x:Name="GCServerInputBox" Height="22" Width="125" Margin="0,4" Text="Unconnected in code"/>
                     </TextBlock>
                 </Grid>
-            </TabItem>
+            </TabItem>-->
             
             <TabItem Name="SkeletonTab" Header="Skeleton Settings">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Name="SkeletonTextBlock" TextWrapping="Wrap" Margin="4,5,-4,-5" Grid.RowSpan="2">
-                        General Settings:<CheckBox Content="Seated Mode" Height="23" Margin="6,0,0,-10" Name="ChooseSeatedModeButton"/>
-                        <LineBreak/>Sorting: <ComboBox Margin="3,0,0,-6" Name="SortSkelModeButton"/>
-                    </TextBlock>
-                    <!--Dummy bindings in following DataGrid-->
+                    <StackPanel Orientation="Horizontal" Height="27">
+                        <CheckBox Content="Seated Mode" Margin="2" Name="ChooseSeatedCheckBox" VerticalAlignment="Center" Checked="ChooseSeatedCheckBox_CheckChanged" Unchecked="ChooseSeatedCheckBox_CheckChanged"/>
+                        <TextBlock Text="Skeleton Sort Mode:" Margin="20,2,2,2" VerticalAlignment="Center"/>
+                        <ComboBox Margin="2" Name="SkelSortModeComboBox" SelectionChanged="SkelSortModeComboBox_SelectionChanged" Width="250">
+                            <ComboBoxItem Content="None"/>
+                            <ComboBoxItem Content="Ascending X-Distance from Origin"/>
+                            <ComboBoxItem Content="Descending X-Distance from Origin"/>
+                            <ComboBoxItem Content="Ascending Y-Distance from Origin"/>
+                            <ComboBoxItem Content="Descending Y-Distance from Origin"/>
+                            <ComboBoxItem Content="Ascending Z-Distance from Origin"/>
+                            <ComboBoxItem Content="Descending Z-Distance from Origin"/>
+                            <ComboBoxItem Content="Ascending Euclidean Distance from Origin"/>
+                            <ComboBoxItem Content="Descending Euclidean Distance from Origin"/>
+                            <ComboBoxItem Content="Ascending X-Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Descending X-Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Ascending Y-Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Descending Y-Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Ascending Z-Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Descending Z-Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Ascending Euclidean Distance from Feedback Sensor"/>
+                            <ComboBoxItem Content="Descending Euclidean Distance from Feedback Sensor"/>
+                        </ComboBox>
+                    </StackPanel>
                     <DataGrid Name="SkeletonSettingsDataGrid" Grid.Row="3" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
                         <DataGrid.Columns>
-                            <!--Skeleton # needs binding-->
-                            <DataGridCheckBoxColumn Header="#" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Server Name" IsReadOnly="False" Binding="{Binding SkelServerName}"/>
-                            <DataGridCheckBoxColumn Header="Transmit" IsReadOnly="False" Binding="{Binding SkelTransmit}"/>
-                            <!--When combobox variable (i.e. Right Hand) is selected, bring up dialog for further options-->
-                            <DataGridComboBoxColumn Header="Customization" />
+                            <DataGridTextColumn Header="#" IsReadOnly="True" Binding="{Binding Path=skeletonNumber}"/>
+                            <DataGridCheckBoxColumn Header="Transmit" IsReadOnly="False" Binding="{Binding Path=useSkeleton}"/>
+                            <DataGridTextColumn Header="Server Name" IsReadOnly="False" Binding="{Binding Path=serverName}"/>
+                            <DataGridTextColumn Header="Render Color" IsReadOnly="True" Binding="{Binding Path=renderColor}"/>
+                            <DataGridCheckBoxColumn Header="Use RH Grip" IsReadOnly="False" Binding="{Binding Path=useRightHandGrip}"/>
+                            <DataGridTextColumn Header="RH Server Name" IsReadOnly="False" Binding="{Binding Path=rightGripServerName}"/>
+                            <DataGridTextColumn Header="RH Button #" IsReadOnly="False" Binding="{Binding Path=rightGripButtonNumber}"/>
+                            <DataGridCheckBoxColumn Header="Use LH Grip" IsReadOnly="False" Binding="{Binding Path=useLeftHandGrip}"/>
+                            <DataGridTextColumn Header="LH Server Name" IsReadOnly="False" Binding="{Binding Path=leftGripServerName}"/>
+                            <DataGridTextColumn Header="LH Button #" IsReadOnly="False" Binding="{Binding Path=leftGripButtonNumber}"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </TabItem>
             
             <TabItem Name="FeedbackTab" Header="Feedback">
-                <!--This tab is to allow the server to accept a VRPN tracking input to use for the audio beam angle and skeleton sorting-->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <CheckBox Name="UseFeedbackCheckBox" Content="Use VRPN Feedback" Margin="2" Checked="UseFeedbackCheckBox_CheckChanged" Unchecked="UseFeedbackCheckBox_CheckChanged"/>
+                    <GroupBox Name="FeedbackOptionsGroupBox" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2" Header="Feedback Tracker" IsEnabled="False">
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Margin="2" Text="Server Name:" VerticalAlignment="Center"/>
+                                <TextBox Name="FeedbackServerNameTextBox" Margin="2" Width="500" TextChanged="FeedbackServerNameTextBox_TextChanged"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Margin="2" Text="Sensor Number:" VerticalAlignment="Center"/>
+                                <TextBox Name="FeedbackSensorNumberTextBox" Margin="2" Width="72" PreviewKeyDown="intNumberTextBox_PreviewKeyDown" TextChanged="FeedbackSensorNumberTextBox_TextChanged"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Margin="2" Text="Joint Type:" VerticalAlignment="Center"/>
+                                <ComboBox Name="FeedbackJointTypeComboBox" Width="120" SelectionChanged="FeedbackJointTypeComboBox_SelectionChanged">
+                                    <ComboBoxItem Content="Hip Center"/>
+                                    <ComboBoxItem Content="Spine"/>
+                                    <ComboBoxItem Content="Shoulder Center"/>
+                                    <ComboBoxItem Content="Head"/>
+                                    <ComboBoxItem Content="Left Shoulder"/>
+                                    <ComboBoxItem Content="Left Elbow"/>
+                                    <ComboBoxItem Content="Left Wrist"/>
+                                    <ComboBoxItem Content="Left Hand"/>
+                                    <ComboBoxItem Content="Right Shoulder"/>
+                                    <ComboBoxItem Content="Right Elbow"/>
+                                    <ComboBoxItem Content="Right Wrist"/>
+                                    <ComboBoxItem Content="Right Hand"/>
+                                    <ComboBoxItem Content="Left Hip"/>
+                                    <ComboBoxItem Content="Left Knee"/>
+                                    <ComboBoxItem Content="Left Ankle"/>
+                                    <ComboBoxItem Content="Left Foot"/>
+                                    <ComboBoxItem Content="Right Hip"/>
+                                    <ComboBoxItem Content="Right Knee"/>
+                                    <ComboBoxItem Content="Right Ankle"/>
+                                    <ComboBoxItem Content="Right Foot"/>                                    
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </Grid>
             </TabItem>
             
             <TabItem Name="ServersTab" Header="Servers">

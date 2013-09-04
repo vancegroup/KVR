@@ -140,9 +140,6 @@ namespace KinectWithVRServer
 
             MasterSettings tempSettings = new MasterSettings();
 
-            //TODO: FOR TESTING ONLY!!  Replace with an option on the GUI
-            tempSettings.skeletonOptions.skeletonSortMode = SkeletonSortMethod.Closest;
-
             //TODO: Replace with an option on the skeleton tracking tab
             //Since skeleton tracking is on by default, add the buttons for the hands
             //for (int i = 0; i < 6; i++)
@@ -214,10 +211,18 @@ namespace KinectWithVRServer
             GenerateImageSourcePickerLists();
             KinectSensor.KinectSensors.StatusChanged += KinectSensors_StatusChanged;
 
+            //Populate the skeleton data and set the binding for the data grid
+            GenerateSkeletonDataGridData();
+            SkeletonSettingsDataGrid.ItemsSource = server.serverMasterOptions.skeletonOptions.individualSkeletons;
+
             //Populate and setup the voice recognition lists
             GenerateVoiceRecogEngineList();
             GenerateAudioSourceList();
             VoiceKinectComboBox.SelectedIndex = 0;
+
+            //Set defaults where needed
+            FeedbackJointTypeComboBox.SelectedIndex = 0;
+            SkelSortModeComboBox.SelectedIndex = 5;
 
             if (startOnLaunch)
             {
@@ -412,12 +417,15 @@ namespace KinectWithVRServer
         {
             if (e.PropertyName == "UseKinect")
             {
+                //TODO: Handle if a Kinect is unplugged from the system (which doesn't call this method but can break things badly)
+                //Note, there is some logic to the order these are called in, do not rearrange without understanding that logic!
                 renumberKinectIDs();
                 reorderKinectSettings();
                 launchAndKillKinects();
                 UpdatePageListing();
                 GenerateImageSourcePickerLists();
                 GenerateAudioSourceList();
+                GenerateSkeletonDataGridData();
                 //FOR DEBUGGING ONLY!!!!
                 //WriteOutKinectOrders();
             }
@@ -537,6 +545,24 @@ namespace KinectWithVRServer
         private void VoiceTextDataGrid_LostFocus(object sender, RoutedEventArgs e)
         {
             VoiceTextDataGrid.SelectedIndex = -1;
+        }
+        private void VoiceKinectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (VoiceKinectComboBox.SelectedIndex == VoiceKinectComboBox.Items.Count - 1)
+            {
+                server.serverMasterOptions.audioOptions.sourceID = -1;
+                voiceRecogSourceConnectionID = "";
+            }
+            else
+            {
+                server.serverMasterOptions.audioOptions.sourceID = VoiceKinectComboBox.SelectedIndex;
+                voiceRecogSourceConnectionID = server.serverMasterOptions.kinectOptions[VoiceKinectComboBox.SelectedIndex].connectionID;
+            }
+        }
+        private void VoiceRecognitionEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ReadOnlyCollection<Microsoft.Speech.Recognition.RecognizerInfo> allRecognizers = Microsoft.Speech.Recognition.SpeechRecognitionEngine.InstalledRecognizers();
+            server.serverMasterOptions.audioOptions.recognizerEngineID = allRecognizers[VoiceRecognitionEngineComboBox.SelectedIndex].Id;
         }
         #endregion
 
@@ -668,27 +694,265 @@ namespace KinectWithVRServer
                 }
             }
         }
+        //Rejects any points that are not numbers or control characters or a period
+        private void floatNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod)
+            {
+                e.Handled = true;
+            }
+        }
+        //Rejects any points that are not numbers or control charactes
+        private void intNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!HelperMethods.NumberKeys.Contains(e.Key))
+            {
+                e.Handled = true;
+            }
+        }
         #endregion
 
-        private void VoiceKinectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        #region Skeleton Rendering Methods
+        private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID)
         {
-            if (VoiceKinectComboBox.SelectedIndex == VoiceKinectComboBox.Items.Count - 1)
+            if (startJoint.TrackingState == JointTrackingState.Tracked && endJoint.TrackingState == JointTrackingState.Tracked)
             {
-                server.serverMasterOptions.audioOptions.sourceID = -1;
-                voiceRecogSourceConnectionID = "";
+                //Map the joint from the skeleton to the color image
+                ColorImagePoint startPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(startJoint.Position, server.kinects[kinectID].kinect.ColorStream.Format);
+                ColorImagePoint endPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(endJoint.Position, server.kinects[kinectID].kinect.ColorStream.Format);
+
+                //Calculate the coordinates on the image (the offset of the image is added in the next section)
+                Point imagePointStart = new Point(0.0, 0.0);
+                imagePointStart.X = ((double)startPoint.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth;
+                imagePointStart.Y = ((double)startPoint.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight;
+                Point imagePointEnd = new Point(0.0, 0.0);
+                imagePointEnd.X = ((double)endPoint.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth;
+                imagePointEnd.Y = ((double)endPoint.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight;
+
+                //Generate the line for the bone
+                Line line = new Line();
+                line.Stroke = new SolidColorBrush(boneColor);
+                line.StrokeThickness = thickness;
+                line.X1 = imagePointStart.X + offset.X;
+                line.X2 = imagePointEnd.X + offset.X;
+                line.Y1 = imagePointStart.Y + offset.Y;
+                line.Y2 = imagePointEnd.Y + offset.Y;
+                ColorImageCanvas.Children.Add(line);
             }
-            else
+        }
+        private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset, int kinectID)
+        {
+            if (joint.TrackingState == JointTrackingState.Tracked)
             {
-                server.serverMasterOptions.audioOptions.sourceID = VoiceKinectComboBox.SelectedIndex;
-                voiceRecogSourceConnectionID = server.serverMasterOptions.kinectOptions[VoiceKinectComboBox.SelectedIndex].connectionID;
+                //Map the joint from the skeleton to the color image
+                ColorImagePoint point = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(joint.Position, server.kinects[kinectID].kinect.ColorStream.Format);
+
+                //Calculate the coordinates on the image (the offset is also added in this section)
+                Point imagePoint = new Point(0.0, 0.0);
+                imagePoint.X = ((double)point.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth + offset.X;
+                imagePoint.Y = ((double)point.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight + offset.Y;
+
+                //Generate the circle for the joint
+                Ellipse circle = new Ellipse();
+                circle.Fill = new SolidColorBrush(jointColor);
+                circle.StrokeThickness = 0.0;
+                circle.Margin = new Thickness(imagePoint.X - radius, imagePoint.Y - radius, 0, 0);
+                circle.HorizontalAlignment = HorizontalAlignment.Left;
+                circle.VerticalAlignment = VerticalAlignment.Top;
+                circle.Height = radius * 2;
+                circle.Width = radius * 2;
+                ColorImageCanvas.Children.Add(circle);
             }
+        }
+        //TODO:  The transforms applied to the skeletons need to be undone before they can be rendered
+        internal void RenderSkeletonOnColor(Skeleton skeleton, Color renderColor)
+        {
+            if (ColorStreamConnectionID != null && ColorStreamConnectionID != "")
+            {
+                //Get the Kinect ID of the currently in view color stream
+                int inViewKinectID = -1;
+                bool found = false;
+                for (int i = 0; i < server.kinects.Count; i++)
+                {
+                    if (ColorStreamConnectionID == server.kinects[i].kinect.DeviceConnectionId)
+                    {
+                        found = true;
+                        inViewKinectID = i;
+                        break;
+                    }
+                }
+
+                if (found)
+                {
+                    //Calculate the offset
+                    Point offset = new Point(0.0, 0.0);
+                    if (ColorImageCanvas.ActualWidth != ColorImage.ActualWidth)
+                    {
+                        offset.X = (ColorImageCanvas.ActualWidth - ColorImage.ActualWidth) / 2;
+                    }
+
+                    if (ColorImageCanvas.ActualHeight != ColorImage.ActualHeight)
+                    {
+                        offset.Y = (ColorImageCanvas.ActualHeight - ColorImage.ActualHeight) / 2;
+                    }
+
+                    //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
+                    DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowLeft], skeleton.Joints[JointType.WristLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.WristLeft], skeleton.Joints[JointType.HandLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderRight], skeleton.Joints[JointType.ElbowRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowRight], skeleton.Joints[JointType.WristRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.WristRight], skeleton.Joints[JointType.HandRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.Spine], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.Spine], skeleton.Joints[JointType.HipCenter], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipLeft], skeleton.Joints[JointType.KneeLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.KneeLeft], skeleton.Joints[JointType.AnkleLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleLeft], skeleton.Joints[JointType.FootLeft], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipRight], skeleton.Joints[JointType.KneeRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.KneeRight], skeleton.Joints[JointType.AnkleRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleRight], skeleton.Joints[JointType.FootRight], renderColor, 2.0, offset, inViewKinectID);
+
+                    foreach (Joint joint in skeleton.Joints)
+                    {
+                        DrawJointPointOnColor(joint, renderColor, 2.0, offset, inViewKinectID);
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Skeleton GUI methods
+        //Updates the data for the skeletons to reflect that a maximum of 6 times the number of kinects in use skeletons are available (only 1/2 of those skeletons support full skeleton tracking)
+        private void GenerateSkeletonDataGridData()
+        {
+            if (server.kinects.Count * 6 > server.serverMasterOptions.skeletonOptions.individualSkeletons.Count) //Add skeleton settings
+            {
+                for (int i = server.serverMasterOptions.skeletonOptions.individualSkeletons.Count; i < server.kinects.Count * 6; i++)
+                {
+                    PerSkeletonSettings temp = new PerSkeletonSettings(); //Fill the skeleton information with the default settings
+                    string tempServer = "Tracker" + i.ToString();
+                    temp.skeletonNumber = i;
+                    temp.serverName = tempServer;
+                    temp.renderColor = AutoPickSkeletonRenderColor(i);
+                    temp.useSkeleton = true;
+                    temp.useRightHandGrip = true;
+                    temp.rightGripServerName = tempServer;
+                    temp.rightGripButtonNumber = 0;
+                    temp.useLeftHandGrip = true;
+                    temp.leftGripServerName = tempServer;
+                    temp.leftGripButtonNumber = 1;
+                    server.serverMasterOptions.skeletonOptions.individualSkeletons.Add(temp);
+                }
+            }
+            else if (server.kinects.Count * 6 < server.serverMasterOptions.skeletonOptions.individualSkeletons.Count) //Remove skeleton settings
+            {
+                for (int i = server.serverMasterOptions.skeletonOptions.individualSkeletons.Count - 1; i >= server.kinects.Count * 6; i--)
+                {
+                    server.serverMasterOptions.skeletonOptions.individualSkeletons.RemoveAt(i);
+                }
+            }
+            SkeletonSettingsDataGrid.Items.Refresh();
+        }
+        //Select a predefined render color based on the skeleton index
+        private Color AutoPickSkeletonRenderColor(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                {
+                    return Colors.Red;
+                }
+                case 1:
+                {
+                    return Colors.Blue;
+                }
+                case 2:
+                {
+                    return Colors.Green;
+                }
+                case 3:
+                {
+                    return Colors.Yellow;
+                }
+                case 4:
+                {
+                    return Colors.Cyan;
+                }
+                case 5:
+                {
+                    return Colors.Fuchsia;
+                }
+                case 6:
+                {
+                    return Colors.Orange;
+                }
+                case 7:
+                {
+                    return Colors.Brown;
+                }
+                case 8:
+                {
+                    return Colors.LightSkyBlue;
+                }
+                case 9:
+                {
+                    return Colors.LimeGreen;
+                }
+                case 10:
+                {
+                    return Colors.Purple;
+                }
+                case 11:
+                {
+                    return Colors.White;
+                }
+            }
+            return Colors.Black;
+        }
+        //Changes if the skeleton tracking is in seated mode
+        private void ChooseSeatedCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            server.serverMasterOptions.skeletonOptions.isSeatedMode = (bool)ChooseSeatedCheckBox.IsChecked;
+        }
+        //Controls which skeleton sorting mode is used
+        private void SkelSortModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            server.serverMasterOptions.skeletonOptions.skeletonSortMode = (SkeletonSortMethod)SkelSortModeComboBox.SelectedIndex;
+        }
+        #endregion
+
+        #region Feedback Tab GUI Methods
+        //Changes if the options for feedback are enabled or not
+        private void UseFeedbackCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            server.serverMasterOptions.feedbackOptions.useFeedback = (bool)UseFeedbackCheckBox.IsChecked;
+            FeedbackOptionsGroupBox.IsEnabled = (bool)UseFeedbackCheckBox.IsChecked;
+        }
+        //Changes the feedback sensor number in the options
+        private void FeedbackSensorNumberTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            int temp = -1;
+            if (int.TryParse(FeedbackSensorNumberTextBox.Text, out temp))
+            {
+                server.serverMasterOptions.feedbackOptions.feedbackSensorNumber = temp;
+            }
+        }
+        //Changes the name of the feedback server in the options
+        private void FeedbackServerNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            server.serverMasterOptions.feedbackOptions.feedbackServerName = FeedbackServerNameTextBox.Text;
         }
 
-        private void VoiceRecognitionEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void FeedbackJointTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ReadOnlyCollection<Microsoft.Speech.Recognition.RecognizerInfo> allRecognizers = Microsoft.Speech.Recognition.SpeechRecognitionEngine.InstalledRecognizers();
-            server.serverMasterOptions.audioOptions.recognizerEngineID = allRecognizers[VoiceRecognitionEngineComboBox.SelectedIndex].Id;
+            server.serverMasterOptions.feedbackOptions.sensorJointType = (JointType)FeedbackJointTypeComboBox.SelectedIndex;
         }
+        #endregion
 
     }
 }
