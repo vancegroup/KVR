@@ -314,7 +314,7 @@ namespace KinectWithVRServer
         //Rejects any points that are not numbers or control characters or a period
         private void floatNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod)
+            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod && e.Key != Key.Decimal)
             {
                 e.Handled = true;
             }

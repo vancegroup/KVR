@@ -10,6 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
@@ -139,27 +140,6 @@ namespace KinectWithVRServer
             uptimeUpdateTimer.Elapsed += new System.Timers.ElapsedEventHandler(uptimeUpdateTimer_Elapsed);
 
             MasterSettings tempSettings = new MasterSettings();
-
-            //TODO: Replace with an option on the skeleton tracking tab
-            //Since skeleton tracking is on by default, add the buttons for the hands
-            //for (int i = 0; i < 6; i++)
-            //{
-            //    for (int j = 0; j < 2; j++) //We need a command for each hand
-            //    {
-            //        GestureCommand gripCommand = new GestureCommand();
-            //        gripCommand.buttonNumber = j;
-            //        string handString = "_left";
-            //        if (j == 0)
-            //        {
-            //            handString = "_right";
-            //        }
-            //        gripCommand.comments = "Skeleton" + i.ToString() + handString;
-            //        gripCommand.gestureType = GestureType.Grip;
-            //        gripCommand.serverName = "Tracker0" + i.ToString();
-            //        gripCommand.skeletonNumber = i;
-            //        tempSettings.gestureCommands.Add(gripCommand);
-            //    }
-            //}
 
             //Create the server core (this does NOT start the server)
             server = new ServerCore(verbose, tempSettings, this);
@@ -697,7 +677,7 @@ namespace KinectWithVRServer
         //Rejects any points that are not numbers or control characters or a period
         private void floatNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod)
+            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod && e.Key != Key.Decimal)
             {
                 e.Handled = true;
             }
@@ -713,13 +693,17 @@ namespace KinectWithVRServer
         #endregion
 
         #region Skeleton Rendering Methods
-        private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID)
+        private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID, Matrix3D transform)
         {
             if (startJoint.TrackingState == JointTrackingState.Tracked && endJoint.TrackingState == JointTrackingState.Tracked)
             {
+                //Undo the transform from the skeleton merging
+                SkeletonPoint skelStartPoint = transformSkeletonPoint(startJoint.Position, transform);
+                SkeletonPoint skelEndPoint = transformSkeletonPoint(endJoint.Position, transform);
+
                 //Map the joint from the skeleton to the color image
-                ColorImagePoint startPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(startJoint.Position, server.kinects[kinectID].kinect.ColorStream.Format);
-                ColorImagePoint endPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(endJoint.Position, server.kinects[kinectID].kinect.ColorStream.Format);
+                ColorImagePoint startPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelStartPoint, server.kinects[kinectID].kinect.ColorStream.Format);
+                ColorImagePoint endPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelEndPoint, server.kinects[kinectID].kinect.ColorStream.Format);
 
                 //Calculate the coordinates on the image (the offset of the image is added in the next section)
                 Point imagePointStart = new Point(0.0, 0.0);
@@ -740,12 +724,15 @@ namespace KinectWithVRServer
                 ColorImageCanvas.Children.Add(line);
             }
         }
-        private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset, int kinectID)
+        private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset, int kinectID, Matrix3D transform)
         {
             if (joint.TrackingState == JointTrackingState.Tracked)
             {
+                //Undo the transform from the skeleton merging
+                SkeletonPoint skelPoint = transformSkeletonPoint(joint.Position, transform);
+
                 //Map the joint from the skeleton to the color image
-                ColorImagePoint point = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(joint.Position, server.kinects[kinectID].kinect.ColorStream.Format);
+                ColorImagePoint point = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelPoint, server.kinects[kinectID].kinect.ColorStream.Format);
 
                 //Calculate the coordinates on the image (the offset is also added in this section)
                 Point imagePoint = new Point(0.0, 0.0);
@@ -764,7 +751,6 @@ namespace KinectWithVRServer
                 ColorImageCanvas.Children.Add(circle);
             }
         }
-        //TODO:  The transforms applied to the skeletons need to be undone before they can be rendered
         internal void RenderSkeletonOnColor(Skeleton skeleton, Color renderColor)
         {
             if (ColorStreamConnectionID != null && ColorStreamConnectionID != "")
@@ -796,33 +782,48 @@ namespace KinectWithVRServer
                         offset.Y = (ColorImageCanvas.ActualHeight - ColorImage.ActualHeight) / 2;
                     }
 
+                    //Invert the transform done to put skeletons on a universal coordinate system
+                    Matrix3D invertMat = server.kinects[inViewKinectID].skeletonTransformation;
+                    invertMat.Invert();
+
                     //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
-                    DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowLeft], skeleton.Joints[JointType.WristLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.WristLeft], skeleton.Joints[JointType.HandLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderRight], skeleton.Joints[JointType.ElbowRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowRight], skeleton.Joints[JointType.WristRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.WristRight], skeleton.Joints[JointType.HandRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.Spine], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.Spine], skeleton.Joints[JointType.HipCenter], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipLeft], skeleton.Joints[JointType.KneeLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.KneeLeft], skeleton.Joints[JointType.AnkleLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleLeft], skeleton.Joints[JointType.FootLeft], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipRight], skeleton.Joints[JointType.KneeRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.KneeRight], skeleton.Joints[JointType.AnkleRight], renderColor, 2.0, offset, inViewKinectID);
-                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleRight], skeleton.Joints[JointType.FootRight], renderColor, 2.0, offset, inViewKinectID);
+                    DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowLeft], skeleton.Joints[JointType.WristLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.WristLeft], skeleton.Joints[JointType.HandLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderRight], skeleton.Joints[JointType.ElbowRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowRight], skeleton.Joints[JointType.WristRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.WristRight], skeleton.Joints[JointType.HandRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.Spine], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.Spine], skeleton.Joints[JointType.HipCenter], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipLeft], skeleton.Joints[JointType.KneeLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.KneeLeft], skeleton.Joints[JointType.AnkleLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleLeft], skeleton.Joints[JointType.FootLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.HipRight], skeleton.Joints[JointType.KneeRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.KneeRight], skeleton.Joints[JointType.AnkleRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleRight], skeleton.Joints[JointType.FootRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
 
                     foreach (Joint joint in skeleton.Joints)
                     {
-                        DrawJointPointOnColor(joint, renderColor, 2.0, offset, inViewKinectID);
+                        DrawJointPointOnColor(joint, renderColor, 2.0, offset, inViewKinectID, invertMat);
                     }
                 }
             }
+        }
+
+        private SkeletonPoint transformSkeletonPoint(SkeletonPoint position, Matrix3D rotation)
+        {
+            Point3D adjustedVector = new Point3D(position.X, position.Y, position.Z);
+            adjustedVector = Point3D.Multiply(adjustedVector, rotation);
+            SkeletonPoint adjustedPoint = new SkeletonPoint();
+            adjustedPoint.X = (float)adjustedVector.X;
+            adjustedPoint.Y = (float)adjustedVector.Y;
+            adjustedPoint.Z = (float)adjustedVector.Z;
+            return adjustedPoint;
         }
         #endregion
 

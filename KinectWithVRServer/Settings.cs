@@ -47,11 +47,6 @@ namespace KinectWithVRServer
             trackerServers = new List<TrackerServerSettings>();
         }
 
-        //TODO: Update this to handle the following...
-        //1) Multiple Kinect audio beam angles
-        //2) Multiple Kinect accelerometer data
-        //3) Find the number of unique analog servers and channels (based on 1 and 2)
-        //TODO: Can the parser check if all the settings are valid too?
         public bool parseSettings(out string errorMessage)
         {
             bool settingsValid = true;

@@ -588,7 +588,7 @@ namespace KinectWithVRServer
                     lock (trackerServers[id])
                     {
                         trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
-                                                      new Vector3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
+                                                      new Point3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
                                                       new Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
                     }
                 }

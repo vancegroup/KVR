@@ -80,9 +80,9 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="VrpnNet, Version=1.1.1.22900, Culture=neutral, PublicKeyToken=d88711d9dd279d9f, processorArchitecture=x86">
+    <Reference Include="VrpnNet, Version=1.1.1.23663, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\vendor\VrpnNet\Win32\Release\VrpnNet.dll</HintPath>
+      <HintPath>..\3rd Party\VrpnNet\Win32\Release\VrpnNet.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
@@ -93,12 +93,27 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AdvancedColorWindow.xaml.cs">
+      <DependentUpon>AdvancedColorWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ConsoleUI.cs" />
+    <Compile Include="FeedbackCore.cs" />
     <Compile Include="HelperMethods.cs" />
     <Compile Include="KinectCore.cs" />
+    <Compile Include="KinectSettingsControl.xaml.cs">
+      <DependentUpon>KinectSettingsControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ServerCore.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="VoiceRecogCore.cs" />
+    <Page Include="AdvancedColorWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="KinectSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
