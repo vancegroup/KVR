@@ -175,7 +175,7 @@ namespace KinectWithVRServer
                 {
                     tempData.UseKinect = true;
                     tempData.KinectID = 0;
-                    server.serverMasterOptions.kinectOptions.Add(new KinectSettings(tempData.ConnectionID, (int)tempData.KinectID));
+                    server.serverMasterOptions.kinectOptionsList.Add(new KinectSettings(tempData.ConnectionID, (int)tempData.KinectID));
                     server.kinects.Add(new KinectCore(server, this, (int)tempData.KinectID));
                 }
                 else
@@ -418,32 +418,33 @@ namespace KinectWithVRServer
                 if (availableKinects[i].UseKinect)
                 {
                     bool found = false;
-                    for (int j = 0; j < server.serverMasterOptions.kinectOptions.Count; j++)
+                    for (int j = 0; j < server.serverMasterOptions.kinectOptionsList.Count; j++)
                     {
-                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptions[j].connectionID)
+                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptionsList[j].connectionID)
                         {
-                            server.serverMasterOptions.kinectOptions[j].kinectID = (int)availableKinects[i].KinectID;
+                            server.serverMasterOptions.kinectOptionsList[j].kinectID = (int)availableKinects[i].KinectID;
                             found = true;
                             break;
                         }
                     }
                     if (!found)
                     {
-                        server.serverMasterOptions.kinectOptions.Add(new KinectSettings(availableKinects[i].ConnectionID, (int)availableKinects[i].KinectID));
+                        server.serverMasterOptions.kinectOptionsList.Add(new KinectSettings(availableKinects[i].ConnectionID, (int)availableKinects[i].KinectID));
                     }
                 }
                 else
                 {
-                    for (int j = 0; j < server.serverMasterOptions.kinectOptions.Count; j++)
+                    for (int j = 0; j < server.serverMasterOptions.kinectOptionsList.Count; j++)
                     {
-                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptions[j].connectionID)
+                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptionsList[j].connectionID)
                         {
-                            server.serverMasterOptions.kinectOptions.RemoveAt(j);
+                            server.serverMasterOptions.kinectOptionsList.RemoveAt(j);
                         }
                     }
                 }
             }
-            server.serverMasterOptions.kinectOptions.Sort(new KinectSettingsComparer());
+
+            server.serverMasterOptions.kinectOptionsList.Sort(new KinectSettingsComparer());
         }
         //Updates which Kinects are running based on the selections in the available Kinects data grid
         private void launchAndKillKinects()
@@ -500,9 +501,9 @@ namespace KinectWithVRServer
             }
 
             Debug.WriteLine("Kinect Setting:");
-            for (int i = 0; i < server.serverMasterOptions.kinectOptions.Count; i++)
+            for (int i = 0; i < server.serverMasterOptions.kinectOptionsList.Count; i++)
             {
-                Debug.WriteLine(server.serverMasterOptions.kinectOptions[i].kinectID.ToString() + ":   " + server.serverMasterOptions.kinectOptions[i].connectionID);
+                Debug.WriteLine(server.serverMasterOptions.kinectOptionsList[i].kinectID.ToString() + ":   " + server.serverMasterOptions.kinectOptionsList[i].connectionID);
             }
 
             Debug.WriteLine("GUI Pages:");
@@ -536,7 +537,7 @@ namespace KinectWithVRServer
             else
             {
                 server.serverMasterOptions.audioOptions.sourceID = VoiceKinectComboBox.SelectedIndex;
-                voiceRecogSourceConnectionID = server.serverMasterOptions.kinectOptions[VoiceKinectComboBox.SelectedIndex].connectionID;
+                voiceRecogSourceConnectionID = server.serverMasterOptions.kinectOptionsList[VoiceKinectComboBox.SelectedIndex].connectionID;
             }
         }
         private void VoiceRecognitionEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

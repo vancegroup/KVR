@@ -12,11 +12,16 @@ namespace KinectWithVRServer
         public AudioSettings audioOptions;
         public SkeletonSettings skeletonOptions;
         public FeedbackSettings feedbackOptions;
-        public List<KinectSettings> kinectOptions;
-        public List<AnalogServerSettings> analogServers;
-        public List<ButtonServerSettings> buttonServers;
-        public List<TextServerSettings> textServers;
-        public List<TrackerServerSettings> trackerServers;
+        public KinectSettings[] kinectOptions  //This conversion allows the method to serialize (lists can't be serialized)
+        {
+            get { return kinectOptionsList.ToArray(); }
+            set { kinectOptionsList = new List<KinectSettings>(value); }
+        }
+        internal List<KinectSettings> kinectOptionsList;
+        internal List<AnalogServerSettings> analogServers;
+        internal List<ButtonServerSettings> buttonServers;
+        internal List<TextServerSettings> textServers;
+        internal List<TrackerServerSettings> trackerServers;
 
         public ObservableCollection<VoiceButtonCommand> voiceButtonCommands;
         public ObservableCollection<VoiceTextCommand> voiceTextCommands;
@@ -34,7 +39,7 @@ namespace KinectWithVRServer
 
         public MasterSettings()
         {
-            kinectOptions = new List<KinectSettings>();
+            kinectOptionsList = new List<KinectSettings>();
             audioOptions = new AudioSettings();
             skeletonOptions = new SkeletonSettings();
             feedbackOptions = new FeedbackSettings();
@@ -312,64 +317,64 @@ namespace KinectWithVRServer
             #endregion
 
             #region Parse the per Kinect (acceleration and audio angle) settings
-            for (int i = 0; i < kinectOptions.Count; i++)
+            for (int i = 0; i < kinectOptionsList.Count; i++)
             {
                 //Parse the acceleration options
-                if (kinectOptions[i].sendAcceleration)
+                if (kinectOptionsList[i].sendAcceleration)
                 {
-                    if (isServerNameValid(kinectOptions[i].accelerationServerName))
+                    if (isServerNameValid(kinectOptionsList[i].accelerationServerName))
                     {
                         bool found = false;
 
                         for (int j = 0; j < analogServers.Count; j++)
                         {
-                            if (analogServers[j].serverName == kinectOptions[i].accelerationServerName)
+                            if (analogServers[j].serverName == kinectOptionsList[i].accelerationServerName)
                             {
                                 found = true;
 
                                 //Check the X acceleration channel
-                                if (isServerAnalogChannelValid(kinectOptions[i].accelXChannel))
+                                if (isServerAnalogChannelValid(kinectOptionsList[i].accelXChannel))
                                 {
                                     //If the channel doesn't exist, create it
-                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelXChannel))
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptionsList[i].accelXChannel))
                                     {
-                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].accelXChannel);
+                                        analogServers[j].uniqueChannels.Add(kinectOptionsList[i].accelXChannel);
                                     }
                                 }
                                 else
                                 {
                                     settingsValid = false;
-                                    errorMessage += "Kinect " + i.ToString() + " X acceleration channel (" + kinectOptions[i].accelXChannel.ToString() + ") is invalid.\r\n";
+                                    errorMessage += "Kinect " + i.ToString() + " X acceleration channel (" + kinectOptionsList[i].accelXChannel.ToString() + ") is invalid.\r\n";
                                 }
 
                                 //Check the Y acceleration channel
-                                if (isServerAnalogChannelValid(kinectOptions[i].accelYChannel))
+                                if (isServerAnalogChannelValid(kinectOptionsList[i].accelYChannel))
                                 {
                                     //If the channel doesn't exist, create it
-                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelYChannel))
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptionsList[i].accelYChannel))
                                     {
-                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].accelYChannel);
+                                        analogServers[j].uniqueChannels.Add(kinectOptionsList[i].accelYChannel);
                                     }
                                 }
                                 else
                                 {
                                     settingsValid = false;
-                                    errorMessage += "Kinect " + i.ToString() + " Y acceleration channel (" + kinectOptions[i].accelYChannel.ToString() + ") is invalid.\r\n";
+                                    errorMessage += "Kinect " + i.ToString() + " Y acceleration channel (" + kinectOptionsList[i].accelYChannel.ToString() + ") is invalid.\r\n";
                                 }
 
                                 //Check the Z acceleration channel
-                                if (isServerAnalogChannelValid(kinectOptions[i].accelZChannel))
+                                if (isServerAnalogChannelValid(kinectOptionsList[i].accelZChannel))
                                 {
                                     //If the channel doesn't exist, create it
-                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].accelZChannel))
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptionsList[i].accelZChannel))
                                     {
-                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].accelZChannel);
+                                        analogServers[j].uniqueChannels.Add(kinectOptionsList[i].accelZChannel);
                                     }
                                 }
                                 else
                                 {
                                     settingsValid = false;
-                                    errorMessage += "Kinect " + i.ToString() + " Z acceleration channel (" + kinectOptions[i].accelZChannel.ToString() + ") is invalid.\r\n";
+                                    errorMessage += "Kinect " + i.ToString() + " Z acceleration channel (" + kinectOptionsList[i].accelZChannel.ToString() + ") is invalid.\r\n";
                                 }
                             }
                         }
@@ -377,46 +382,46 @@ namespace KinectWithVRServer
                         if (!found)
                         {
                             AnalogServerSettings temp = new AnalogServerSettings();
-                            temp.serverName = kinectOptions[i].accelerationServerName;
+                            temp.serverName = kinectOptionsList[i].accelerationServerName;
                             temp.uniqueChannels = new List<int>();
 
                             //Add the X channel, if it is valid (it is the first one added, so it must be unique)
-                            if (isServerAnalogChannelValid(kinectOptions[i].accelXChannel))
+                            if (isServerAnalogChannelValid(kinectOptionsList[i].accelXChannel))
                             {
-                                temp.uniqueChannels.Add(kinectOptions[i].accelXChannel);
+                                temp.uniqueChannels.Add(kinectOptionsList[i].accelXChannel);
                             }
                             else
                             {
                                 settingsValid = false;
-                                errorMessage += "Kinect " + i.ToString() + " X acceleration channel (" + kinectOptions[i].accelXChannel.ToString() + ") is invalid.\r\n";
+                                errorMessage += "Kinect " + i.ToString() + " X acceleration channel (" + kinectOptionsList[i].accelXChannel.ToString() + ") is invalid.\r\n";
                             }
 
                             //Add the Y channel, if it is valid and unique
-                            if (isServerAnalogChannelValid(kinectOptions[i].accelYChannel))
+                            if (isServerAnalogChannelValid(kinectOptionsList[i].accelYChannel))
                             {
-                                if (!temp.uniqueChannels.Contains(kinectOptions[i].accelYChannel))
+                                if (!temp.uniqueChannels.Contains(kinectOptionsList[i].accelYChannel))
                                 {
-                                    temp.uniqueChannels.Add(kinectOptions[i].accelYChannel);
+                                    temp.uniqueChannels.Add(kinectOptionsList[i].accelYChannel);
                                 }
                             }
                             else
                             {
                                 settingsValid = false;
-                                errorMessage += "Kinect " + i.ToString() + " Y acceleration channel (" + kinectOptions[i].accelYChannel.ToString() + ") is invalid.\r\n";
+                                errorMessage += "Kinect " + i.ToString() + " Y acceleration channel (" + kinectOptionsList[i].accelYChannel.ToString() + ") is invalid.\r\n";
                             }
 
                             //Add the Z channel, if it is valid and unique
-                            if (isServerAnalogChannelValid(kinectOptions[i].accelZChannel))
+                            if (isServerAnalogChannelValid(kinectOptionsList[i].accelZChannel))
                             {
-                                if (!temp.uniqueChannels.Contains(kinectOptions[i].accelZChannel))
+                                if (!temp.uniqueChannels.Contains(kinectOptionsList[i].accelZChannel))
                                 {
-                                    temp.uniqueChannels.Add(kinectOptions[i].accelZChannel);
+                                    temp.uniqueChannels.Add(kinectOptionsList[i].accelZChannel);
                                 }
                             }
                             else
                             {
                                 settingsValid = false;
-                                errorMessage += "Kinect " + i.ToString() + " Z acceleration channel (" + kinectOptions[i].accelZChannel.ToString() + ") is invalid.\r\n";
+                                errorMessage += "Kinect " + i.ToString() + " Z acceleration channel (" + kinectOptionsList[i].accelZChannel.ToString() + ") is invalid.\r\n";
                             }
 
                             analogServers.Add(temp);
@@ -425,34 +430,34 @@ namespace KinectWithVRServer
                     else
                     {
                         settingsValid = false;
-                        errorMessage += "Kinect " + i.ToString() + " acceleration server name (\"" + kinectOptions[i].accelerationServerName + "\") is invalid.\r\n";
+                        errorMessage += "Kinect " + i.ToString() + " acceleration server name (\"" + kinectOptionsList[i].accelerationServerName + "\") is invalid.\r\n";
                     }
                 }
 
                 //Parse audio source angle options
-                if (kinectOptions[i].sendAudioAngle)
+                if (kinectOptionsList[i].sendAudioAngle)
                 {
-                    if (isServerNameValid(kinectOptions[i].audioAngleServerName))
+                    if (isServerNameValid(kinectOptionsList[i].audioAngleServerName))
                     {
                         bool found = false;
 
                         for (int j = 0; j < analogServers.Count; j++)
                         {
-                            if (analogServers[j].serverName == kinectOptions[i].audioAngleServerName)
+                            if (analogServers[j].serverName == kinectOptionsList[i].audioAngleServerName)
                             {
                                 found = true;
 
-                                if (isServerAnalogChannelValid(kinectOptions[i].audioAngleChannel))
+                                if (isServerAnalogChannelValid(kinectOptionsList[i].audioAngleChannel))
                                 {
-                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptions[i].audioAngleChannel))
+                                    if (!analogServers[j].uniqueChannels.Contains(kinectOptionsList[i].audioAngleChannel))
                                     {
-                                        analogServers[j].uniqueChannels.Add(kinectOptions[i].audioAngleChannel);
+                                        analogServers[j].uniqueChannels.Add(kinectOptionsList[i].audioAngleChannel);
                                     }
                                 }
                                 else
                                 {
                                     settingsValid = false;
-                                    errorMessage += "Kinect " + i.ToString() + " audio angle server channel (" + kinectOptions[i].audioAngleChannel.ToString() + ") is invalid.\r\n";
+                                    errorMessage += "Kinect " + i.ToString() + " audio angle server channel (" + kinectOptionsList[i].audioAngleChannel.ToString() + ") is invalid.\r\n";
                                 }
                             }
                         }
@@ -460,16 +465,16 @@ namespace KinectWithVRServer
                         if (!found)
                         {
                             AnalogServerSettings temp = new AnalogServerSettings();
-                            temp.serverName = kinectOptions[i].audioAngleServerName;
+                            temp.serverName = kinectOptionsList[i].audioAngleServerName;
                             temp.uniqueChannels = new List<int>();
-                            if (isServerAnalogChannelValid(kinectOptions[i].audioAngleChannel))
+                            if (isServerAnalogChannelValid(kinectOptionsList[i].audioAngleChannel))
                             {
-                                temp.uniqueChannels.Add(kinectOptions[i].audioAngleChannel);
+                                temp.uniqueChannels.Add(kinectOptionsList[i].audioAngleChannel);
                             }
                             else
                             {
                                 settingsValid = false;
-                                errorMessage += "Kinect " + i.ToString() + " audio angle server channel (" + kinectOptions[i].audioAngleChannel.ToString() + ") is invalid.\r\n";
+                                errorMessage += "Kinect " + i.ToString() + " audio angle server channel (" + kinectOptionsList[i].audioAngleChannel.ToString() + ") is invalid.\r\n";
                             }
                             analogServers.Add(temp);
                         }
@@ -477,7 +482,7 @@ namespace KinectWithVRServer
                     else
                     {
                         settingsValid = false;
-                        errorMessage += "Kinect " + i.ToString() + " audio angle server name (\"" + kinectOptions[i].audioAngleServerName + "\") is invalid.\r\n";
+                        errorMessage += "Kinect " + i.ToString() + " audio angle server name (\"" + kinectOptionsList[i].audioAngleServerName + "\") is invalid.\r\n";
                     }
                 }
             }
@@ -514,6 +519,7 @@ namespace KinectWithVRServer
 
     public class KinectSettings
     {
+        public KinectSettings() { } //Needed for serialization
         public KinectSettings(string deviceConnectionID, int kinectNumber)
         {
             connectionID = deviceConnectionID;

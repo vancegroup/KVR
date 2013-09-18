@@ -57,7 +57,7 @@ namespace KinectWithVRServer
                     int globalIndex = -1;
                     for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
                     {
-                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == server.serverMasterOptions.kinectOptions[(int)kinectNumber].connectionID)
+                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == server.serverMasterOptions.kinectOptionsList[(int)kinectNumber].connectionID)
                         {
                             globalIndex = i;
                             break;
@@ -106,7 +106,10 @@ namespace KinectWithVRServer
                 interactStream.Dispose();
                 interactStream = null;
 
-                kinect.AudioSource.Stop();
+                if (kinect.AudioSource != null)
+                {
+                    kinect.AudioSource.Stop();
+                }
                 kinect.Stop();
             }
         }
@@ -115,16 +118,16 @@ namespace KinectWithVRServer
             if (kinect.IsRunning)
             {
                 //Start the audio streams, if necessary -- NOTE: This must be after the skeleton stream is started (which it should be here)
-                if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle || server.serverMasterOptions.audioOptions.sourceID == kinectID)
+                if (server.serverMasterOptions.kinectOptionsList[kinectID].sendAudioAngle || server.serverMasterOptions.audioOptions.sourceID == kinectID)
                 {
                     if (server.serverMasterOptions.audioOptions.sourceID == kinectID)
                     {
                         kinect.AudioSource.EchoCancellationMode = server.serverMasterOptions.audioOptions.echoMode;
                         kinect.AudioSource.AutomaticGainControlEnabled = server.serverMasterOptions.audioOptions.autoGainEnabled;
                         kinect.AudioSource.NoiseSuppression = server.serverMasterOptions.audioOptions.noiseSurpression;
-                        if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
+                        if (server.serverMasterOptions.kinectOptionsList[kinectID].sendAudioAngle)
                         {
-                            if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
+                            if (server.serverMasterOptions.kinectOptionsList[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
                             {
                                 kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
                             }
@@ -135,12 +138,12 @@ namespace KinectWithVRServer
                             kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
                         }
                     }
-                    else if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle)
+                    else if (server.serverMasterOptions.kinectOptionsList[kinectID].sendAudioAngle)
                     {
                         kinect.AudioSource.EchoCancellationMode = EchoCancellationMode.None;
                         kinect.AudioSource.AutomaticGainControlEnabled = false;
                         kinect.AudioSource.NoiseSuppression = true;
-                        if (server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
+                        if (server.serverMasterOptions.kinectOptionsList[kinectID].audioTrackMode != AudioTrackingMode.Loudest)
                         {
                             kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
                         }
@@ -197,12 +200,12 @@ namespace KinectWithVRServer
         private void LaunchKinect()
         {
             //Setup default properties
-            if (server.serverMasterOptions.kinectOptions[kinectID].colorImageMode != ColorImageFormat.Undefined)
+            if (server.serverMasterOptions.kinectOptionsList[kinectID].colorImageMode != ColorImageFormat.Undefined)
             {
-                kinect.ColorStream.Enable(server.serverMasterOptions.kinectOptions[kinectID].colorImageMode);
+                kinect.ColorStream.Enable(server.serverMasterOptions.kinectOptionsList[kinectID].colorImageMode);
                 kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
             }
-            if (server.serverMasterOptions.kinectOptions[kinectID].depthImageMode != DepthImageFormat.Undefined)
+            if (server.serverMasterOptions.kinectOptionsList[kinectID].depthImageMode != DepthImageFormat.Undefined)
             {
                 kinect.DepthStream.Enable();
                 kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
@@ -253,6 +256,7 @@ namespace KinectWithVRServer
             {
                 if (kinect.IsRunning)
                 {
+                    //TODO: Fix this, because it is messed up!
                     acceleration = kinect.AccelerometerGetCurrentReading();
                     elevationAngle = kinect.ElevationAngle;
                     dataValid = true;
@@ -276,17 +280,17 @@ namespace KinectWithVRServer
                 }
 
                 //Update the VRPN server
-                if (server.isRunning && server.serverMasterOptions.kinectOptions[kinectID].sendAcceleration)
+                if (server.isRunning && server.serverMasterOptions.kinectOptionsList[kinectID].sendAcceleration)
                 {
                     for (int i = 0; i < server.analogServers.Count; i++)
                     {
-                        if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptions[kinectID].accelerationServerName)
+                        if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptionsList[kinectID].accelerationServerName)
                         {
                             lock (server.analogServers[i])
                             {
-                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelXChannel].Value = acceleration.X;
-                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelYChannel].Value = acceleration.Y;
-                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].accelZChannel].Value = acceleration.Z;
+                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptionsList[kinectID].accelXChannel].Value = acceleration.X;
+                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptionsList[kinectID].accelYChannel].Value = acceleration.Y;
+                                server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptionsList[kinectID].accelZChannel].Value = acceleration.Z;
                                 server.analogServers[i].Report();
                             }
                             break;
@@ -300,7 +304,7 @@ namespace KinectWithVRServer
         {
             using (SkeletonFrame skelFrame = e.OpenSkeletonFrame())
             {
-                if (skelFrame != null && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
+                if (skelFrame != null && server.serverMasterOptions.kinectOptionsList[kinectID].trackSkeletons)
                 {
                     Skeleton[] skeletons = new Skeleton[6];
                     skelFrame.CopySkeletonDataTo(skeletons);
@@ -313,8 +317,8 @@ namespace KinectWithVRServer
 
                     
                     //Generate the transformation matrix for the skeletons
-                    double kinectYaw = server.serverMasterOptions.kinectOptions[kinectID].kinectYaw;
-                    Point3D kinectPosition = server.serverMasterOptions.kinectOptions[kinectID].kinectPosition;
+                    double kinectYaw = server.serverMasterOptions.kinectOptionsList[kinectID].kinectYaw;
+                    Point3D kinectPosition = server.serverMasterOptions.kinectOptionsList[kinectID].kinectPosition;
                     Matrix3D gravityBasedKinectRotation = findRotation(new Vector3D(acceleration.X, acceleration.Y, acceleration.Z), new Vector3D(0, -1, 0));
                     AxisAngleRotation3D yawRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), -kinectYaw);
                     RotateTransform3D tempTrans = new RotateTransform3D(yawRotation);
@@ -397,7 +401,7 @@ namespace KinectWithVRServer
         {
             using (InteractionFrame interactFrame = e.OpenInteractionFrame())
             {
-                if (interactFrame != null && server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons)
+                if (interactFrame != null && server.serverMasterOptions.kinectOptionsList[kinectID].trackSkeletons)
                 {
                     bool changeMade = false;
                     UserInfo[] tempUserInfo = new UserInfo[6];
@@ -460,15 +464,15 @@ namespace KinectWithVRServer
         }
         void AudioSource_SoundSourceAngleChanged(object sender, SoundSourceAngleChangedEventArgs e)
         {
-            if (server.serverMasterOptions.kinectOptions[kinectID].sendAudioAngle && server.isRunning)
+            if (server.serverMasterOptions.kinectOptionsList[kinectID].sendAudioAngle && server.isRunning)
             {
                 for (int i = 0; i < server.serverMasterOptions.analogServers.Count; i++)
                 {
-                    if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptions[kinectID].audioAngleServerName)
+                    if (server.serverMasterOptions.analogServers[i].serverName == server.serverMasterOptions.kinectOptionsList[kinectID].audioAngleServerName)
                     {
                         lock (server.analogServers[i])
                         {
-                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptions[kinectID].audioAngleChannel].Value = e.Angle;
+                            server.analogServers[i].AnalogChannels[server.serverMasterOptions.kinectOptionsList[kinectID].audioAngleChannel].Value = e.Angle;
                             server.analogServers[i].Report();
                         }
                     }

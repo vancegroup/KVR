@@ -261,9 +261,9 @@ namespace KinectWithVRServer
             List<List<bool>> leftHandStates = new List<List<bool>>();
 
             #region Merge the skeleton data
-            for (int i = 0; i < serverMasterOptions.kinectOptions.Count; i++)
+            for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
             {
-                if (serverMasterOptions.kinectOptions[i].trackSkeletons)
+                if (serverMasterOptions.kinectOptionsList[i].trackSkeletons)
                 {
                     List<KinectSkeleton> localCopy = new List<KinectSkeleton>(kinects[i].skeletonData.actualSkeletons);
                     for (int localIndex = localCopy.Count - 1; localIndex >= 0; localIndex--)

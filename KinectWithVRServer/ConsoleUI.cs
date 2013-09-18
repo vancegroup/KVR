@@ -23,9 +23,9 @@ namespace KinectWithVRServer
             }
 
             ServerCore server = new ServerCore(isVerbose, settings);
-            for (int i = 0; i < server.serverMasterOptions.kinectOptions.Count; i++) //Launch the Kinects
+            for (int i = 0; i < server.serverMasterOptions.kinectOptionsList.Count; i++) //Launch the Kinects
             {
-                server.kinects.Add(new KinectCore(server, null, server.serverMasterOptions.kinectOptions[i].kinectID));
+                server.kinects.Add(new KinectCore(server, null, server.serverMasterOptions.kinectOptionsList[i].kinectID));
             }
             server.launchServer(); //This will still try to launch with default settings even if the settings load fails
 

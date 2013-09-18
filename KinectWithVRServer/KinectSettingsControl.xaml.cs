@@ -50,7 +50,7 @@ namespace KinectWithVRServer
         #region Acceleration Option Methods
         private void SendAccelCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAcceleration = true;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].sendAcceleration = true;
 
             //Enable the server boxes
             accelXChannelTextBox.IsEnabled = true;
@@ -60,7 +60,7 @@ namespace KinectWithVRServer
         }
         private void SendAccelCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAcceleration = false;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].sendAcceleration = false;
 
             //Disable the server boxes
             accelXChannelTextBox.IsEnabled = false;
@@ -70,14 +70,14 @@ namespace KinectWithVRServer
         }
         private void accelServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].accelerationServerName = accelServerTextBox.Text;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].accelerationServerName = accelServerTextBox.Text;
         }
         private void accelXChannelTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             int temp = 0;
             if (int.TryParse(accelXChannelTextBox.Text, out temp))
             {
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].accelXChannel = temp;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].accelXChannel = temp;
             }
         }
         private void accelYChannelTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -85,7 +85,7 @@ namespace KinectWithVRServer
             int temp = 0;
             if (int.TryParse(accelYChannelTextBox.Text, out temp))
             {
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].accelYChannel = temp;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].accelYChannel = temp;
             }
         }
         private void accelZChannelTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -93,7 +93,7 @@ namespace KinectWithVRServer
             int temp = 0;
             if (int.TryParse(accelZChannelTextBox.Text, out temp))
             {
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].accelZChannel = temp;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].accelZChannel = temp;
             }
         }
         #endregion
@@ -101,7 +101,7 @@ namespace KinectWithVRServer
         #region Audio Option Methods
         private void SendSoundAngleCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAudioAngle = true;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].sendAudioAngle = true;
 
             //Enable the server boxes
             audioServerTextBox.IsEnabled = true;
@@ -109,7 +109,7 @@ namespace KinectWithVRServer
         }
         private void SendSoundAngleCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].sendAudioAngle = false;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].sendAudioAngle = false;
 
             //Disable the server boxes
             audioServerTextBox.IsEnabled = false;
@@ -117,14 +117,14 @@ namespace KinectWithVRServer
         }
         private void audioServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].audioAngleServerName = audioServerTextBox.Text;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].audioAngleServerName = audioServerTextBox.Text;
         }
         private void audioChannelTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             int temp = 0;
             if (int.TryParse(audioChannelTextBox.Text, out temp))
             {
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].audioAngleChannel = temp;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].audioAngleChannel = temp;
             }
         }
         #endregion
@@ -159,7 +159,7 @@ namespace KinectWithVRServer
                     }
             }
 
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].depthImageMode = newFormat;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].depthImageMode = newFormat;
             parent.server.kinects[(int)KinectID].ChangeDepthResolution(newFormat);
         }
         private void nearModeCheckBox_CheckChanged(object sender, RoutedEventArgs e)
@@ -169,13 +169,13 @@ namespace KinectWithVRServer
                 try
                 {
                     parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Near;
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = true;
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].isNearMode = true;
                 }
                 catch (InvalidOperationException)
                 {
                     //Must be a XBox Kinect, so disable the near mode option and the force IR off mode
                     parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Default;
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = false;
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].isNearMode = false;
                     nearModeCheckBox.IsChecked = false;
                     nearModeCheckBox.IsEnabled = false;
                     irOnCheckBox.IsEnabled = false;
@@ -184,7 +184,7 @@ namespace KinectWithVRServer
             else
             {
                 parent.server.kinects[(int)KinectID].kinect.DepthStream.Range = Microsoft.Kinect.DepthRange.Default;
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].isNearMode = false;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].isNearMode = false;
             }
         }
         private void irOnCheckBox_CheckChanged(object sender, RoutedEventArgs e)
@@ -192,20 +192,20 @@ namespace KinectWithVRServer
             if ((bool)irOnCheckBox.IsChecked)
             {
                 parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = false;
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = true;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].irON = true;
             }
             else if (!(bool)irOnCheckBox.IsChecked)
             {
                 try
                 {
                     parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = true;
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = false;
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].irON = false;
                 }
                 catch (InvalidOperationException)
                 {
                     //Must be a XBox Kinect, so disable near mode and IR off
                     parent.server.kinects[(int)KinectID].kinect.ForceInfraredEmitterOff = false;
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].irON = true;
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].irON = true;
                     nearModeCheckBox.IsEnabled = false;
                     irOnCheckBox.IsChecked = true;
                     irOnCheckBox.IsEnabled = false;
@@ -214,7 +214,7 @@ namespace KinectWithVRServer
         }
         private void UseSkeletonCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].trackSkeletons = (bool)UseSkeletonCheckBox.IsChecked;
         }
         #endregion
 
@@ -247,7 +247,7 @@ namespace KinectWithVRServer
                 }
             }
 
-            parent.server.serverMasterOptions.kinectOptions[(int)KinectID].colorImageMode = newFormat;
+            parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].colorImageMode = newFormat;
             parent.server.kinects[(int)KinectID].ChangeColorResolution(newFormat);
         }
         private void advancedColorButton_Click(object sender, RoutedEventArgs e)
@@ -263,13 +263,13 @@ namespace KinectWithVRServer
             double temp = 0.0;
             if (double.TryParse(xPosTextBox.Text, out temp))
             {
-                if (parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition == null)
+                if (parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition == null)
                 {
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
                 }
-                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition;
+                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition;
                 tempPoint.X = temp;
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = tempPoint;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition = tempPoint;
             }
         }
         private void yPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -277,13 +277,13 @@ namespace KinectWithVRServer
             double temp = 0.0;
             if (double.TryParse(yPosTextBox.Text, out temp))
             {
-                if (parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition == null)
+                if (parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition == null)
                 {
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
                 }
-                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition;
+                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition;
                 tempPoint.Y = temp;
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = tempPoint;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition = tempPoint;
             }
         }
         private void zPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -291,13 +291,13 @@ namespace KinectWithVRServer
             double temp = 0.0;
             if (double.TryParse(zPosTextBox.Text, out temp))
             {
-                if (parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition == null)
+                if (parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition == null)
                 {
-                    parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
                 }
-                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition;
+                System.Windows.Media.Media3D.Point3D tempPoint = parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition;
                 tempPoint.Z = temp;
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectPosition = tempPoint;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectPosition = tempPoint;
             }
         }
         private void yawPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -305,7 +305,7 @@ namespace KinectWithVRServer
             double temp = 0.0;
             if (double.TryParse(yawPosTextBox.Text, out temp))
             {
-                parent.server.serverMasterOptions.kinectOptions[(int)KinectID].kinectYaw = temp;
+                parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].kinectYaw = temp;
             }
         }
         #endregion
