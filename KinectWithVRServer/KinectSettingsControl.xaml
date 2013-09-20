@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="222" d:DesignWidth="530">
+             d:DesignHeight="222" d:DesignWidth="530" IsVisibleChanged="UserControl_IsVisibleChanged">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
         <Grid>
             <Grid.RowDefinitions>
@@ -78,10 +78,9 @@
                         <TextBox Name="audioChannelTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="audioChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
                     </Grid>
                     <TextBlock Text="Beam Mode:" Margin="2"/>
-                    <ComboBox SelectedIndex="0">
+                    <ComboBox Name="audioBeamModeComboBox" SelectedIndex="0" SelectionChanged="audioBeamModeComboBox_SelectionChanged">
                         <ComboBoxItem Content="Loudest Source"/>
                         <ComboBoxItem Content="Feedback Position"/>
-                        <ComboBoxItem Content="Skeleton 1"/>
                     </ComboBox>                           
                 </StackPanel>
             </GroupBox>

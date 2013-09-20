@@ -30,7 +30,7 @@ namespace KinectWithVRServer
         private Int64 lastDepthTime = 0;
         private Int64 lastColorTime = 0;
         //private Skeleton[] skeletons = null;
-        private System.Timers.Timer accelerationUpdateTimer;
+        private System.Timers.Timer updateTimer;
         internal KinectSkeletonsData skeletonData;
         internal Matrix3D skeletonTransformation = Matrix3D.Identity;
 
@@ -96,11 +96,11 @@ namespace KinectWithVRServer
                 kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
                 kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
                 interactStream.InteractionFrameReady -= new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
-                if (accelerationUpdateTimer != null)
+                if (updateTimer != null)
                 {
-                    accelerationUpdateTimer.Stop();
-                    accelerationUpdateTimer.Elapsed -= accelerationUpdateTimer_Elapsed;
-                    accelerationUpdateTimer.Dispose();
+                    updateTimer.Stop();
+                    updateTimer.Elapsed -= updateTimer_Elapsed;
+                    updateTimer.Dispose();
                 }
 
                 interactStream.Dispose();
@@ -236,19 +236,30 @@ namespace KinectWithVRServer
 
             kinect.Start();
 
-            StartAccelTimer();
+            StartUpdateTimer();
         }
-        private void StartAccelTimer()
+        private void StartUpdateTimer()
         {
-            accelerationUpdateTimer = new System.Timers.Timer();
-            accelerationUpdateTimer.AutoReset = true;
-            accelerationUpdateTimer.Interval = 33.333;
-            accelerationUpdateTimer.Elapsed += accelerationUpdateTimer_Elapsed;
-            accelerationUpdateTimer.Start();
+            updateTimer = new System.Timers.Timer();
+            updateTimer.AutoReset = true;
+            updateTimer.Interval = 33.333;
+            updateTimer.Elapsed += updateTimer_Elapsed;
+            updateTimer.Start();
         }
         //Updates the acceleration on the GUI and the server, 30 FPS may be a little fast for the GUI, but for VRPN, it probably needs to be at least that fast
-        private void accelerationUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        private void updateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            //Update the audio beam angle, if it is using feedback mode (loudest is done automatically, and skeleton mode is done in the server core)
+            if (kinect.AudioSource != null && server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode == AudioTrackingMode.Feedback)
+            {
+                if (server.feedbackPosition != null)
+                {
+                    double angle = Math.Atan((server.feedbackPosition.Value.X - server.serverMasterOptions.kinectOptions[kinectID].kinectPosition.X) / (server.feedbackPosition.Value.Z - server.serverMasterOptions.kinectOptions[kinectID].kinectPosition.Z)) * (180.0 / Math.PI);
+                    kinect.AudioSource.ManualBeamAngle = angle; // This will be rounded automatically to the nearest 10 degree increment, in the range -50 to 50 degrees
+                }
+            }
+
+            //Update the acceleration data
             bool dataValid = false;
             Vector4 acceleration = new Vector4();
             int elevationAngle = 0;

@@ -94,7 +94,9 @@ namespace KinectWithVRServer
         {
             if (e.Sensor == watchedSensor)
             {
-                //TODO: Update the feedback based parameters here, will need a invoke for any GUI stuff
+                //TODO: Does the feedback position need to be written to the GUI?
+                server.feedbackPosition = (System.Windows.Media.Media3D.Point3D)e.Position;
+                System.Diagnostics.Debug.WriteLine("Position: " + server.feedbackPosition.Value.X + ", " + server.feedbackPosition.Value.Y + ", " + server.feedbackPosition.Value.Z);
             }
         }
 

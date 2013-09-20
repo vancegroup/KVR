@@ -328,6 +328,58 @@ namespace KinectWithVRServer
             }
         }
         #endregion
+
+        private void audioBeamModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (KinectID != null)
+            {
+                if (audioBeamModeComboBox.SelectedIndex == 0)
+                {
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].audioTrackMode = AudioTrackingMode.Loudest;
+                    if (parent.server.kinects[(int)KinectID].kinect.AudioSource != null)
+                    {
+                        parent.server.kinects[(int)KinectID].kinect.AudioSource.BeamAngleMode = Microsoft.Kinect.BeamAngleMode.Automatic;
+                    }
+                }
+                else if (audioBeamModeComboBox.SelectedIndex == 1)
+                {
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].audioTrackMode = AudioTrackingMode.Feedback;
+                    if (parent.server.kinects[(int)KinectID].kinect.AudioSource != null)
+                    {
+                        parent.server.kinects[(int)KinectID].kinect.AudioSource.BeamAngleMode = Microsoft.Kinect.BeamAngleMode.Manual;
+                    }
+                }
+                else
+                {
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].audioTrackMode = AudioTrackingMode.SkeletonX;
+                    parent.server.serverMasterOptions.kinectOptionsList[(int)KinectID].audioBeamTrackSkeletonNumber = audioBeamModeComboBox.SelectedIndex - 2;
+                    if (parent.server.kinects[(int)KinectID].kinect.AudioSource != null)
+                    {
+                        parent.server.kinects[(int)KinectID].kinect.AudioSource.BeamAngleMode = Microsoft.Kinect.BeamAngleMode.Manual;
+                    }
+                }
+            }
+        }
+
+        //Update the options in the audio mode combobox
+        private void UserControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            //We need to add skeletons to the list
+            if (audioBeamModeComboBox.Items.Count < parent.server.serverMasterOptions.skeletonOptions.individualSkeletons.Count + 2)
+            {
+                for (int i = audioBeamModeComboBox.Items.Count - 2; i < parent.server.serverMasterOptions.skeletonOptions.individualSkeletons.Count; i++)
+                {
+                    audioBeamModeComboBox.Items.Add("Skeleton " + i.ToString());
+                }
+            }
+            else if (audioBeamModeComboBox.Items.Count > parent.server.serverMasterOptions.skeletonOptions.individualSkeletons.Count + 2)
+            {
+                for (int i = audioBeamModeComboBox.Items.Count - 1; i >= parent.server.serverMasterOptions.skeletonOptions.individualSkeletons.Count + 2; i--)
+                {
+                    audioBeamModeComboBox.Items.RemoveAt(i);
+                }
+            }
+        }
     }
 
     public class KinectSettingsControlComparer : IComparer<KinectSettingsControl>

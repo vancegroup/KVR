@@ -36,6 +36,8 @@ namespace KinectWithVRServer
         MainWindow parent;
         internal List<KinectCore> kinects = new List<KinectCore>();
         VoiceRecogCore voiceRecog;
+        FeedbackCore feedbackCore;
+        internal Point3D? feedbackPosition = null;
 
         public ServerCore(bool isVerbose, MasterSettings serverOptions, MainWindow guiParent = null)
         {                
@@ -62,6 +64,13 @@ namespace KinectWithVRServer
                 for (int i = 0; i < kinects.Count; i++)
                 {
                     kinects[i].StartKinectAudio(); //TODO: This will crash if the Kinects are in another thread (i.e. console mode)
+                }
+
+                //Start the feedback client if necessary
+                if (serverMasterOptions.feedbackOptions.useFeedback)
+                {
+                    feedbackCore = new FeedbackCore(verbose, this, parent);
+                    feedbackCore.StartFeedbackCore(serverMasterOptions.feedbackOptions.feedbackServerName, serverMasterOptions.feedbackOptions.feedbackSensorNumber);
                 }
 
                 runServerCoreDelegate serverDelegate = runServerCore;
@@ -123,6 +132,11 @@ namespace KinectWithVRServer
             if (voiceRecog != null)
             {
                 voiceRecog.stopVoiceRecognizer();
+            }
+
+            if (feedbackCore != null)
+            {
+                feedbackCore.StopFeedbackCore();
             }
 
             int count = 0;
@@ -278,7 +292,7 @@ namespace KinectWithVRServer
                             for (int masterIndex = 0; masterIndex < masterSkeletons.Count; masterIndex++)
                             {
                                 double dist = InterPointDistance(localCopy[localIndex].skeleton.Position, masterSkeletons[masterIndex].skeleton.Position);
-                                if (dist < 0.2)
+                                if (dist < 0.3)
                                 {
                                     skeletonFound = true;
                                     masterSkeletons[masterIndex].skeleton.Position = IncAverage(masterSkeletons[masterIndex].skeleton.Position, localCopy[localIndex].skeleton.Position, pointsAverages[masterIndex][20]);
@@ -413,6 +427,23 @@ namespace KinectWithVRServer
                                 }
                                 break;
                             }
+                        }
+                    }
+                }
+            }
+
+            //Update the audio beam angle on each Kinect, if necessary
+            for (int i = 0; i < kinects.Count; i++)
+            {
+                if ((serverMasterOptions.kinectOptionsList[i].sendAudioAngle || serverMasterOptions.audioOptions.sourceID == i) && serverMasterOptions.kinectOptionsList[i].audioTrackMode == AudioTrackingMode.SkeletonX)
+                {
+                    int audioSkeleton = serverMasterOptions.kinectOptionsList[i].audioBeamTrackSkeletonNumber;
+                    if (kinects[i].kinect.AudioSource != null && masterSkeletons.Count > audioSkeleton)
+                    {
+                        if (masterSkeletons[audioSkeleton].skeleton.TrackingState != SkeletonTrackingState.NotTracked)
+                        {
+                            double angle = Math.Atan((masterSkeletons[audioSkeleton].skeleton.Position.X - serverMasterOptions.kinectOptionsList[i].kinectPosition.X) / (masterSkeletons[audioSkeleton].skeleton.Position.Z - serverMasterOptions.kinectOptionsList[i].kinectPosition.Z)) * (180.0 / Math.PI);
+                            kinects[i].kinect.AudioSource.ManualBeamAngle = angle;
                         }
                     }
                 }
@@ -625,7 +656,7 @@ namespace KinectWithVRServer
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                        while (insertIndex > 0 && tempSkeleton.skeleton.Position.X < trackedSkeletons[insertIndex - 1].skeleton.Position.X)
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.X) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.X))
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -646,7 +677,7 @@ namespace KinectWithVRServer
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                        while (insertIndex > 0 && tempSkeleton.skeleton.Position.Y < trackedSkeletons[insertIndex - 1].skeleton.Position.Y)
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Y))
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -667,7 +698,7 @@ namespace KinectWithVRServer
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                        while (insertIndex > 0 && tempSkeleton.skeleton.Position.Z < trackedSkeletons[insertIndex - 1].skeleton.Position.Z)
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Z))
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -703,7 +734,103 @@ namespace KinectWithVRServer
                         trackedSkeletons.Reverse();
                     }
                 }
-                //TODO: Add feedback sort methods here
+                else if (feedbackPosition != null)  //Sort based on the feedback position, if it isn't null
+                {
+                    if (sortMethod == SkeletonSortMethod.FeedbackXClosest || sortMethod == SkeletonSortMethod.FeedbackXFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            KinectSkeleton tempSkeleton = trackedSkeletons[i];
+
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.X - feedbackPosition.Value.X) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.X - feedbackPosition.Value.X))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackXFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else if (sortMethod == SkeletonSortMethod.FeedbackYClosest || sortMethod == SkeletonSortMethod.FeedbackYFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            KinectSkeleton tempSkeleton = trackedSkeletons[i];
+
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Y - feedbackPosition.Value.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Y - feedbackPosition.Value.Y))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackYFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else if (sortMethod == SkeletonSortMethod.FeedbackZClosest || sortMethod == SkeletonSortMethod.FeedbackZFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            KinectSkeleton tempSkeleton = trackedSkeletons[i];
+
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Z - feedbackPosition.Value.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Z - feedbackPosition.Value.Z))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackZFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else if (sortMethod == SkeletonSortMethod.FeedbackEuclidClosest || sortMethod == SkeletonSortMethod.FeedbackEuclidFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            KinectSkeleton tempSkeleton = trackedSkeletons[i];
+                            SkeletonPoint feedPosition = new SkeletonPoint() { X = (float)feedbackPosition.Value.X, Y = (float)feedbackPosition.Value.Y, Z = (float)feedbackPosition.Value.Z };
+                            double tempDistance = InterPointDistance(feedPosition, trackedSkeletons[i].skeleton.Position);
+
+                            while (insertIndex > 0 && tempDistance < InterPointDistance(feedPosition, trackedSkeletons[insertIndex - 1].skeleton.Position))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackEuclidFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else
+                    {
+                        return unsortedSkeletons;
+                    }
+                }
+                else
+                {
+                    return unsortedSkeletons;
+                }
 
                 //Add the untracked skeletons to the tracked ones before sending everything back
                 trackedSkeletons.AddRange(untrackedSkeletons);
