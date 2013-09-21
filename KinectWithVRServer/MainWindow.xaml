@@ -20,6 +20,10 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
         <local:BoolToPressConverter x:Key="boolToPressConverter"/>
+        <local:ConnectionStateToBoolConverter x:Key="connectionStatusToBoolConverter"/>
+        <local:ConnectionStateToInverseBoolConverter x:Key="connectionStatusToInverseBoolConverter"/>
+        <local:ConnectionStateToTextDecorationsConverter x:Key="connectionStateToTextDecorationsConverter"/>
+        <local:ConnectionStateToBrushConverter x:Key="connectionStateToBrushConverter"/>
     </Window.Resources>
         <Grid>
         <Grid.RowDefinitions>
@@ -119,10 +123,27 @@
                     <ListBox Name="kinectTabListBox" SelectionChanged="kinectTabListBox_SelectionChanged"/>
                     <DataGrid Name="kinectsAvailableDataGrid" Grid.Column="2" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
                         <DataGrid.Columns>
-                            <DataGridCheckBoxColumn Header="Use Kinect" IsReadOnly="False" Binding="{Binding Path=UseKinect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridTemplateColumn Header="Use Kinect">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding Path=UseKinect, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Path=Status, Converter={StaticResource connectionStatusToBoolConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Kinect Number" IsReadOnly="True" Binding="{Binding Path=KinectID, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridTextColumn Header="Kinect Status" IsReadOnly="True" Binding="{Binding Path=ServerStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridTemplateColumn Header="Connection Status" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Hyperlink Click="Hyperlink_Click" TextDecorations="{Binding Path=Status, Converter={StaticResource connectionStateToTextDecorationsConverter}}">
+                                                <TextBlock Text="{Binding Path=Status}" IsEnabled="{Binding Path=Status, Converter={StaticResource connectionStatusToInverseBoolConverter}}" Foreground="{Binding Path=Status, Converter={StaticResource connectionStateToBrushConverter}}" />
+                                            </Hyperlink>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>
-                            <DataGridTextColumn Header="Kinect Status" IsReadOnly="True" Binding="{Binding Status}"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

@@ -153,7 +153,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
                     </Grid>
                 </StackPanel>
             </GroupBox>

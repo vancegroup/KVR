@@ -18,6 +18,7 @@ using System.IO;
 using Microsoft.Win32;
 using Microsoft.Kinect;
 using System.Diagnostics;
+using System.Security.Permissions;
 
 namespace KinectWithVRServer
 {
@@ -177,6 +178,7 @@ namespace KinectWithVRServer
                     tempData.KinectID = 0;
                     server.serverMasterOptions.kinectOptionsList.Add(new KinectSettings(tempData.ConnectionID, (int)tempData.KinectID));
                     server.kinects.Add(new KinectCore(server, this, (int)tempData.KinectID));
+                    tempData.ServerStatus = "Running";
                 }
                 else
                 {
@@ -466,18 +468,30 @@ namespace KinectWithVRServer
                     }
                     if (!kinectFound)
                     {
+                        availableKinects[i].ServerStatus = "Starting";
+                        kinectsAvailableDataGrid.Items.Refresh();
+                        kinectsAvailableDataGrid.InvalidateVisual();
+                        System.Threading.Thread.Sleep(10); //Yes, it is a dirty hack, but it is the only way I can find to get the GUI to update reliably
+                        ForceGUIUpdate();
                         server.kinects.Add(new KinectCore(server, this, availableKinects[i].KinectID));
+                        availableKinects[i].ServerStatus = "Running";
                     }
                 }
                 else
                 {
-                    //If the Jinect is not to be used, check and see if it exists, and destroy it if it does
+                    //If the Kinect is not to be used, check and see if it exists, and destroy it if it does
                     for (int j = 0; j < server.kinects.Count; j++)
                     {
                         if (server.kinects[j].kinect.DeviceConnectionId == availableKinects[i].ConnectionID)
                         {
+                            availableKinects[i].ServerStatus = "Stopping";
+                            kinectsAvailableDataGrid.Items.Refresh();
+                            kinectsAvailableDataGrid.UpdateLayout();
+                            System.Threading.Thread.Sleep(10);
+                            ForceGUIUpdate();
                             server.kinects[j].ShutdownSensor();
                             server.kinects.RemoveAt(j);
+                            availableKinects[i].ServerStatus = "Stopped";
                             break;
                         }
                     }
@@ -485,6 +499,19 @@ namespace KinectWithVRServer
             }
             server.kinects.Sort(new KinectCoreComparer());
         }
+
+        private void ForceGUIUpdate()
+        {
+            DispatcherFrame frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Render, new DispatcherOperationCallback(delegate(object parameter)
+            {
+                frame.Continue = false;
+                return null;
+            }), null);
+
+            Dispatcher.PushFrame(frame);
+        }
+
         //TODO: REMOVE (FOR DEBUGGING ONLY)
         private void WriteOutKinectOrders()
         {
@@ -510,6 +537,65 @@ namespace KinectWithVRServer
             for (int i = 0; i < kinectOptionGUIPages.Count; i++)
             {
                 Debug.WriteLine(kinectOptionGUIPages[i].KinectID.ToString() + ":   " + kinectOptionGUIPages[i].ConnectionID);
+            }
+        }
+        //Handles the linking of the connection status hyperlinks to the help messages
+        private void Hyperlink_Click(object sender, RoutedEventArgs e)
+        {
+            //TODO: Link this to the pages in the help file for each error
+            KinectStatus status = availableKinects[kinectsAvailableDataGrid.SelectedIndex].Status;
+            switch (status)
+            {
+                case KinectStatus.Connected:
+                {
+                    //No help is needed if the Kinect is connected properly
+                    break;
+                }
+                case KinectStatus.DeviceNotGenuine:
+                {
+                    MessageBox.Show("The connected device is not genuine.  Please attach a genuine Kinect.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.DeviceNotSupported:
+                {
+                    MessageBox.Show("The connected device is not supported.  Please attach a Kinect sensor.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.Disconnected:
+                {
+                    MessageBox.Show("The Kinect device is disconnected.  Please reconnect the Kinect sensor.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.Error:
+                {
+                    MessageBox.Show("An unknown error has occured with the Kinect.  Try restarting the computer?", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.Initializing:
+                {
+                    MessageBox.Show("The Kinect is initializing.  Please wait, the Kinect should be operational momentarily.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.InsufficientBandwidth:
+                {
+                    MessageBox.Show("There is not enough bandwidth available on this USB port for the Kinect.  Please move the Kinect to a different USB root node.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.NotPowered:
+                {
+                    MessageBox.Show("The Kinect is not connected to AC power.  Please plug in the Kinect's AC adapter.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.NotReady:
+                {
+                    MessageBox.Show("The Kinect is not ready to run.  Please wait, the Kinect should be operational momentarily.  If not, try restarting the computer?", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
+                case KinectStatus.Undefined:
+                {
+                    MessageBox.Show("An unknown error has occured with the Kinect.  Try restarting the computer?", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    break;
+                }
             }
         }
         #endregion
@@ -955,6 +1041,5 @@ namespace KinectWithVRServer
             server.serverMasterOptions.feedbackOptions.sensorJointType = (JointType)FeedbackJointTypeComboBox.SelectedIndex;
         }
         #endregion
-
     }
 }

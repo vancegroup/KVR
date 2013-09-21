@@ -138,6 +138,16 @@ namespace KinectWithVRServer
                 NotifyPropertyChanged("KinectID");
             }
         }
+        private string serverStatus = "Stopped";
+        public string ServerStatus
+        {
+            get { return serverStatus; }
+            set
+            {
+                serverStatus = value;
+                NotifyPropertyChanged("ServerStatus");
+            }
+        }
         public KinectStatus Status { get; set; }
         private bool useKinect;
         public bool UseKinect
@@ -161,6 +171,154 @@ namespace KinectWithVRServer
         public object ConvertBack(object value, Type tagetType, object parameter, CultureInfo culture)
         {
             return ((PressState)value == PressState.Pressed) ? true : false;
+        }
+    }
+
+    public class ConnectionStateToBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(bool))
+            {
+                throw new InvalidCastException("The output of the converter must be a boolean");
+            }
+
+            if (((KinectStatus)value) == KinectStatus.Connected)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(KinectStatus))
+            {
+                throw new InvalidCastException("The output of the converter must be KinectStatus");
+            }
+
+            if ((bool)value)
+            {
+                return KinectStatus.Connected;
+            }
+            else
+            {
+                return KinectStatus.Undefined;
+            }
+        }
+    }
+
+    public class ConnectionStateToInverseBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(bool))
+            {
+                throw new InvalidCastException("The output of the converter must be a boolean");
+            }
+
+            if (((KinectStatus)value) == KinectStatus.Connected)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(KinectStatus))
+            {
+                throw new InvalidCastException("The output of the converter must be KinectStatus");
+            }
+
+            if ((bool)value)
+            {
+                return KinectStatus.Undefined;
+            }
+            else
+            {
+                return KinectStatus.Connected;
+            }
+        }
+    }
+
+    public class ConnectionStateToTextDecorationsConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(TextDecorationCollection))
+            {
+                throw new InvalidCastException("The output of the converter must be TextDecorationCollection");
+            }
+
+            if (((KinectStatus)value) == KinectStatus.Connected)
+            {
+                return null;
+            }
+            else
+            {
+                return TextDecorations.Underline;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(KinectStatus))
+            {
+                throw new InvalidCastException("The output of the converter must be KinectStatus");
+            }
+
+            if (value == null)
+            {
+                return KinectStatus.Connected;
+            }
+            else
+            {
+                return KinectStatus.Undefined;
+            }
+        }
+    }
+
+    public class ConnectionStateToBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(System.Windows.Media.Brush))
+            {
+                throw new InvalidCastException("The output of the converter must be TextDecorationCollection");
+            }
+
+            if (((KinectStatus)value) == KinectStatus.Connected)
+            {
+                return System.Windows.Media.Brushes.Black;
+            }
+            else
+            {
+                return new System.Windows.Media.SolidColorBrush(new System.Windows.Media.Color() { A = 0xFF, R = 0x00, G = 0x66, B = 0xCC });
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (targetType != typeof(KinectStatus))
+            {
+                throw new InvalidCastException("The output of the converter must be KinectStatus");
+            }
+
+            if ((System.Windows.Media.Brush)value == System.Windows.Media.Brushes.Black)
+            {
+                return KinectStatus.Connected;
+            }
+            else
+            {
+                return KinectStatus.Undefined;
+            }
         }
     }
 

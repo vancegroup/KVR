@@ -250,11 +250,11 @@ namespace KinectWithVRServer
         private void updateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             //Update the audio beam angle, if it is using feedback mode (loudest is done automatically, and skeleton mode is done in the server core)
-            if (kinect.AudioSource != null && server.serverMasterOptions.kinectOptions[kinectID].audioTrackMode == AudioTrackingMode.Feedback)
+            if (kinect.AudioSource != null && server.serverMasterOptions.kinectOptionsList.Count > kinectID)
             {
-                if (server.feedbackPosition != null)
+                if (server.feedbackPosition != null && server.serverMasterOptions.kinectOptionsList[kinectID].audioTrackMode == AudioTrackingMode.Feedback)
                 {
-                    double angle = Math.Atan((server.feedbackPosition.Value.X - server.serverMasterOptions.kinectOptions[kinectID].kinectPosition.X) / (server.feedbackPosition.Value.Z - server.serverMasterOptions.kinectOptions[kinectID].kinectPosition.Z)) * (180.0 / Math.PI);
+                    double angle = Math.Atan((server.feedbackPosition.Value.X - server.serverMasterOptions.kinectOptionsList[kinectID].kinectPosition.X) / (server.feedbackPosition.Value.Z - server.serverMasterOptions.kinectOptionsList[kinectID].kinectPosition.Z)) * (180.0 / Math.PI);
                     kinect.AudioSource.ManualBeamAngle = angle; // This will be rounded automatically to the nearest 10 degree increment, in the range -50 to 50 degrees
                 }
             }
@@ -277,7 +277,7 @@ namespace KinectWithVRServer
             //Update the GUI
             if (dataValid)
             {
-                if (isGUI && parent.kinectOptionGUIPages[kinectID].IsVisible)
+                if (isGUI && parent.kinectOptionGUIPages.Count > kinectID && parent.kinectOptionGUIPages[kinectID].IsVisible)
                 {
                     //Note: This method is on a different thread from the rest of the KinectCore because of the timer, thus the need for the invoke
                     parent.Dispatcher.BeginInvoke((Action)(() =>
@@ -315,7 +315,7 @@ namespace KinectWithVRServer
         {
             using (SkeletonFrame skelFrame = e.OpenSkeletonFrame())
             {
-                if (skelFrame != null && server.serverMasterOptions.kinectOptionsList[kinectID].trackSkeletons)
+                if (skelFrame != null && server.serverMasterOptions.kinectOptionsList.Count > kinectID && server.serverMasterOptions.kinectOptionsList[kinectID].trackSkeletons)
                 {
                     Skeleton[] skeletons = new Skeleton[6];
                     skelFrame.CopySkeletonDataTo(skeletons);
