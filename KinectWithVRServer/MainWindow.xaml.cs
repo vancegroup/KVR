@@ -499,7 +499,7 @@ namespace KinectWithVRServer
             }
             server.kinects.Sort(new KinectCoreComparer());
         }
-
+        //Forces the GUI to update before launching the Kinect so the user knows what is going on
         private void ForceGUIUpdate()
         {
             DispatcherFrame frame = new DispatcherFrame();
@@ -511,7 +511,6 @@ namespace KinectWithVRServer
 
             Dispatcher.PushFrame(frame);
         }
-
         //TODO: REMOVE (FOR DEBUGGING ONLY)
         private void WriteOutKinectOrders()
         {
@@ -558,7 +557,7 @@ namespace KinectWithVRServer
                 }
                 case KinectStatus.DeviceNotSupported:
                 {
-                    MessageBox.Show("The connected device is not supported.  Please attach a Kinect sensor.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("A Kinect for Xbox is connected.  Please attach a Kinect for Windows sensor or install the Kinect SDK instead of the Kinect runtime.", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
                     break;
                 }
                 case KinectStatus.Disconnected:

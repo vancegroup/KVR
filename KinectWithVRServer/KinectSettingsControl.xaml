@@ -31,7 +31,7 @@
                         <ComboBoxItem Content="50 Hz"/>
                         <ComboBoxItem Content="Disabled"/>
                     </ComboBox>
-                    <CheckBox Name="AutoColorCheckBox" Content="Auto Color" Margin="2"/>
+                    <CheckBox Name="AutoColorCheckBox" Content="Auto Color" Margin="2" IsChecked="True"/>
                     <Button Name="advancedColorButton" Content="Advanced Color" Margin="2" Click="advancedColorButton_Click"/>
                 </StackPanel>
             </GroupBox>
@@ -55,7 +55,7 @@
                             <CheckBox Name="nearModeCheckBox" Content="Near Mode" IsChecked="False" Margin="2" Checked="nearModeCheckBox_CheckChanged" Unchecked="nearModeCheckBox_CheckChanged"/>
                         </StackPanel>
                     </Grid>
-                    <CheckBox Name="UseSkeletonCheckBox" Content="Use Skeleton" Margin="0,2,0,2" Checked="UseSkeletonCheckBox_CheckChanged" Unchecked="UseSkeletonCheckBox_CheckChanged"/>
+                    <CheckBox Name="UseSkeletonCheckBox" Content="Use Skeleton" Margin="0,2,0,2" IsChecked="True" Checked="UseSkeletonCheckBox_CheckChanged" Unchecked="UseSkeletonCheckBox_CheckChanged"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Header="Audio Settings" Grid.Column="1" Grid.Row="1">
