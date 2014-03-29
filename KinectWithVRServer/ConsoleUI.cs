@@ -8,7 +8,7 @@ namespace KinectWithVRServer
         internal static void RunServerInConsole(bool isVerbose, bool autoStart, string startupFile)
         {
             Console.Clear();
-            Console.WriteLine("Welcome to the Kinect With VR (KiwiVR) Server!");
+            Console.WriteLine("Welcome to the Kinect With VR (KVR) Server!");
             Console.WriteLine("Press the \"E\" key at any time to exit.");
 
             MasterSettings settings = new MasterSettings();
