@@ -1,6 +1,6 @@
-Kinect With VR Server - KiwiVR
+Kinect With VR Server - KVR
 
-https://github.com/vancegroup/KiwiVR
+https://github.com/vancegroup/KVR
 
 This software manages and runs VRPN servers for Kinect voice recognition
 and skeletal tracking.
@@ -26,4 +26,4 @@ Compiling Hints:
 	1. Microsoft.Kinect (Microsoft.Kinect.dll)
 	2. Microsoft.Speech (Microsoft.Speech.dll)
 	3. VrpnNet (VrpnNet.dll)
-* The debug versions of VrpnNet require Visual Studio 2010 to be installed. If VS 2010 is not installed, link KiwiVR to the release version of VrpnNet for the appropriate CPU architecture.
+* The debug versions of VrpnNet require Visual Studio 2010 to be installed. If VS 2010 is not installed, link KVR to the release version of VrpnNet for the appropriate CPU architecture.
