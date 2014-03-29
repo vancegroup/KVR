@@ -339,7 +339,7 @@
             <TabItem Name="LogTab" Header="Log">
                 <ScrollViewer Name="LogScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled" AcceptsReturn="True"
-                             Text="Welcome to the Kinect With VR (KiwiVR) Server!&#x0d;&#x0a;Note: For verbose logging, add -V as a Command Line Argument in the namespace Properties menu."
+                             Text="Welcome to the Kinect With VR (KVR) Server!&#x0d;&#x0a;Note: For verbose logging, add -V as a Command Line Argument in the namespace Properties menu."
                              IsReadOnly="True" IsReadOnlyCaretVisible="True" />
                 </ScrollViewer>
             </TabItem>
