@@ -123,7 +123,7 @@ namespace KinectWithVRServer
         }
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Kinect with VR (KiwiVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson, Diana Jarrell, and Tim Morgan.\r\nCopyright 2013", "About KiwiVR", MessageBoxButton.OK);
+            MessageBox.Show("Kinect with VR (KVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson, Diana Jarrell, and Tim Morgan.\r\nCopyright 2013", "About KVR", MessageBoxButton.OK);
         }
         private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
         {
