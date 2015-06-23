@@ -99,6 +99,18 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
+  <ItemGroup Condition="$(Platform)=='x86'">
+    <None Include="C:\Program Files\Microsoft SDKs\Kinect\Developer Toolkit v1.8.0\Redist\x86\KinectInteraction180_32.dll">
+      <Link>KinectInteraction180_32.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="$(Platform)=='x64'">
+    <None Include="C:\Program Files\Microsoft SDKs\Kinect\Developer Toolkit v1.8.0\Redist\amd64\KinectInteraction180_64.dll">
+      <Link>KinectInteraction180_64.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KinectBase\KinectBase.csproj">
       <Project>{e212ea42-c987-4d89-996f-c9da49878cfd}</Project>
