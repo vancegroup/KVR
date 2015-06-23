@@ -5,18 +5,19 @@
         xmlns:System="clr-namespace:System;assembly=mscorlib"
         xmlns:Collections="clr-namespace:System.Collections;assembly=mscorlib"
         xmlns:local="clr-namespace:KinectWithVRServer"
+        xmlns:kBase="clr-namespace:KinectBase;assembly=KinectBase"
         xmlns:core="clr-namespace:System;assembly=mscorlib"
         Initialized="Window_Initialized" Closing="Window_Closing"
         Title="Kinect with VR (KVR) Server" Height="504" Width="700">
     <Window.Resources>
         <ObjectDataProvider x:Key="ButtonTypeEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
             <ObjectDataProvider.MethodParameters>
-                <x:Type Type="local:ButtonType"/>
+                <x:Type Type="kBase:ButtonType"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
         <ObjectDataProvider x:Key="PressStateEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
             <ObjectDataProvider.MethodParameters>
-                <x:Type Type="local:PressState"/>
+                <x:Type Type="kBase:PressState"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
         <local:BoolToPressConverter x:Key="boolToPressConverter"/>
@@ -39,7 +40,6 @@
                 <MenuItem Name="SaveSettingsMenuItem" Header="_Save Settings" Click="SaveSettingsMenuItem_Click"/>
                 <Separator/>
                 <MenuItem Name="SaveLogMenuItem" Header="Save Log" Click="SaveLogMenuItem_Click"/>
-                <MenuItem Name="GenJCONFMenuItem" Header="Generate .jconf" Click="GenJCONFMenuItem_Click"/>
                 <Separator/>
                 <MenuItem Name="ExitMenuItem" Header="Exit" Click="ExitMenuItem_Click"/>
             </MenuItem>
@@ -53,25 +53,40 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <!--<RowDefinition Height="Auto"/>-->
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*" MaxWidth="150"/>
+                <!--This column is for the server status, which I have removed for now-->
+                <!--<ColumnDefinition Width="*" MaxWidth="150"/>-->
             </Grid.ColumnDefinitions>
-            <Label Content="Color:"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="Color:"/>
+                <ComboBox Name="ColorSourcePickerComboBox" SelectionChanged="ColorSourcePickerComboBox_SelectionChanged" Grid.Column="1" Margin="2" SelectedIndex="0">
+                    <ComboBoxItem Content="None"/>
+                </ComboBox>
+            </Grid>
             <Image Name="ColorImage" Grid.Row="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"/>
             <Canvas Name="ColorImageCanvas" Grid.Row="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
-            <ComboBox Name="ColorSourcePickerComboBox" SelectionChanged="ColorSourcePickerComboBox_SelectionChanged" Grid.Row="2" Margin="2" SelectedIndex="0">
-                <ComboBoxItem Content="None"/>
-            </ComboBox>
-            <Label Content="Depth:" Grid.Column="1"/>
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="Depth:"/>
+                <ComboBox Name="DepthSourcePickerComboBox" SelectionChanged="DepthSourcePickerComboBox_SelectionChanged" Grid.Column="1" Margin="2" SelectedIndex="0">
+                    <ComboBoxItem Content="None"/>
+                </ComboBox>
+            </Grid>
             <Image Name="DepthImage" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <ComboBox Name="DepthSourcePickerComboBox" SelectionChanged="DepthSourcePickerComboBox_SelectionChanged" Grid.Row="2" Grid.Column="1" Margin="2" SelectedIndex="0">
-                <ComboBoxItem Content="None"/>
-            </ComboBox>
-            <Label Content="Info:" Grid.Column="2"/>
+            <!--<Canvas Name="DepthImageCanvas" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>-->
+            <!--Info column has been removed pending a decision on what to put in it-->
+            <!--<Label Content="Info:" Grid.Column="2"/>-->
         </Grid>
         <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
         <GridSplitter Grid.Row="2" VerticalAlignment="Top" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
@@ -143,6 +158,8 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Unique ID" IsReadOnly="True" Binding="{Binding UniqueID}"/>
+                            <!--TODO: Hide the connection ID once networked and Kinect 2 sensors are supported?-->
                             <DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>
                         </DataGrid.Columns>
                     </DataGrid>
@@ -156,7 +173,11 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Grid.ColumnSpan="2">
                         <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="Audio Source:" Margin="2"/>
                         <ComboBox Name="VoiceKinectComboBox" Margin="2" Height="23" Width="110" SelectionChanged="VoiceKinectComboBox_SelectionChanged">
                             <ComboBoxItem Content="System Default"/>
@@ -165,10 +186,19 @@
                         <ComboBox Name="VoiceRecognitionEngineComboBox" Margin="2" SelectedIndex="0" Height="23" Width="350" SelectionChanged="VoiceRecognitionEngineComboBox_SelectionChanged">
                         </ComboBox>
                     </StackPanel>
-                    <!--<TextBlock Grid.Row="0" Name="KinectSpecVoiceBlock" HorizontalAlignment="Stretch" Height="27" VerticalAlignment="Center" TextWrapping="Wrap" Margin="6,6,0,0" Width="Auto">
-                        <CheckBox Content="Enable Voice Recognition" Name="EnableVoiceRecog" Margin="3,0,0,-3"/> <Separator/> Selected Kinect for Audio: <ComboBox Name="VoiceKinectChoiceBox" Margin="3,0,0,-6"></ComboBox>
-                    </TextBlock>-->
-                    <DataGrid Name="VoiceButtonDataGrid" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
+                    <StackPanel Orientation="Horizontal" Grid.Row="1" >
+                        <TextBlock Text="VRPN Button" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,0,0">
+                            <TextBlock.LayoutTransform>
+                                <RotateTransform Angle="-90"/>
+                            </TextBlock.LayoutTransform>
+                        </TextBlock>
+                        <TextBlock Text="Commands" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,0,0">
+                            <TextBlock.LayoutTransform>
+                                <RotateTransform Angle="-90"/>
+                            </TextBlock.LayoutTransform>
+                        </TextBlock>
+                    </StackPanel>
+                    <DataGrid Name="VoiceButtonDataGrid" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceButtonDataGrid_LostFocus">
                         <DataGrid.Columns>
                             <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
                             <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>                            
@@ -181,7 +211,19 @@
                             <DataGridTextColumn Header="Comments" Binding="{Binding comments}"/>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <DataGrid Name="VoiceTextDataGrid" Grid.Row="2" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
+                    <StackPanel Orientation="Horizontal" Grid.Row="2" >
+                        <TextBlock Text="VRPN Text" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,0,0">
+                            <TextBlock.LayoutTransform>
+                                <RotateTransform Angle="-90"/>
+                            </TextBlock.LayoutTransform>
+                        </TextBlock>
+                        <TextBlock Text="Commands" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,0,0">
+                            <TextBlock.LayoutTransform>
+                                <RotateTransform Angle="-90"/>
+                            </TextBlock.LayoutTransform>
+                        </TextBlock>
+                    </StackPanel>
+                    <DataGrid Name="VoiceTextDataGrid" Grid.Row="2" Grid.Column="1" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" LostFocus="VoiceTextDataGrid_LostFocus">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Action Text" Binding="{Binding actionText}"/>
                             <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
@@ -193,7 +235,7 @@
                     </DataGrid>
                 </Grid>
             </TabItem>
-            <!--The gesture t ab is disabled until such time as gestures are put into the server-->
+            <!--The gesture tab is disabled until such time as gestures are put into the server-->
             <!--<TabItem Name="GestureTab" Header="Gesture Commands">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -239,50 +281,54 @@
                 </Grid>
             </TabItem>-->
             
-            <TabItem Name="SkeletonTab" Header="Skeleton Settings">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal" Height="27">
-                        <CheckBox Content="Seated Mode" Margin="2" Name="ChooseSeatedCheckBox" VerticalAlignment="Center" Checked="ChooseSeatedCheckBox_CheckChanged" Unchecked="ChooseSeatedCheckBox_CheckChanged"/>
-                        <TextBlock Text="Skeleton Sort Mode:" Margin="20,2,2,2" VerticalAlignment="Center"/>
-                        <ComboBox Margin="2" Name="SkelSortModeComboBox" SelectionChanged="SkelSortModeComboBox_SelectionChanged" Width="250">
-                            <ComboBoxItem Content="None"/>
-                            <ComboBoxItem Content="Ascending X-Distance from Origin"/>
-                            <ComboBoxItem Content="Descending X-Distance from Origin"/>
-                            <ComboBoxItem Content="Ascending Y-Distance from Origin"/>
-                            <ComboBoxItem Content="Descending Y-Distance from Origin"/>
-                            <ComboBoxItem Content="Ascending Z-Distance from Origin"/>
-                            <ComboBoxItem Content="Descending Z-Distance from Origin"/>
-                            <ComboBoxItem Content="Ascending Euclidean Distance from Origin"/>
-                            <ComboBoxItem Content="Descending Euclidean Distance from Origin"/>
-                            <ComboBoxItem Content="Ascending X-Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Descending X-Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Ascending Y-Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Descending Y-Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Ascending Z-Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Descending Z-Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Ascending Euclidean Distance from Feedback Sensor"/>
-                            <ComboBoxItem Content="Descending Euclidean Distance from Feedback Sensor"/>
-                        </ComboBox>
-                    </StackPanel>
-                    <DataGrid Name="SkeletonSettingsDataGrid" Grid.Row="3" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="#" IsReadOnly="True" Binding="{Binding Path=skeletonNumber}"/>
-                            <DataGridCheckBoxColumn Header="Transmit" IsReadOnly="False" Binding="{Binding Path=useSkeleton}"/>
-                            <DataGridTextColumn Header="Server Name" IsReadOnly="False" Binding="{Binding Path=serverName}"/>
-                            <DataGridTextColumn Header="Render Color" IsReadOnly="True" Binding="{Binding Path=renderColor}"/>
-                            <DataGridCheckBoxColumn Header="Use RH Grip" IsReadOnly="False" Binding="{Binding Path=useRightHandGrip}"/>
-                            <DataGridTextColumn Header="RH Server Name" IsReadOnly="False" Binding="{Binding Path=rightGripServerName}"/>
-                            <DataGridTextColumn Header="RH Button #" IsReadOnly="False" Binding="{Binding Path=rightGripButtonNumber}"/>
-                            <DataGridCheckBoxColumn Header="Use LH Grip" IsReadOnly="False" Binding="{Binding Path=useLeftHandGrip}"/>
-                            <DataGridTextColumn Header="LH Server Name" IsReadOnly="False" Binding="{Binding Path=leftGripServerName}"/>
-                            <DataGridTextColumn Header="LH Button #" IsReadOnly="False" Binding="{Binding Path=leftGripButtonNumber}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
+            <TabItem Name="SkeletonTab" Header="Skeleton Settings" RequestBringIntoView="SkeletonTab_RequestBringIntoView">
+                <TabControl Name="SkeletonsTabControl" TabStripPlacement="Bottom">
+                    <TabItem Name="MergedSkeletonTab" Header="Merged Skeletons">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal" Height="27">
+                                <!--<CheckBox Content="Seated Mode" Margin="2" Name="ChooseSeatedCheckBox" VerticalAlignment="Center" Checked="ChooseSeatedCheckBox_CheckChanged" Unchecked="ChooseSeatedCheckBox_CheckChanged"/>-->
+                                <TextBlock Text="Skeleton Sort Mode:" Margin="2,2,2,2" VerticalAlignment="Center"/>
+                                <ComboBox Margin="2" Name="SkelSortModeComboBox" SelectionChanged="SkelSortModeComboBox_SelectionChanged" Width="250">
+                                    <ComboBoxItem Content="None"/>
+                                    <ComboBoxItem Content="Ascending X-Distance from Origin"/>
+                                    <ComboBoxItem Content="Descending X-Distance from Origin"/>
+                                    <ComboBoxItem Content="Ascending Y-Distance from Origin"/>
+                                    <ComboBoxItem Content="Descending Y-Distance from Origin"/>
+                                    <ComboBoxItem Content="Ascending Z-Distance from Origin"/>
+                                    <ComboBoxItem Content="Descending Z-Distance from Origin"/>
+                                    <ComboBoxItem Content="Ascending Euclidean Distance from Origin"/>
+                                    <ComboBoxItem Content="Descending Euclidean Distance from Origin"/>
+                                    <ComboBoxItem Content="Ascending X-Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Descending X-Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Ascending Y-Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Descending Y-Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Ascending Z-Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Descending Z-Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Ascending Euclidean Distance from Feedback Sensor"/>
+                                    <ComboBoxItem Content="Descending Euclidean Distance from Feedback Sensor"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <DataGrid Name="SkeletonSettingsDataGrid" Grid.Row="3" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" IsReadOnly="True" Binding="{Binding Path=skeletonNumber}"/>
+                                    <DataGridCheckBoxColumn Header="Transmit" IsReadOnly="False" Binding="{Binding Path=useSkeleton}"/>
+                                    <DataGridTextColumn Header="Server Name" IsReadOnly="False" Binding="{Binding Path=serverName}"/>
+                                    <DataGridTextColumn Header="Render Color" IsReadOnly="True" Binding="{Binding Path=renderColor}"/>
+                                    <DataGridCheckBoxColumn Header="Use RH Grip" IsReadOnly="False" Binding="{Binding Path=useRightHandGrip}"/>
+                                    <DataGridTextColumn Header="RH Server Name" IsReadOnly="False" Binding="{Binding Path=rightGripServerName}"/>
+                                    <DataGridTextColumn Header="RH Button #" IsReadOnly="False" Binding="{Binding Path=rightGripButtonNumber}"/>
+                                    <DataGridCheckBoxColumn Header="Use LH Grip" IsReadOnly="False" Binding="{Binding Path=useLeftHandGrip}"/>
+                                    <DataGridTextColumn Header="LH Server Name" IsReadOnly="False" Binding="{Binding Path=leftGripServerName}"/>
+                                    <DataGridTextColumn Header="LH Button #" IsReadOnly="False" Binding="{Binding Path=leftGripButtonNumber}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>    
+                    </TabItem>
+                </TabControl>
             </TabItem>
             
             <TabItem Name="FeedbackTab" Header="Feedback">

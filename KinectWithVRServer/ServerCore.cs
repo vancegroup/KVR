@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Diagnostics;
-using Microsoft.Kinect;
+//using Microsoft.Kinect;
 using System.Windows.Media.Media3D;
 using Vrpn;
+using KinectBase;
 
 namespace KinectWithVRServer
 {
@@ -25,21 +27,24 @@ namespace KinectWithVRServer
             get { return (serverState == ServerRunState.Running); }
         }
         Vrpn.Connection vrpnConnection;
-        internal MasterSettings serverMasterOptions;
+        internal KinectBase.MasterSettings serverMasterOptions;
         internal List<Vrpn.ButtonServer> buttonServers;
         internal List<Vrpn.AnalogServer> analogServers;
         internal List<Vrpn.TextSender> textServers;
         internal List<Vrpn.TrackerServer> trackerServers;
-        //internal List<KinectSkeletonsData> perKinectSkeletons = new List<KinectSkeletonsData>(); //TODO: use this to merge the skeletons
+
+        private List<KinectSkeletonsData> perKinectSkeletons = new List<KinectSkeletonsData>();
+        private List<MergedSkeleton> mergedSkeletons = new List<MergedSkeleton>();
+        private System.Timers.Timer skeletonUpdateTimer;  //Use a timer to update the skeletons at a constant rate since we might have so much data coming in that updating them as we get data would just clog the network
         bool verbose = false;
         bool GUI = false;
         MainWindow parent;
-        internal List<KinectCore> kinects = new List<KinectCore>();
+        internal List<KinectBase.IKinectCore> kinects = new List<KinectBase.IKinectCore>();
         VoiceRecogCore voiceRecog;
         FeedbackCore feedbackCore;
         internal Point3D? feedbackPosition = null;
 
-        public ServerCore(bool isVerbose, MasterSettings serverOptions, MainWindow guiParent = null)
+        public ServerCore(bool isVerbose, KinectBase.MasterSettings serverOptions, MainWindow guiParent = null)
         {                
             parent = guiParent;
             verbose = isVerbose;
@@ -58,12 +63,19 @@ namespace KinectWithVRServer
             serverState = ServerRunState.Starting;
 
             string errorMessage = "";
-            if (serverMasterOptions.parseSettings(out errorMessage))
+            if (parseSettings(out errorMessage))
             {
                 //Start the Kinect audio streams and create the per Kinect skeleton lists
                 for (int i = 0; i < kinects.Count; i++)
                 {
-                    kinects[i].StartKinectAudio(); //TODO: This will crash if the Kinects are in another thread (i.e. console mode)
+                    if (kinects[i].version == KinectVersion.KinectV1)
+                    {
+                        ((KinectV1Core.KinectCoreV1)kinects[i]).StartKinectAudio(); 
+                    }
+                    else if (kinects[i].version == KinectVersion.KinectV2)
+                    {
+                        //TODO: Start Kinect v2 audio
+                    }
                 }
 
                 //Start the feedback client if necessary
@@ -228,6 +240,15 @@ namespace KinectWithVRServer
                 }
             }
 
+            //Subscribe to the Kinect events
+            subscribeToKinectEvents();
+
+            //Start the skeleton update timer
+            //TODO: Is this update rate okay?
+            skeletonUpdateTimer = new System.Timers.Timer(33); //Update at 30 FPS?
+            skeletonUpdateTimer.Elapsed += skeletonUpdateTimer_Elapsed;
+            skeletonUpdateTimer.Start();
+
             //The server isn't really running until everything is setup here.
             serverState = ServerRunState.Running;
 
@@ -247,6 +268,10 @@ namespace KinectWithVRServer
             }
 
             //Cleanup everything
+            unsubscribeFromKinectEvents();
+            skeletonUpdateTimer.Stop();
+            skeletonUpdateTimer.Elapsed -= skeletonUpdateTimer_Elapsed;
+
             //Dispose the analog servers
             serverState = ServerRunState.Stopping;
             disposeList(ref analogServers);
@@ -261,239 +286,292 @@ namespace KinectWithVRServer
             serverState = ServerRunState.Stopped;
         }
 
-        //Redirect the skeleton data changed event to merge and transmit the skeleton data
-        public void PerKinectSkeletons_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void subscribeToKinectEvents()
         {
-            mergeAndTransmitSkeletons();
-        }
-        //Merges all the skeletons together and transmits the new master skeletons VIA vrpn
-        private void mergeAndTransmitSkeletons()
-        {
-            List<KinectSkeleton> masterSkeletons = new List<KinectSkeleton>();
-            List<int[]> pointsAverages = new List<int[]>();
-            List<List<bool>> rightHandStates = new List<List<bool>>();
-            List<List<bool>> leftHandStates = new List<List<bool>>();
-
-            #region Merge the skeleton data
             for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
             {
-                if (serverMasterOptions.kinectOptionsList[i].trackSkeletons)
+                if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    List<KinectSkeleton> localCopy = new List<KinectSkeleton>(kinects[i].skeletonData.actualSkeletons);
-                    for (int localIndex = localCopy.Count - 1; localIndex >= 0; localIndex--)
+                    KinectV1Core.KinectV1Settings tempSettings = (KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i];
+                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
                     {
-                        if (localCopy[localIndex].skeleton == null || localCopy[localIndex].skeleton.TrackingState == SkeletonTrackingState.NotTracked)
-                        {
-                            localCopy.RemoveAt(localIndex);
-                        }
-                        else
-                        {
-                            bool skeletonFound = false;
-                            for (int masterIndex = 0; masterIndex < masterSkeletons.Count; masterIndex++)
-                            {
-                                double dist = InterPointDistance(localCopy[localIndex].skeleton.Position, masterSkeletons[masterIndex].skeleton.Position);
-                                if (dist < 0.3)
-                                {
-                                    skeletonFound = true;
-                                    masterSkeletons[masterIndex].skeleton.Position = IncAverage(masterSkeletons[masterIndex].skeleton.Position, localCopy[localIndex].skeleton.Position, pointsAverages[masterIndex][20]);
-                                    pointsAverages[masterIndex][20]++;
-
-                                    //Average the joints
-                                    for (int jointIndex = 0; jointIndex < masterSkeletons[masterIndex].skeleton.Joints.Count; jointIndex++)
-                                    {
-                                        Joint tempJoint = new Joint();
-
-                                        //If the new skeleton joint has tracking data, and the old one doesn't, use the new one and update the tracking state
-                                        if (masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.NotTracked && localCopy[localIndex].skeleton.Joints[(JointType)jointIndex].TrackingState != JointTrackingState.NotTracked)
-                                        {
-                                            tempJoint = localCopy[localIndex].skeleton.Joints[(JointType)jointIndex];
-                                            masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex] = tempJoint;
-                                            pointsAverages[masterIndex][jointIndex] = 0;
-                                        }
-                                        //If they are both inferred, just average them
-                                        else if (masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.Inferred && localCopy[localIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.Inferred)
-                                        {
-                                            tempJoint = masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex];
-                                            tempJoint.Position = IncAverage(masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex].Position, localCopy[localIndex].skeleton.Joints[(JointType)jointIndex].Position, pointsAverages[masterIndex][jointIndex]);
-                                            pointsAverages[masterIndex][jointIndex]++;
-                                            masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex] = tempJoint;
-                                        }
-                                        //If they are both tracked, just average them
-                                        else if (masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.Tracked && localCopy[localIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.Tracked)
-                                        {
-                                            tempJoint = masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex];
-                                            tempJoint.Position = IncAverage(masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex].Position, localCopy[localIndex].skeleton.Joints[(JointType)jointIndex].Position, pointsAverages[masterIndex][jointIndex]);
-                                            pointsAverages[masterIndex][jointIndex]++;
-                                            masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex] = tempJoint;
-                                        }
-                                        //If they new one is tracked, and the old one is inferred, use the new one and update the tracking state - COULD DO A WEIGHTED AVERAGE HERE!!
-                                        else if (masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.Inferred && localCopy[localIndex].skeleton.Joints[(JointType)jointIndex].TrackingState == JointTrackingState.Tracked)
-                                        {
-                                            tempJoint = localCopy[localIndex].skeleton.Joints[(JointType)jointIndex];
-                                            pointsAverages[masterIndex][jointIndex] = 0;
-                                            masterSkeletons[masterIndex].skeleton.Joints[(JointType)jointIndex] = tempJoint;
-                                        }
-                                        //Otherwise, we just ignore it
-
-                                        //Merge the hands
-                                        if ((JointType)jointIndex == JointType.HandRight)
-                                        {
-                                            if (localCopy[localIndex].skeleton.Joints[JointType.HandRight].TrackingState == JointTrackingState.Tracked)
-                                            {
-                                                rightHandStates[masterIndex].Add(localCopy[localIndex].rightHandClosed);
-                                            }
-                                        }
-                                        else if ((JointType)jointIndex == JointType.HandLeft)
-                                        {
-                                            if (localCopy[localIndex].skeleton.Joints[JointType.HandLeft].TrackingState == JointTrackingState.Tracked)
-                                            {
-                                                leftHandStates[masterIndex].Add(localCopy[localIndex].leftHandClosed);
-                                            }
-                                        }
-                                    }
-                                    localCopy.RemoveAt(localIndex);
-                                    break;
-                                }
-                            }
-                            if (!skeletonFound)
-                            {
-                                masterSkeletons.Add(localCopy[localIndex]);
-                                pointsAverages.Add(new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });  //Use 21 N's for the averaging, even though there at 20 joints (the 21st is for the position)
-                                if (localCopy[localIndex].skeleton.Joints[JointType.HandRight].TrackingState == JointTrackingState.Tracked)
-                                {
-                                    rightHandStates.Add(new List<bool>(new bool[] { localCopy[localIndex].rightHandClosed }));
-                                }
-                                else
-                                {
-                                    rightHandStates.Add(new List<bool>());
-                                }
-                                if (localCopy[localIndex].skeleton.Joints[JointType.HandLeft].TrackingState == JointTrackingState.Tracked)
-                                {
-                                    leftHandStates.Add(new List<bool>(new bool[] { localCopy[localIndex].leftHandClosed }));
-                                }
-                                else
-                                {
-                                    leftHandStates.Add(new List<bool>());
-                                }
-                                localCopy.RemoveAt(localIndex);
-                            }
-                        }
+                        kinects[i].SkeletonChanged += kinect_SkeletonChanged;
+                    }
+                    if (tempSettings.sendAudioAngle)
+                    {
+                        kinects[i].AudioPositionChanged += kinect_AudioPositionChanged;
+                    }
+                    if (tempSettings.sendAcceleration)
+                    {
+                        kinects[i].AccelerationChanged += kinect_AccelerationChanged;
                     }
                 }
-
-                kinects[i].skeletonData.needsUpdate = false;
+                //TODO: Add handling for Kinect v2 events
+                //TODO: Add handling for Networked Kinect events
             }
-            #endregion
+        }
+        private void unsubscribeFromKinectEvents()
+        {
+            for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
+            {
+                if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                {
+                    KinectV1Core.KinectV1Settings tempSettings = (KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i];
+                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    {
+                        kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
+                    }
+                    if (tempSettings.sendAudioAngle)
+                    {
+                        kinects[i].AudioPositionChanged -= kinect_AudioPositionChanged;
+                    }
+                    if (tempSettings.sendAcceleration)
+                    {
+                        kinects[i].AccelerationChanged -= kinect_AccelerationChanged;
+                    }
+                }
+                //TODO: Add handling for Kinect v2 events
+                //TODO: Add handling for networked Kinect events
+            }
+        }
 
-            //Sort all the skeletons before transmitting them
-            masterSkeletons = SortSkeletons(masterSkeletons, serverMasterOptions.skeletonOptions.skeletonSortMode);
-
-            //Transmit all skeletons here
+        private void kinect_AccelerationChanged(object sender, AccelerationEventArgs e)
+        {
+            //Transmit the acceleration
             if (isRunning)
             {
-                for (int skeletonIndex = 0; skeletonIndex < masterSkeletons.Count; skeletonIndex++)
+                if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
                 {
-                    SendSkeletonVRPN(masterSkeletons[skeletonIndex].skeleton, skeletonIndex);
-                    //Transmit the hand grips, if we have good data on them
-                    if (leftHandStates.Count > 0)
+                    KinectV1Core.KinectV1Settings tempSettings = ((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendAcceleration)
                     {
-                        int grippedLeft = leftHandStates[skeletonIndex].FindAll(x => x == true).Count;
-                        bool leftState = grippedLeft >= ((leftHandStates.Count + 1) / 2); //If at least half of the available data says it is gripped, it is gripped
-                       
-                        for (int j = 0; j < buttonServers.Count; j++)
+                        for (int i = 0; i < analogServers.Count; i++)
                         {
-                            if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.skeletonOptions.individualSkeletons[skeletonIndex].leftGripServerName)
+                            if (serverMasterOptions.analogServers[i].serverName == tempSettings.accelerationServerName)
                             {
-                                lock (buttonServers[j])
+                                if (e.acceleration.HasValue)
                                 {
-                                    buttonServers[j].Buttons[serverMasterOptions.skeletonOptions.individualSkeletons[skeletonIndex].leftGripButtonNumber] = leftState;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    if (rightHandStates.Count > 0)
-                    {
-                        int grippedRight = rightHandStates[skeletonIndex].FindAll(x => x == true).Count;
-                        bool rightState = grippedRight >= ((rightHandStates.Count + 1) / 2); //If at least half of the available data says it is gripped, it is gripped
-
-                        for (int j = 0; j < buttonServers.Count; j++)
-                        {
-                            if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.skeletonOptions.individualSkeletons[skeletonIndex].rightGripServerName)
-                            {
-                                lock (buttonServers[j])
-                                {
-                                    buttonServers[j].Buttons[serverMasterOptions.skeletonOptions.individualSkeletons[skeletonIndex].rightGripButtonNumber] = rightState;
+                                    lock (analogServers[i])
+                                    {
+                                        analogServers[i].AnalogChannels[tempSettings.accelXChannel].Value = e.acceleration.Value.X;
+                                        analogServers[i].AnalogChannels[tempSettings.accelYChannel].Value = e.acceleration.Value.Y;
+                                        analogServers[i].AnalogChannels[tempSettings.accelZChannel].Value = e.acceleration.Value.Z;
+                                        analogServers[i].Report();
+                                    }
                                 }
                                 break;
                             }
                         }
                     }
                 }
-            }
-
-            //Update the audio beam angle on each Kinect, if necessary
-            for (int i = 0; i < kinects.Count; i++)
-            {
-                if ((serverMasterOptions.kinectOptionsList[i].sendAudioAngle || serverMasterOptions.audioOptions.sourceID == i) && serverMasterOptions.kinectOptionsList[i].audioTrackMode == AudioTrackingMode.SkeletonX)
+                else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
                 {
-                    int audioSkeleton = serverMasterOptions.kinectOptionsList[i].audioBeamTrackSkeletonNumber;
-                    if (kinects[i].kinect.AudioSource != null && masterSkeletons.Count > audioSkeleton)
+                    //TODO: Setup transmitting for the Kinect v2
+                    //KinectV1Core.KinectV1Settings tempSettings = ((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    //if (tempSettings.sendAcceleration)
+                    //{
+                    //    for (int i = 0; i < analogServers.Count; i++)
+                    //    {
+                    //        if (serverMasterOptions.analogServers[i].serverName == tempSettings.accelerationServerName)
+                    //        {
+                    //            lock (analogServers[i])
+                    //            {
+                    //                analogServers[i].AnalogChannels[tempSettings.accelXChannel].Value = e.acceleration.X;
+                    //                analogServers[i].AnalogChannels[tempSettings.accelYChannel].Value = e.acceleration.Y;
+                    //                analogServers[i].AnalogChannels[tempSettings.accelZChannel].Value = e.acceleration.Z;
+                    //                analogServers[i].Report();
+                    //            }
+                    //            break;
+                    //        }
+                    //    }
+                    //}
+                }
+            }
+        }
+        private void kinect_AudioPositionChanged(object sender, AudioPositionEventArgs e)
+        {
+            if (isRunning)
+            {
+                if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
+                {
+                    KinectV1Core.KinectV1Settings tempSettings = ((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendAudioAngle)
                     {
-                        if (masterSkeletons[audioSkeleton].skeleton.TrackingState != SkeletonTrackingState.NotTracked)
+                        for (int i = 0; i < analogServers.Count; i++)
                         {
-                            double angle = Math.Atan((masterSkeletons[audioSkeleton].skeleton.Position.X - serverMasterOptions.kinectOptionsList[i].kinectPosition.X) / (masterSkeletons[audioSkeleton].skeleton.Position.Z - serverMasterOptions.kinectOptionsList[i].kinectPosition.Z)) * (180.0 / Math.PI);
-                            kinects[i].kinect.AudioSource.ManualBeamAngle = angle;
+                            if (serverMasterOptions.analogServers[i].serverName == tempSettings.audioAngleServerName)
+                            {
+                                lock (analogServers[i])
+                                {
+                                    analogServers[i].AnalogChannels[tempSettings.audioAngleChannel].Value = e.audioAngle;
+                                    analogServers[i].Report();
+                                }
+                                break;
+                            }
                         }
                     }
                 }
-            }
-
-            //Update stuff on the GUI
-            if (GUI)
-            {
-                if (parent.Dispatcher.Thread.ManagedThreadId == Thread.CurrentThread.ManagedThreadId)
+                else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
                 {
-                    //Update the number of skeletons being tracked on the GUI
-                    parent.TrackedSkeletonsTextBlock.Text = masterSkeletons.Count.ToString();
-                    parent.ColorImageCanvas.Children.Clear();
-                    for (int skeletonIndex = 0; skeletonIndex < masterSkeletons.Count; skeletonIndex++)
+                    //TODO: Transmit the audio angle from the Kinect v2
+                }
+            }
+        }
+        private void kinect_SkeletonChanged(object sender, SkeletonEventArgs e)
+        {
+            DateTime time = DateTime.UtcNow;
+
+            if (isRunning)
+            {
+                //Transmit the Kinect v1 Skeletons
+                if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
+                {
+                    KinectV1Core.KinectV1Settings tempSettings = (KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID];
+
+                    //Send the raw skeletons
+                    if (tempSettings.sendRawSkeletons)
                     {
-                        parent.RenderSkeletonOnColor(masterSkeletons[skeletonIndex].skeleton, serverMasterOptions.skeletonOptions.individualSkeletons[skeletonIndex].renderColor);
+                        //The skeletons need to be copied, so the e.skeletons version isn't changed when the transformation is done
+                        KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
+                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
+
+                        //Transform the raw skeletons, if the user requested it
+                        if (tempSettings.transformRawSkeletons)
+                        {
+                            for (int i = 0; i < skeletons.Length; i++)
+                            {
+                                skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
+                            }
+                        }
+
+                        //Sort the raw skeletons
+                        List<KinectSkeleton> sortedSkeletons = SortSkeletons(new List<KinectSkeleton>(skeletons), tempSettings.rawSkeletonSettings.skeletonSortMode);
+
+                        //Transmit the skeleton data
+                        for (int i = 0; i < sortedSkeletons.Count; i++)
+                        {
+                            //Transmit the joints
+                            SendSkeletonVRPN(sortedSkeletons[i].skeleton, tempSettings.rawSkeletonSettings.individualSkeletons[i].serverName);
+
+                            //Transmit the right hand
+                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useRightHandGrip)
+                            {
+                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                            }
+
+                            //Transmit the right hand
+                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useLeftHandGrip)
+                            {
+                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                            }
+                        }
+                    }
+
+                    //Merge the skeletons into the ones collected by the other Kinects
+                    if (tempSettings.mergeSkeletons)
+                    {
+                        //Copy the skeletons to a temporary variable
+                        KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
+                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
+
+                        //Transform the skeletons
+                        for (int i = 0; i < skeletons.Length; i++)
+                        {
+                            skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
+                        }
+
+                        //Add the skeletons to the merge list
+                        for (int i = 0; i < perKinectSkeletons.Count; i++)
+                        {
+                            if (perKinectSkeletons[i].uniqueID == kinects[e.kinectID].uniqueKinectID)
+                            {
+                                perKinectSkeletons.RemoveAt(i);
+                            }
+                        }
+                        KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
+                        kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
+                        kinectSkel.kinectID = e.kinectID;
+                        kinectSkel.utcTime = time;
+                        perKinectSkeletons.Add(kinectSkel);
+
                     }
                 }
-                else
+                else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
                 {
-                    parent.Dispatcher.BeginInvoke((Action)(() =>
-                    {
-                        //Update the number of skeletons being tracked on the GUI
-                        parent.TrackedSkeletonsTextBlock.Text = masterSkeletons.Count.ToString();
-                        parent.ColorImageCanvas.Children.Clear();
-                        for (int skeletonIndex = 0; skeletonIndex < masterSkeletons.Count; skeletonIndex++)
-                        {
-                            parent.RenderSkeletonOnColor(masterSkeletons[skeletonIndex].skeleton, serverMasterOptions.skeletonOptions.individualSkeletons[skeletonIndex].renderColor);
-                        }
-                    }), null
-                    );
+                    //TODO: Send the raw skeletons for the Kinect v2
                 }
             }
+        }
 
-            //Call the GUI skeleton renderer
+        //This function goes through the skeletons from all the Kinects and figures out which ones are the same
+        //When multiple skeletons from different Kinects are the same, they will need to be merged together
+        private void findSameSkeletons(List<KinectSkeletonsData> kinectSkeletons)
+        {            
+            KinectSkeletonsData[] skeletonsCopy;
+            lock (kinectSkeletons)
+            {
+                //TODO: Fix threading issues
+                //Even with the lock, the kinectSkeletons variable sometimes gets updated while we are inside this function
+                skeletonsCopy = new KinectSkeletonsData[kinectSkeletons.Count];
+                kinectSkeletons.CopyTo(0, skeletonsCopy, 0, skeletonsCopy.Length);
+            }
+
+            List<Point3D> averageCenters = new List<Point3D>();
+            mergedSkeletons.Clear();
+
+            for (int i = 0; i < skeletonsCopy.Length; i++) //For each Kinect
+            {
+                for (int j = 0; j < skeletonsCopy[i].actualSkeletons.Count; j++) //For each skeleton from the Kinect
+                {
+                    bool matchFound = false;
+                    for (int k = 0; k < averageCenters.Count; k++)
+                    {
+                        Vector3D distance = averageCenters[k] - skeletonsCopy[i].actualSkeletons[j].Position;
+                        if (Math.Abs(distance.Length) < 0.3)
+                        {
+                            matchFound = true;
+                            averageCenters[k] = HelperMethods.IncAverage(averageCenters[k], skeletonsCopy[i].actualSkeletons[j].Position, mergedSkeletons[k].Count);
+                            mergedSkeletons[k].AddSkeletonToMerge(skeletonsCopy[i].actualSkeletons[j]);
+                        }
+                    }
+
+                    if (!matchFound)
+                    {
+                        mergedSkeletons.Add(new MergedSkeleton());
+                        mergedSkeletons[mergedSkeletons.Count - 1].AddSkeletonToMerge(skeletonsCopy[i].actualSkeletons[j]);
+                        averageCenters.Add(skeletonsCopy[i].actualSkeletons[j].Position);
+                    }
+                }
+            }
         }
-        private double InterPointDistance(SkeletonPoint x, SkeletonPoint y)
+        private void skeletonUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            double distance = double.MaxValue;
-            distance = Math.Sqrt(Math.Pow((double)y.X - (double)x.X, 2.0) + Math.Pow((double)y.Y - (double)x.Y, 2.0) + Math.Pow((double)y.Z - (double)x.Z, 2.0));
-            return distance;
+            findSameSkeletons(perKinectSkeletons);
+
+            List<MergedSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
+
+            int usedSkeletonsCount = Math.Min(mergedSkeletons.Count, serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count);
+            for (int i = 0; i < usedSkeletonsCount; i++)
+            {
+                //Send the skeleton data
+                if (serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].useSkeleton)
+                {
+                    SendSkeletonVRPN(sortedSkeletons[i].skeleton, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].serverName);
+                }
+                //Send the right hand grab data
+                if (serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].useRightHandGrip)
+                {
+                    SendHandStateVRPN(sortedSkeletons[i].rightHandClosed, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].rightGripServerName, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].rightGripButtonNumber);
+                }
+                //Send the left hand grab data
+                if (serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].useLeftHandGrip)
+                {
+                    SendHandStateVRPN(sortedSkeletons[i].leftHandClosed, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].leftGripServerName, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].leftGripButtonNumber);
+                }
+            }
         }
-        private SkeletonPoint IncAverage(SkeletonPoint x, SkeletonPoint y, int n)
-        {
-            SkeletonPoint avePoint = new SkeletonPoint();
-            avePoint.X = (float)((double)x.X + ((double)y.X - (double)x.X) / (double)(n + 1));
-            avePoint.Y = (float)((double)x.Y + ((double)y.Y - (double)x.Y) / (double)(n + 1));
-            avePoint.Z = (float)((double)x.Z + ((double)y.Z - (double)x.Z) / (double)(n + 1));
-            return avePoint;
-        }
+
+
         private int GetSkeletonSensorNumber(JointType joint)
         {
             int sensorNumber = -1;
@@ -521,7 +599,7 @@ namespace KinectWithVRServer
                         sensorNumber = 3;
                         break;
                     }
-                //There is no 4, in order to match with FAAST
+                //There is no 4, in order to match with FAAST (left collar in OpenNI)
                 case JointType.ShoulderLeft:
                     {
                         sensorNumber = 5;
@@ -542,7 +620,12 @@ namespace KinectWithVRServer
                         sensorNumber = 8;
                         break;
                     }
-                //There is no 9 or 10, in order to match with FAAST
+                case JointType.HandTipLeft: //Kinect v2 only
+                    {
+                        sensorNumber = 9;
+                        break;
+                    }
+                //There is no 10, in order to match with FAAST (right collar in OpenNI)
                 case JointType.ShoulderRight:
                     {
                         sensorNumber = 11;
@@ -563,7 +646,11 @@ namespace KinectWithVRServer
                         sensorNumber = 14;
                         break;
                     }
-                //There is no 15, in order to match with FAAST
+                case JointType.HandTipRight: //Kinect v2 only
+                    {
+                        sensorNumber = 15;
+                        break;
+                    }
                 case JointType.HipLeft:
                     {
                         sensorNumber = 16;
@@ -604,25 +691,67 @@ namespace KinectWithVRServer
                         sensorNumber = 23;
                         break;
                     }
+                case JointType.Neck: //Kinect v2 only
+                    {
+                        sensorNumber = 24;
+                        break;
+                    }
+                case JointType.ThumbLeft: //Kinect v2 only
+                    {
+                        sensorNumber = 25;
+                        break;
+                    }
+                case JointType.ThumbRight: //Kinect v2 only
+                    {
+                        sensorNumber = 26;
+                        break;
+                    }
             }
 
             return sensorNumber;
         }
-        private void SendSkeletonVRPN(Skeleton skeleton, int id)
+        //If any of the server names are null, the data for that server will be ignored
+        private void SendSkeletonVRPN(SkeletonData skeleton, string trackingServerName)
         {
-            foreach (Joint joint in skeleton.Joints)
+            int? jointServerID = GetServerIDFromName(trackingServerName, ServerType.Tracker);
+
+            if (jointServerID.HasValue)
             {
-                //I could include inferred joints as well, should I? 
-                if (joint.TrackingState != JointTrackingState.NotTracked)
+                //foreach (Joint joint in skeleton)
+                for (int i = 0; i < skeleton.Count; i++)
                 {
-                    Vector4 boneQuat = skeleton.BoneOrientations[joint.JointType].AbsoluteRotation.Quaternion;
-                    lock (trackerServers[id])
+                    Joint joint = skeleton[i];
+
+                    //TODO: I am including inferred joints as well, should I? 
+                    if (joint.TrackingState != TrackingState.NotTracked)
                     {
-                        trackerServers[id].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now,
-                                                      new Point3D(joint.Position.X, joint.Position.Y, joint.Position.Z),
-                                                      new Quaternion(boneQuat.W, boneQuat.X, boneQuat.Y, boneQuat.Z));
+                        lock (trackerServers[jointServerID.Value])
+                        {
+                            trackerServers[jointServerID.Value].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now, joint.Position, joint.Orientation);
+                        }
                     }
                 }
+            }
+            else
+            {
+                HelperMethods.WriteToLog(String.Format("Could not find the ID of the tracking server {0}.", trackingServerName), parent);
+            }
+        }
+        private void SendHandStateVRPN(bool state, string handServerName, int buttonNumber)
+        {
+            int? handServerID = GetServerIDFromName(handServerName, ServerType.Button);
+
+            if (handServerID.HasValue)
+            {
+                lock (buttonServers[handServerID.Value])
+                {
+                    //TODO: Fix crash here when the server closes (null reference on the button server)
+                    buttonServers[handServerID.Value].Buttons[buttonNumber] = state;
+                }
+            }
+            else
+            {
+                HelperMethods.WriteToLog(String.Format("Could not find the ID of the button server {0}.", handServerName), parent);
             }
         }
         private List<KinectSkeleton> SortSkeletons(List<KinectSkeleton> unsortedSkeletons, SkeletonSortMethod sortMethod)
@@ -633,12 +762,13 @@ namespace KinectWithVRServer
             }
             else
             {
+                //TODO: What point do I want to sort by?  Right now i am using head, but should i use something else?
                 //Seperate the tracked and untracked skeletons
                 List<KinectSkeleton> trackedSkeletons = new List<KinectSkeleton>();
                 List<KinectSkeleton> untrackedSkeletons = new List<KinectSkeleton>();
                 for (int i = 0; i < unsortedSkeletons.Count; i++)
                 {
-                    if (unsortedSkeletons[i].skeleton.TrackingState == SkeletonTrackingState.NotTracked)
+                    if (unsortedSkeletons[i].SkeletonTrackingState == TrackingState.NotTracked)
                     {
                         untrackedSkeletons.Add(unsortedSkeletons[i]);
                     }
@@ -656,7 +786,7 @@ namespace KinectWithVRServer
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                        while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.X) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.X))
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.X) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.X))
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -677,7 +807,7 @@ namespace KinectWithVRServer
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                        while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Y))
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Y))
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -698,7 +828,7 @@ namespace KinectWithVRServer
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                        while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Z))
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Z))
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -718,10 +848,10 @@ namespace KinectWithVRServer
                     {
                         int insertIndex = i;
                         KinectSkeleton tempSkeleton = trackedSkeletons[i];
-                        SkeletonPoint origin = new SkeletonPoint() { X = 0, Y = 0, Z = 0 };
-                        double tempDistance = InterPointDistance(origin, trackedSkeletons[i].skeleton.Position);
+                        Point3D origin = new Point3D(0, 0, 0);
+                        double tempDistance = (origin - trackedSkeletons[i].Position).Length;
 
-                        while (insertIndex > 0 && tempDistance < InterPointDistance(origin, trackedSkeletons[insertIndex - 1].skeleton.Position))
+                        while (insertIndex > 0 && tempDistance < (origin - trackedSkeletons[insertIndex - 1].Position).Length)
                         {
                             trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                             insertIndex--;
@@ -744,7 +874,7 @@ namespace KinectWithVRServer
                             int insertIndex = i;
                             KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                            while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.X - feedbackPosition.Value.X) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.X - feedbackPosition.Value.X))
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.X - feedbackPosition.Value.X) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.X - feedbackPosition.Value.X))
                             {
                                 trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                                 insertIndex--;
@@ -765,7 +895,7 @@ namespace KinectWithVRServer
                             int insertIndex = i;
                             KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                            while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Y - feedbackPosition.Value.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Y - feedbackPosition.Value.Y))
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Y - feedbackPosition.Value.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Y - feedbackPosition.Value.Y))
                             {
                                 trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                                 insertIndex--;
@@ -786,7 +916,7 @@ namespace KinectWithVRServer
                             int insertIndex = i;
                             KinectSkeleton tempSkeleton = trackedSkeletons[i];
 
-                            while (insertIndex > 0 && Math.Abs(tempSkeleton.skeleton.Position.Z - feedbackPosition.Value.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].skeleton.Position.Z - feedbackPosition.Value.Z))
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Z - feedbackPosition.Value.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Z - feedbackPosition.Value.Z))
                             {
                                 trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                                 insertIndex--;
@@ -806,10 +936,11 @@ namespace KinectWithVRServer
                         {
                             int insertIndex = i;
                             KinectSkeleton tempSkeleton = trackedSkeletons[i];
-                            SkeletonPoint feedPosition = new SkeletonPoint() { X = (float)feedbackPosition.Value.X, Y = (float)feedbackPosition.Value.Y, Z = (float)feedbackPosition.Value.Z };
-                            double tempDistance = InterPointDistance(feedPosition, trackedSkeletons[i].skeleton.Position);
+                            //SkeletonPoint feedPosition = new SkeletonPoint() { X = (float)feedbackPosition.Value.X, Y = (float)feedbackPosition.Value.Y, Z = (float)feedbackPosition.Value.Z };
+                            //double tempDistance = InterPointDistance(feedPosition, trackedSkeletons[i].skeleton.Position);
+                            double tempDistance = (feedbackPosition.Value - trackedSkeletons[i].Position).Length;
 
-                            while (insertIndex > 0 && tempDistance < InterPointDistance(feedPosition, trackedSkeletons[insertIndex - 1].skeleton.Position))
+                            while (insertIndex > 0 && tempDistance < (feedbackPosition.Value - trackedSkeletons[insertIndex - 1].Position).Length)
                             {
                                 trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
                                 insertIndex--;
@@ -838,17 +969,793 @@ namespace KinectWithVRServer
                 return trackedSkeletons;
             }
         }
+        private List<MergedSkeleton> SortSkeletons(List<MergedSkeleton> unsortedSkeletons, SkeletonSortMethod sortMethod)
+        {
+            if (sortMethod == SkeletonSortMethod.NoSort)
+            {
+                return unsortedSkeletons;
+            }
+            else
+            {
+                //TODO: What point do I want to sort by?  Right now i am using head, but should i use something else?
+                //Seperate the tracked and untracked skeletons
+                List<MergedSkeleton> trackedSkeletons = new List<MergedSkeleton>();
+                List<MergedSkeleton> untrackedSkeletons = new List<MergedSkeleton>();
+                for (int i = 0; i < unsortedSkeletons.Count; i++)
+                {
+                    if (unsortedSkeletons[i].SkeletonTrackingState == TrackingState.NotTracked)
+                    {
+                        untrackedSkeletons.Add(unsortedSkeletons[i]);
+                    }
+                    else
+                    {
+                        trackedSkeletons.Add(unsortedSkeletons[i]);
+                    }
+                }
+
+                if (sortMethod == SkeletonSortMethod.OriginXClosest || sortMethod == SkeletonSortMethod.OriginXFarthest)
+                {
+                    //We only care about the tracked skeletons, so only sort those
+                    for (int i = 1; i < trackedSkeletons.Count; i++)
+                    {
+                        int insertIndex = i;
+                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
+
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.X) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.X))
+                        {
+                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                            insertIndex--;
+                        }
+                        trackedSkeletons[insertIndex] = tempSkeleton;
+                    }
+
+                    if (sortMethod == SkeletonSortMethod.OriginXFarthest)
+                    {
+                        trackedSkeletons.Reverse();
+                    }
+                }
+                else if (sortMethod == SkeletonSortMethod.OriginYClosest || sortMethod == SkeletonSortMethod.OriginYFarthest)
+                {
+                    //We only care about the tracked skeletons, so only sort those
+                    for (int i = 1; i < trackedSkeletons.Count; i++)
+                    {
+                        int insertIndex = i;
+                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
+
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Y))
+                        {
+                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                            insertIndex--;
+                        }
+                        trackedSkeletons[insertIndex] = tempSkeleton;
+                    }
+
+                    if (sortMethod == SkeletonSortMethod.OriginYFarthest)
+                    {
+                        trackedSkeletons.Reverse();
+                    }
+                }
+                else if (sortMethod == SkeletonSortMethod.OriginZClosest || sortMethod == SkeletonSortMethod.OriginZFarthest)
+                {
+                    //We only care about the tracked skeletons, so only sort those
+                    for (int i = 1; i < trackedSkeletons.Count; i++)
+                    {
+                        int insertIndex = i;
+                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
+
+                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Z))
+                        {
+                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                            insertIndex--;
+                        }
+                        trackedSkeletons[insertIndex] = tempSkeleton;
+                    }
+
+                    if (sortMethod == SkeletonSortMethod.OriginZFarthest)
+                    {
+                        trackedSkeletons.Reverse();
+                    }
+                }
+                else if (sortMethod == SkeletonSortMethod.OriginEuclidClosest || sortMethod == SkeletonSortMethod.OriginEuclidFarthest)
+                {
+                    //We only care about the tracked skeletons, so only sort those
+                    for (int i = 1; i < trackedSkeletons.Count; i++)
+                    {
+                        int insertIndex = i;
+                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
+                        Point3D origin = new Point3D(0, 0, 0);
+                        double tempDistance = (origin - trackedSkeletons[i].Position).Length;
+
+                        while (insertIndex > 0 && tempDistance < (origin - trackedSkeletons[insertIndex - 1].Position).Length)
+                        {
+                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                            insertIndex--;
+                        }
+                        trackedSkeletons[insertIndex] = tempSkeleton;
+                    }
+
+                    if (sortMethod == SkeletonSortMethod.OriginEuclidFarthest)
+                    {
+                        trackedSkeletons.Reverse();
+                    }
+                }
+                else if (feedbackPosition != null)  //Sort based on the feedback position, if it isn't null
+                {
+                    if (sortMethod == SkeletonSortMethod.FeedbackXClosest || sortMethod == SkeletonSortMethod.FeedbackXFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
+
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.X - feedbackPosition.Value.X) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.X - feedbackPosition.Value.X))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackXFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else if (sortMethod == SkeletonSortMethod.FeedbackYClosest || sortMethod == SkeletonSortMethod.FeedbackYFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
+
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Y - feedbackPosition.Value.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Y - feedbackPosition.Value.Y))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackYFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else if (sortMethod == SkeletonSortMethod.FeedbackZClosest || sortMethod == SkeletonSortMethod.FeedbackZFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
+
+                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Z - feedbackPosition.Value.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Z - feedbackPosition.Value.Z))
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackZFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else if (sortMethod == SkeletonSortMethod.FeedbackEuclidClosest || sortMethod == SkeletonSortMethod.FeedbackEuclidFarthest)
+                    {
+                        //We only care about the tracked skeletons, so only sort those
+                        for (int i = 1; i < trackedSkeletons.Count; i++)
+                        {
+                            int insertIndex = i;
+                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
+                            double tempDistance = (feedbackPosition.Value - trackedSkeletons[i].Position).Length;
+
+                            while (insertIndex > 0 && tempDistance < (feedbackPosition.Value - trackedSkeletons[insertIndex - 1].Position).Length)
+                            {
+                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
+                                insertIndex--;
+                            }
+                            trackedSkeletons[insertIndex] = tempSkeleton;
+                        }
+
+                        if (sortMethod == SkeletonSortMethod.FeedbackEuclidFarthest)
+                        {
+                            trackedSkeletons.Reverse();
+                        }
+                    }
+                    else
+                    {
+                        return unsortedSkeletons;
+                    }
+                }
+                else
+                {
+                    return unsortedSkeletons;
+                }
+
+                //Add the untracked skeletons to the tracked ones before sending everything back
+                trackedSkeletons.AddRange(untrackedSkeletons);
+
+                return trackedSkeletons;
+            }
+        }
+        private int? GetServerIDFromName(string name, ServerType type)
+        {
+            if (type == ServerType.Analog)
+            {
+                for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
+                {
+                    if (serverMasterOptions.analogServers[i].serverName == name)
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (type == ServerType.Button)
+            {
+                for (int i = 0; i < serverMasterOptions.buttonServers.Count; i++)
+                {
+                    if (serverMasterOptions.buttonServers[i].serverName == name)
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (type == ServerType.Text)
+            {
+                for (int i = 0; i < serverMasterOptions.textServers.Count; i++)
+                {
+                    if (serverMasterOptions.textServers[i].serverName == name)
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (type == ServerType.Tracker)
+            {
+                for (int i = 0; i < serverMasterOptions.trackerServers.Count; i++)
+                {
+                    if (serverMasterOptions.trackerServers[i].serverName == name)
+                    {
+                        return i;
+                    }
+                }
+            }
+            return null; //Return null if the server isn't found
+            //TODO: Add support for imager server
+        }
+
+        #region Settings parsing functions
+        //This was moved from the settings to here because it needs to know about the per kinect options which are dependent on the different core dlls
+        private bool parseSettings(out string errorMessage)
+        {
+            bool settingsValid = true;
+            errorMessage = "";
+
+            serverMasterOptions.analogServers = new List<KinectBase.AnalogServerSettings>();
+            serverMasterOptions.buttonServers = new List<KinectBase.ButtonServerSettings>();
+            serverMasterOptions.textServers = new List<KinectBase.TextServerSettings>();
+            serverMasterOptions.trackerServers = new List<KinectBase.TrackerServerSettings>();
+
+            #region Parse the Skeleton servers
+            settingsValid &= parseIndividualSkeletons(serverMasterOptions.mergedSkeletonOptions.individualSkeletons, ref errorMessage);
+            for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
+            {
+                if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                {
+                    if (((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    {
+                        settingsValid &= parseIndividualSkeletons(((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).rawSkeletonSettings.individualSkeletons, ref errorMessage);
+                    }
+                }
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
+                {
+                    //TODO: Add parsing for Kinect v2 raw skeleton transmission
+                }
+            }
+            #endregion
+
+            #region Parse the Voice Commands
+            for (int i = 0; i < serverMasterOptions.voiceCommands.Count; i++)
+            {
+                if (serverMasterOptions.voiceCommands[i].serverType == ServerType.Button)
+                {
+                    bool found = false;
+
+                    if (isServerNameValid(serverMasterOptions.voiceCommands[i].serverName))
+                    {
+                        //Check if the button server already exists
+                        for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
+                        {
+                            if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.voiceCommands[i].serverName)
+                            {
+                                //The button server exists, so lets see if it is using a unique button channel
+                                found = true;
+                                if (isServerButtonNumberValid(((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber))
+                                {
+                                    if (!serverMasterOptions.buttonServers[j].uniqueChannels.Contains(((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber))
+                                    {
+                                        serverMasterOptions.buttonServers[j].uniqueChannels.Add(((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber);
+                                    }
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Voice command \"" + serverMasterOptions.voiceCommands[i].recognizedWord + "\" server channel (\"" + ((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber + "\") is invalid.\r\n";
+                                }
+                            }
+                        }
+
+                        //The button server did not exist, time to create it!
+                        if (!found)
+                        {
+                            ButtonServerSettings temp = new ButtonServerSettings();
+                            temp.serverName = serverMasterOptions.voiceCommands[i].serverName;
+                            temp.uniqueChannels = new List<int>();
+                            if (isServerButtonNumberValid(((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber))
+                            {
+                                temp.uniqueChannels.Add(((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber);
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Voice command \"" + serverMasterOptions.voiceCommands[i].recognizedWord + "\" server channel (\"" + ((VoiceButtonCommand)serverMasterOptions.voiceCommands[i]).buttonNumber + "\") is invalid.\r\n";
+                            }
+                            serverMasterOptions.buttonServers.Add(temp);
+                        }
+                    }
+                    else
+                    {
+                        settingsValid = false;
+                        errorMessage += "Voice command \"" + serverMasterOptions.voiceCommands[i].recognizedWord + "\" server name (\"" + serverMasterOptions.voiceCommands[i].serverName + "\") is invalid.\r\n";
+                    }
+                }
+                else if (serverMasterOptions.voiceCommands[i].serverType == ServerType.Text)
+                {
+                    bool found = false;
+
+                    if (isServerNameValid(serverMasterOptions.voiceCommands[i].serverName))
+                    {
+                        //Check if the button server already exists
+                        for (int j = 0; j < serverMasterOptions.textServers.Count; j++)
+                        {
+                            if (serverMasterOptions.textServers[j].serverName == serverMasterOptions.voiceCommands[i].serverName)
+                            {
+                                //The text server exists!  We don't need to check channels on text servers
+                                found = true;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            TextServerSettings temp = new TextServerSettings();
+                            temp.serverName = serverMasterOptions.voiceCommands[i].serverName;
+                            serverMasterOptions.textServers.Add(temp);
+                        }
+                    }
+                    else
+                    {
+                        settingsValid = false;
+                        errorMessage += "Voice command \"" + serverMasterOptions.voiceCommands[i].recognizedWord + "\" server name (\"" + serverMasterOptions.voiceCommands[i].serverName + "\") is invalid.\r\n";
+                    }
+                }
+            }
+            #endregion
+
+            //TODO: Implement gesture parsing and error handling
+            #region Parse the Gesture Commands
+            //for (int i = 0; i < serverMasterOptions.gestureCommands.Count; i++)
+            //{
+            //    bool found = false;
+
+            //    for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
+            //    {
+            //        if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.gestureCommands[i].serverName)
+            //        {
+            //            //The button server exists, so lets see if it is using a unique button channel
+            //            found = true;
+            //            if (!serverMasterOptions.buttonServers[j].uniqueChannels.Contains(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber))
+            //            {
+            //                serverMasterOptions.buttonServers[j].uniqueChannels.Add(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber);
+            //            }
+            //        }
+            //    }
+
+            //    if (!found)
+            //    {
+            //        ButtonServerSettings temp = new ButtonServerSettings();
+            //        temp.serverName = serverMasterOptions.gestureCommands[i].serverName;
+            //        temp.uniqueChannels = new List<int>();
+            //        temp.uniqueChannels.Add(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber);
+            //        serverMasterOptions.buttonServers.Add(temp);
+            //    }
+            //}
+            #endregion
+
+            //TODO: Reimplement this in a way that works with the interface
+            #region Parse the per Kinect (acceleration and audio angle) settings
+            for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
+            {
+                if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                {
+                    settingsValid &= parseKinectV1Settings(((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]), ref errorMessage);
+                }
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
+                {
+                    //TODO: Pasrse the per kinect options for the Kinect v2
+                }
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
+                {
+                    //TODO: Parse the per kinect options for the networked kinects
+                }
+            }
+            #endregion
+
+            return settingsValid;
+        }
+        private bool isServerNameValid(string serverName)
+        {
+            bool valid = true;
+
+            valid = serverName != null && serverName != "";
+            //TODO: This checks if the servername is alphanumeric, are there any other valid characters?
+            valid = valid && System.Text.RegularExpressions.Regex.IsMatch(serverName, @"^[a-zA-Z0-9]+$");
+
+            return valid;
+        }
+        private bool isServerAnalogChannelValid(int channel)
+        {
+            bool valid = true;
+            valid = channel >= 0 && channel < AnalogServer.MaxChannels;
+            return valid;
+        }
+        private bool isServerButtonNumberValid(int buttonNumber)
+        {
+            bool valid = true;
+            valid = buttonNumber >= 0 && buttonNumber < ButtonServer.MaxButtons;
+            return valid;
+        }
+        private bool parseIndividualSkeletons(ObservableCollection<KinectBase.PerSkeletonSettings> individualSkeletons, ref string errorMessage)
+        {
+            bool settingsValid = true;
+            if (errorMessage == null)
+            {
+                errorMessage = "";
+            }
+            
+            for (int i = 0; i < individualSkeletons.Count; i++)
+            {
+                if (individualSkeletons[i].useSkeleton)
+                {
+                    //Add the skeleton servers
+                    if (isServerNameValid(individualSkeletons[i].serverName))
+                    {
+                        bool serverFound = false;
+                        for (int j = 0; j < serverMasterOptions.trackerServers.Count; j++) //This allows for multiple skeletons to be assigned to the same tracker, although I don't know why you would want to do that...
+                        {
+                            if (serverMasterOptions.trackerServers[j].serverName == individualSkeletons[i].serverName)
+                            {
+                                serverFound = true;
+                            }
+                        }
+
+                        if (!serverFound)
+                        {
+                            serverMasterOptions.trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = individualSkeletons[i].serverName });
+                        }
+                    }
+                    else
+                    {
+                        settingsValid = false;
+                        errorMessage += "Skeleton " + i.ToString() + " server name (\"" + individualSkeletons[i].serverName + "\") is invalid.\r\n";
+                    }
+
+                    //Parse the right hand grip
+                    if (individualSkeletons[i].useRightHandGrip)
+                    {
+                        if (isServerNameValid(individualSkeletons[i].rightGripServerName))
+                        {
+                            bool found = false;
+                            for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
+                            {
+                                if (serverMasterOptions.buttonServers[j].serverName == individualSkeletons[i].rightGripServerName)
+                                {
+                                    found = true;
+                                    if (isServerButtonNumberValid(individualSkeletons[i].rightGripButtonNumber))
+                                    {
+                                        if (!serverMasterOptions.buttonServers[j].uniqueChannels.Contains(individualSkeletons[i].rightGripButtonNumber))
+                                        {
+                                            serverMasterOptions.buttonServers[j].uniqueChannels.Add(individualSkeletons[i].rightGripButtonNumber);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        settingsValid = false;
+                                        errorMessage += "Skeleton " + i.ToString() + " right-hand grip server channel (" + individualSkeletons[i].rightGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                    }
+                                }
+                            }
+
+                            //If the button server doesn't exist, create it!
+                            if (!found)
+                            {
+                                ButtonServerSettings temp = new ButtonServerSettings();
+                                temp.serverName = individualSkeletons[i].rightGripServerName;
+                                temp.uniqueChannels = new List<int>();
+
+                                if (isServerButtonNumberValid(individualSkeletons[i].rightGripButtonNumber))
+                                {
+                                    temp.uniqueChannels.Add(individualSkeletons[i].rightGripButtonNumber);
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Skeleton " + i.ToString() + " right-hand grip server channel (" + individualSkeletons[i].rightGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                }
+
+                                serverMasterOptions.buttonServers.Add(temp);
+                            }
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Skeleton " + i.ToString() + " right-hand grip server name (\"" + individualSkeletons[i].rightGripServerName + "\") is invalid.\r\n";
+                        }
+                    }
+
+                    //Parse the left hand grip
+                    if (individualSkeletons[i].useLeftHandGrip)
+                    {
+                        if (isServerNameValid(individualSkeletons[i].leftGripServerName))
+                        {
+                            bool found = false;
+                            for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
+                            {
+                                if (serverMasterOptions.buttonServers[j].serverName == individualSkeletons[i].leftGripServerName)
+                                {
+                                    found = true;
+                                    if (isServerButtonNumberValid(individualSkeletons[i].leftGripButtonNumber))
+                                    {
+                                        if (!serverMasterOptions.buttonServers[j].uniqueChannels.Contains(individualSkeletons[i].leftGripButtonNumber))
+                                        {
+                                            serverMasterOptions.buttonServers[j].uniqueChannels.Add(individualSkeletons[i].leftGripButtonNumber);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        settingsValid = false;
+                                        errorMessage += "Skeleton " + i.ToString() + " left-hand grip server channel (" + individualSkeletons[i].leftGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                    }
+                                }
+                            }
+
+                            //If the button server doesn't exist, create it!
+                            if (!found)
+                            {
+                                ButtonServerSettings temp = new ButtonServerSettings();
+                                temp.serverName = individualSkeletons[i].leftGripServerName;
+                                temp.uniqueChannels = new List<int>();
+
+                                if (isServerButtonNumberValid(individualSkeletons[i].leftGripButtonNumber))
+                                {
+                                    temp.uniqueChannels.Add(individualSkeletons[i].leftGripButtonNumber);
+                                }
+                                else
+                                {
+                                    settingsValid = false;
+                                    errorMessage += "Skeleton " + i.ToString() + " left-hand grip server channel (" + individualSkeletons[i].leftGripButtonNumber.ToString() + ") is invalid.\r\n";
+                                }
+
+                                serverMasterOptions.buttonServers.Add(temp);
+                            }
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Skeleton " + i.ToString() + " left-hand grip server name (\"" + individualSkeletons[i].leftGripServerName + "\") is invalid.\r\n";
+                        }
+                    }
+                }
+            }
+
+            return settingsValid;
+        }
+        private bool parseKinectV1Settings(KinectV1Core.KinectV1Settings settings, ref string errorMessage)
+        {
+            bool settingsValid = true;
+            if (errorMessage == null)
+            {
+                errorMessage = "";
+            }
+
+            //Parse the acceleration options
+            if (settings.sendAcceleration)
+            {
+                if (isServerNameValid(settings.accelerationServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.analogServers.Count; j++)
+                    {
+                        if (serverMasterOptions.analogServers[j].serverName == settings.accelerationServerName)
+                        {
+                            found = true;
+
+                            //Check the X acceleration channel
+                            if (isServerAnalogChannelValid(settings.accelXChannel))
+                            {
+                                //If the channel doesn't exist, create it
+                                if (!serverMasterOptions.analogServers[j].uniqueChannels.Contains(settings.accelXChannel))
+                                {
+                                    serverMasterOptions.analogServers[j].uniqueChannels.Add(settings.accelXChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + settings.kinectID.ToString() + " X acceleration channel (" + settings.accelXChannel.ToString() + ") is invalid.\r\n";
+                            }
+
+                            //Check the Y acceleration channel
+                            if (isServerAnalogChannelValid(settings.accelYChannel))
+                            {
+                                //If the channel doesn't exist, create it
+                                if (!serverMasterOptions.analogServers[j].uniqueChannels.Contains(settings.accelYChannel))
+                                {
+                                    serverMasterOptions.analogServers[j].uniqueChannels.Add(settings.accelYChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + settings.kinectID.ToString() + " Y acceleration channel (" + settings.accelYChannel.ToString() + ") is invalid.\r\n";
+                            }
+
+                            //Check the Z acceleration channel
+                            if (isServerAnalogChannelValid(settings.accelZChannel))
+                            {
+                                //If the channel doesn't exist, create it
+                                if (!serverMasterOptions.analogServers[j].uniqueChannels.Contains(settings.accelZChannel))
+                                {
+                                    serverMasterOptions.analogServers[j].uniqueChannels.Add(settings.accelZChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + settings.kinectID.ToString() + " Z acceleration channel (" + settings.accelZChannel.ToString() + ") is invalid.\r\n";
+                            }
+
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        AnalogServerSettings temp = new AnalogServerSettings();
+                        temp.serverName = settings.accelerationServerName;
+                        temp.uniqueChannels = new List<int>();
+
+                        //Add the X channel, if it is valid (it is the first one added, so it must be unique)
+                        if (isServerAnalogChannelValid(settings.accelXChannel))
+                        {
+                            temp.uniqueChannels.Add(settings.accelXChannel);
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " X acceleration channel (" + settings.accelXChannel.ToString() + ") is invalid.\r\n";
+                        }
+
+                        //Add the Y channel, if it is valid and unique
+                        if (isServerAnalogChannelValid(settings.accelYChannel))
+                        {
+                            if (!temp.uniqueChannels.Contains(settings.accelYChannel))
+                            {
+                                temp.uniqueChannels.Add(settings.accelYChannel);
+                            }
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " Y acceleration channel (" + settings.accelYChannel.ToString() + ") is invalid.\r\n";
+                        }
+
+                        //Add the Z channel, if it is valid and unique
+                        if (isServerAnalogChannelValid(settings.accelZChannel))
+                        {
+                            if (!temp.uniqueChannels.Contains(settings.accelZChannel))
+                            {
+                                temp.uniqueChannels.Add(settings.accelZChannel);
+                            }
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " Z acceleration channel (" + settings.accelZChannel.ToString() + ") is invalid.\r\n";
+                        }
+
+                        serverMasterOptions.analogServers.Add(temp);
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " acceleration server name (\"" + settings.accelerationServerName + "\") is invalid.\r\n";
+                }
+            }
+
+            //Parse audio source angle options
+            if (settings.sendAudioAngle)
+            {
+                if (isServerNameValid(settings.audioAngleServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.analogServers.Count; j++)
+                    {
+                        if (serverMasterOptions.analogServers[j].serverName == settings.audioAngleServerName)
+                        {
+                            found = true;
+
+                            if (isServerAnalogChannelValid(settings.audioAngleChannel))
+                            {
+                                if (!serverMasterOptions.analogServers[j].uniqueChannels.Contains(settings.audioAngleChannel))
+                                {
+                                    serverMasterOptions.analogServers[j].uniqueChannels.Add(settings.audioAngleChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server channel (" + settings.audioAngleChannel.ToString() + ") is invalid.\r\n";
+                            }
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        AnalogServerSettings temp = new AnalogServerSettings();
+                        temp.serverName = settings.audioAngleServerName;
+                        temp.uniqueChannels = new List<int>();
+                        if (isServerAnalogChannelValid(settings.audioAngleChannel))
+                        {
+                            temp.uniqueChannels.Add(settings.audioAngleChannel);
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server channel (" + settings.audioAngleChannel.ToString() + ") is invalid.\r\n";
+                        }
+                        serverMasterOptions.analogServers.Add(temp);
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server name (\"" + settings.audioAngleServerName + "\") is invalid.\r\n";
+                }
+            }
+
+            return settingsValid;
+        }
+        #endregion
 
         private delegate void runServerCoreDelegate();
         private delegate void launchVoiceRecognizerDelegate();
     }
 
-    class PassedSkeleton
-    {
-        internal Skeleton skeletonData;
-        internal bool? leftHandGripped;
-        internal bool? rightHandGripped;
-    }
+    //TODO: Can we blow this class away and just use the KinectSkeleton class?
+    //class PassedSkeleton
+    //{
+    //    internal Skeleton skeletonData;
+    //    internal bool? leftHandGripped;
+    //    internal bool? rightHandGripped;
+    //}
 
     enum ServerRunState {Starting, Running, Stopping, Stopped}
 }

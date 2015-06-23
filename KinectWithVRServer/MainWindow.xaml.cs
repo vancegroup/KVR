@@ -16,9 +16,10 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.IO;
 using Microsoft.Win32;
-using Microsoft.Kinect;
+//using Microsoft.Kinect;
 using System.Diagnostics;
 using System.Security.Permissions;
+using KinectBase;
 
 namespace KinectWithVRServer
 {
@@ -29,13 +30,23 @@ namespace KinectWithVRServer
         internal bool startOnLaunch = false;
         internal ServerCore server;
         internal DateTime serverStartTime = DateTime.MaxValue;
-        internal string ColorStreamConnectionID = "";
-        internal string DepthStreamConnectionID = "";
+        internal string ColorStreamUniqueID = "";
+        internal string DepthStreamUniqueID = "";
         System.Timers.Timer uptimeUpdateTimer;
         internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
-        internal List<KinectSettingsControl> kinectOptionGUIPages = new List<KinectSettingsControl>();
-        private string voiceRecogSourceConnectionID = "";
+        internal List<IKinectSettingsControl> kinectOptionGUIPages = new List<IKinectSettingsControl>();
+        private string voiceRecogSourceUniqueID = "";
+        private WriteableBitmap depthSource;
+        private WriteableBitmap colorSource;
+        private List<double> depthTimeIntervals = new List<double>();
+        private List<double> colorTimeIntervals = new List<double>();
+        private Int64 lastDepthTime = 0;
+        private Int64 lastColorTime = 0;
+
+        //TODO: Add a user control to allow the system to go into verbose mode on the fly (only in console mode)
+        //When this happens, we will have to update any other classes that store the verbose mode option
+        //We should also write a comment to the log when the system is entering or exiting verbose mode
 
         public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
         {
@@ -64,7 +75,7 @@ namespace KinectWithVRServer
                 catch
                 {
                     MessageBox.Show("Error: The settings file failed to open!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    HelperMethods.WriteToLog("Settings file (" + openDlg.FileName + ") failed to load.");
+                    HelperMethods.WriteToLog("Settings file (" + openDlg.FileName + ") failed to load.", this);
                 }
             }
         }
@@ -79,10 +90,11 @@ namespace KinectWithVRServer
                 {
                     HelperMethods.SaveSettings(saveDlg.FileName, server.serverMasterOptions);
                 }
-                catch
+                catch (Exception exc)
                 {
+                    Debug.WriteLine(exc.Message);
                     MessageBox.Show("Error: The settings file failed to save!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    HelperMethods.WriteToLog("Settings file (" + saveDlg.FileName + ") failed to save.");
+                    HelperMethods.WriteToLog("Settings file (" + saveDlg.FileName + ") failed to save.", this);
                 }
             }
         }
@@ -112,18 +124,13 @@ namespace KinectWithVRServer
                 }
             }
         }
-        private void GenJCONFMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            //TODO: Add jconf generating
-            MessageBox.Show("Warning: The JCONF generation feature has not been implemented yet.  Sorry.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Kinect with VR (KVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson, Diana Jarrell, and Tim Morgan.\r\nCopyright 2013", "About KVR", MessageBoxButton.OK);
+            MessageBox.Show("Kinect with VR (KVR) Server\r\nCreated at the Virtual Reality Applications Center\r\nIowa State University\r\nBy Patrick Carlson, Diana Jarrell, and Tim Morgan.\r\nCopyright 2015", "About KVR", MessageBoxButton.OK);
         }
         private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -140,7 +147,7 @@ namespace KinectWithVRServer
             uptimeUpdateTimer.Interval = 500;
             uptimeUpdateTimer.Elapsed += new System.Timers.ElapsedEventHandler(uptimeUpdateTimer_Elapsed);
 
-            MasterSettings tempSettings = new MasterSettings();
+            KinectBase.MasterSettings tempSettings = new KinectBase.MasterSettings();
 
             //Create the server core (this does NOT start the server)
             server = new ServerCore(verbose, tempSettings, this);
@@ -148,8 +155,6 @@ namespace KinectWithVRServer
             //Set all the data for the data grids
             VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
             VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
-
-            KinectStatusBlock.Text = "1";
 
             if (startupFile != null && startupFile != "")
             {
@@ -166,18 +171,21 @@ namespace KinectWithVRServer
             }
 
             //TODO: Handle starting Kinects based on the loaded settings file
-            //Initialize the data for the available Kinects
-            for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
+            //Initialize the data for the available Kinect v1s
+            KinectV1Core.KinectV1StatusEventArgs[] currentStatuses = KinectV1Core.KinectV1StatusHelper.GetAllKinectsStatus();
+            for (int i = 0; i < currentStatuses.Length; i++)
             {
                 AvailableKinectData tempData = new AvailableKinectData();
-                tempData.ConnectionID = KinectSensor.KinectSensors[i].DeviceConnectionId;
-                tempData.Status = KinectSensor.KinectSensors[i].Status;
+
+                tempData.ConnectionID = currentStatuses[i].ConnectionID;
+                tempData.UniqueID = currentStatuses[i].UniqueKinectID;
+                tempData.Status = currentStatuses[i].Status;
                 if (i == 0 && tempData.Status == KinectStatus.Connected)
                 {
                     tempData.UseKinect = true;
                     tempData.KinectID = 0;
-                    server.serverMasterOptions.kinectOptionsList.Add(new KinectSettings(tempData.ConnectionID, (int)tempData.KinectID));
-                    server.kinects.Add(new KinectCore(server, this, (int)tempData.KinectID));
+                    server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Core.KinectV1Settings(tempData.ConnectionID, tempData.UniqueID, (int)tempData.KinectID)));
+                    server.kinects.Add((IKinectCore)(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
                     tempData.ServerStatus = "Running";
                 }
                 else
@@ -188,14 +196,41 @@ namespace KinectWithVRServer
                 tempData.PropertyChanged += useKinect_PropertyChanged;
                 availableKinects.Add(tempData);
             }
+
+#if Kinect2
+            //Initialize the data for the available Kinect v2s
+            KinectV2Core.KinectV2StatusEventArgs[] currentStatuses2 = KinectV2Core.KinectV2StatusHelper.GetAllKinectsStatus();
+            for (int i = 0; i < currentStatuses2.Length; i++)
+            {
+                AvailableKinectData tempData = new AvailableKinectData();
+
+                tempData.UniqueID = currentStatuses2[i].UniqueKinectID;
+                tempData.Status = currentStatuses2[i].Status;
+                //Note: Unlike the Kinect v1, we don't automatically launch a Kinect v2
+                //TODO: Do we want to automatically launch a Kinect v2 here?
+                tempData.UseKinect = false;
+                tempData.KinectID = null;
+                tempData.PropertyChanged += useKinect_PropertyChanged;
+                availableKinects.Add(tempData);
+            }
+#endif
+
+            KinectStatusBlock.Text = availableKinects.Count.ToString();
             kinectsAvailableDataGrid.ItemsSource = availableKinects;
             UpdatePageListing();
             GenerateImageSourcePickerLists();
-            KinectSensor.KinectSensors.StatusChanged += KinectSensors_StatusChanged;
+            //Subscribe to the v1 status changed event
+            KinectV1Core.KinectV1StatusHelper v1StatusHelper = new KinectV1Core.KinectV1StatusHelper();
+            v1StatusHelper.KinectV1StatusChanged += v1StatusHelper_KinectV1StatusChanged;
+#if Kinect2
+            //Subscribe to the v2 status changed event
+            KinectV2Core.KinectV2StatusHelper v2StatusHelper = new KinectV2Core.KinectV2StatusHelper();
+            v2StatusHelper.KinectV2StatusChanged += v2StatusHelper_KinectV2StatusChanged;
+#endif
 
             //Populate the skeleton data and set the binding for the data grid
             GenerateSkeletonDataGridData();
-            SkeletonSettingsDataGrid.ItemsSource = server.serverMasterOptions.skeletonOptions.individualSkeletons;
+            SkeletonSettingsDataGrid.ItemsSource = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons;
 
             //Populate and setup the voice recognition lists
             GenerateVoiceRecogEngineList();
@@ -209,6 +244,96 @@ namespace KinectWithVRServer
             if (startOnLaunch)
             {
                 startServerButton_Click(this, new RoutedEventArgs());
+            }
+        }
+
+#if Kinect2
+        void v2StatusHelper_KinectV2StatusChanged(object sender, KinectV2Core.KinectV2StatusEventArgs e)
+        {
+            bool kinectFound = false;
+
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].UniqueID == e.UniqueKinectID)
+                {
+                    if (e.Status != KinectStatus.Disconnected)
+                    {
+                        availableKinects[i].Status = e.Status;
+                        if (e.Status != KinectStatus.Connected)
+                        {
+                            availableKinects[i].UseKinect = false;
+                        }
+                    }
+                    else
+                    {
+                        availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
+                        availableKinects.RemoveAt(i);
+
+                        renumberKinectIDs();
+                    }
+                    kinectsAvailableDataGrid.Items.Refresh();
+                    kinectFound = true;
+                }
+            }
+
+            //Update the number of Kinects attached to the computer
+            KinectStatusBlock.Text = availableKinects.Count.ToString();
+
+            if (!kinectFound)
+            {
+                AvailableKinectData tempData = new AvailableKinectData();
+                tempData.UniqueID = e.UniqueKinectID;
+                tempData.KinectID = null;
+                tempData.UseKinect = false;
+                tempData.PropertyChanged += useKinect_PropertyChanged;
+                tempData.Status = e.Status;
+                availableKinects.Add(tempData);
+                kinectsAvailableDataGrid.Items.Refresh();
+            }
+        }
+#endif
+
+        void v1StatusHelper_KinectV1StatusChanged(object sender, KinectV1Core.KinectV1StatusEventArgs e)
+        {
+            bool kinectFound = false;
+
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].ConnectionID == e.ConnectionID)
+                {
+                    if (e.Status != KinectStatus.Disconnected)
+                    {
+                        availableKinects[i].Status = e.Status;
+                        if (e.Status != KinectStatus.Connected)
+                        {
+                            availableKinects[i].UseKinect = false;
+                        }
+                    }
+                    else
+                    {
+                        availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
+                        availableKinects.RemoveAt(i);
+
+                        renumberKinectIDs();
+                    }
+                    kinectsAvailableDataGrid.Items.Refresh();
+                    kinectFound = true;
+                }
+            }
+
+            //Update the number of Kinects attached to the computer
+            KinectStatusBlock.Text = availableKinects.Count.ToString();
+
+            if (!kinectFound)
+            {
+                AvailableKinectData tempData = new AvailableKinectData();
+                tempData.ConnectionID = e.ConnectionID;
+                tempData.KinectID = null;
+                tempData.UseKinect = false;
+                tempData.PropertyChanged += useKinect_PropertyChanged;
+                tempData.Status = e.Status;
+                availableKinects.Add(tempData);
+                kinectsAvailableDataGrid.Items.Refresh();
             }
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -264,45 +389,22 @@ namespace KinectWithVRServer
             }), null
             );
         }
+        private static double CalculateFrameRate(Int64 currentTimeStamp, ref Int64 lastTimeStamp, ref List<double> oldIntervals)
+        {
+            double newInterval = (double)(currentTimeStamp - lastTimeStamp);
+            lastTimeStamp = currentTimeStamp;
+
+            if (oldIntervals.Count >= 10) //Computes a running average of 10 frames for stability
+            {
+                oldIntervals.RemoveAt(0);
+            }
+            oldIntervals.Add(newInterval);
+
+            return (1.0 / oldIntervals.Average() * 1000.0);
+        }
         #endregion
 
         #region Kinect Tab GUI Stuff
-        //Event fires whenever a Kinect on the computer changes, this is used to keep the list of available Kinects up to date
-        void KinectSensors_StatusChanged(object sender, StatusChangedEventArgs e)
-        {
-            for (int i = 0; i < availableKinects.Count; i++)
-            {
-                if (availableKinects[i].ConnectionID == e.Sensor.DeviceConnectionId)
-                {
-                    if (e.Sensor.Status != KinectStatus.Disconnected)
-                    {
-                        availableKinects[i].Status = e.Sensor.Status;
-                        if (e.Sensor.Status != KinectStatus.Connected)
-                        {
-                            availableKinects[i].UseKinect = false;
-                        }
-                    }
-                    else
-                    {
-                        availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
-                        availableKinects.RemoveAt(i);
-
-                        renumberKinectIDs();
-                    }
-                    kinectsAvailableDataGrid.Items.Refresh();
-                    return;
-                }
-            }
-
-            AvailableKinectData tempData = new AvailableKinectData();
-            tempData.ConnectionID = e.Sensor.DeviceConnectionId;
-            tempData.KinectID = null;
-            tempData.UseKinect = false;
-            tempData.PropertyChanged += useKinect_PropertyChanged;
-            tempData.Status = e.Sensor.Status;
-            availableKinects.Add(tempData);
-            kinectsAvailableDataGrid.Items.Refresh();
-        }
         //Renumbers the Kinect IDs
         private void renumberKinectIDs()
         {
@@ -333,16 +435,18 @@ namespace KinectWithVRServer
                     bool exists = false;
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
-                        if (kinectOptionGUIPages[j].ConnectionID == availableKinects[i].ConnectionID)
+                        if (((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).ConnectionID == availableKinects[i].ConnectionID)
                         {
                             exists = true;
-                            kinectOptionGUIPages[j].KinectID = availableKinects[i].KinectID;
+                            ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).kinectID = availableKinects[i].KinectID.Value;
                             break;
                         }
                     }
                     if (!exists)
                     {
-                        kinectOptionGUIPages.Add(new KinectSettingsControl(availableKinects[i].KinectID, availableKinects[i].ConnectionID, verbose, this));
+                        IKinectSettingsControl tempControl = new KinectV1Core.KinectV1SettingsControl(availableKinects[i].KinectID.Value, availableKinects[i].ConnectionID, verbose, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                        kinectOptionGUIPages.Add(tempControl);
+                        KinectTabMasterGrid.Children.Add((UserControl)tempControl);
                     }
                     kinectsPageList.Add("Kinect " + availableKinects[i].KinectID.ToString());
                 }
@@ -351,9 +455,11 @@ namespace KinectWithVRServer
                     //Check if the GUI exist for the one we are removing, and set the Kinect ID to null so it will go to the end
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
-                        if (kinectOptionGUIPages[j].ConnectionID == availableKinects[i].ConnectionID)
+                        //TODO: Figure out a way to perserve the settings and the acceleration updating
+                        if (((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).ConnectionID == availableKinects[i].ConnectionID)
                         {
-                            kinectOptionGUIPages[j].KinectID = null;
+                            //((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).kinectID = null;  //This will cause the page to be hidden, but not destroyed (which saves the settings on the GUI, but breaks acceleration updating)
+                            kinectOptionGUIPages.RemoveAt(j);  //This will destroy the page and cause it to be recreated when the Kinect is set to be used again (which saves the acceleration updating, but losses all the settings)
                             break;
                         }
                     }
@@ -373,7 +479,7 @@ namespace KinectWithVRServer
                 {
                     for (int i = 0; i < kinectOptionGUIPages.Count; i++)
                     {
-                        kinectOptionGUIPages[i].Visibility = System.Windows.Visibility.Collapsed;
+                        ((UserControl)kinectOptionGUIPages[i]).Visibility = System.Windows.Visibility.Collapsed;
                     }
                     kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Visible;
                 }
@@ -384,11 +490,11 @@ namespace KinectWithVRServer
                     {
                         if (kinectTabListBox.SelectedIndex - 1 == i)
                         {
-                            kinectOptionGUIPages[i].Visibility = System.Windows.Visibility.Visible;
+                            ((UserControl)kinectOptionGUIPages[i]).Visibility = System.Windows.Visibility.Visible;
                         }
                         else
                         {
-                            kinectOptionGUIPages[i].Visibility = System.Windows.Visibility.Collapsed;
+                            ((UserControl)kinectOptionGUIPages[i]).Visibility = System.Windows.Visibility.Collapsed;
                         }
                     }
                 }
@@ -422,7 +528,7 @@ namespace KinectWithVRServer
                     bool found = false;
                     for (int j = 0; j < server.serverMasterOptions.kinectOptionsList.Count; j++)
                     {
-                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptionsList[j].connectionID)
+                        if (availableKinects[i].UniqueID == server.serverMasterOptions.kinectOptionsList[j].uniqueKinectID)
                         {
                             server.serverMasterOptions.kinectOptionsList[j].kinectID = (int)availableKinects[i].KinectID;
                             found = true;
@@ -431,14 +537,14 @@ namespace KinectWithVRServer
                     }
                     if (!found)
                     {
-                        server.serverMasterOptions.kinectOptionsList.Add(new KinectSettings(availableKinects[i].ConnectionID, (int)availableKinects[i].KinectID));
+                        server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Core.KinectV1Settings(availableKinects[i].ConnectionID, availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
                     }
                 }
                 else
                 {
                     for (int j = 0; j < server.serverMasterOptions.kinectOptionsList.Count; j++)
                     {
-                        if (availableKinects[i].ConnectionID == server.serverMasterOptions.kinectOptionsList[j].connectionID)
+                        if (availableKinects[i].UniqueID == server.serverMasterOptions.kinectOptionsList[j].uniqueKinectID)
                         {
                             server.serverMasterOptions.kinectOptionsList.RemoveAt(j);
                         }
@@ -459,7 +565,7 @@ namespace KinectWithVRServer
                     bool kinectFound = false;
                     for (int j = 0; j < server.kinects.Count; j++)
                     {
-                        if (server.kinects[j].kinect.DeviceConnectionId == availableKinects[i].ConnectionID)
+                        if (server.kinects[j].uniqueKinectID == availableKinects[i].UniqueID)
                         {
                             server.kinects[j].kinectID = (int)availableKinects[i].KinectID;
                             kinectFound = true;
@@ -473,7 +579,7 @@ namespace KinectWithVRServer
                         kinectsAvailableDataGrid.InvalidateVisual();
                         System.Threading.Thread.Sleep(10); //Yes, it is a dirty hack, but it is the only way I can find to get the GUI to update reliably
                         ForceGUIUpdate();
-                        server.kinects.Add(new KinectCore(server, this, availableKinects[i].KinectID));
+                        server.kinects.Add((IKinectCore)(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, true, availableKinects[i].KinectID)));
                         availableKinects[i].ServerStatus = "Running";
                     }
                 }
@@ -482,7 +588,7 @@ namespace KinectWithVRServer
                     //If the Kinect is not to be used, check and see if it exists, and destroy it if it does
                     for (int j = 0; j < server.kinects.Count; j++)
                     {
-                        if (server.kinects[j].kinect.DeviceConnectionId == availableKinects[i].ConnectionID)
+                        if (server.kinects[j].uniqueKinectID == availableKinects[i].UniqueID)
                         {
                             availableKinects[i].ServerStatus = "Stopping";
                             kinectsAvailableDataGrid.Items.Refresh();
@@ -523,19 +629,19 @@ namespace KinectWithVRServer
             Debug.WriteLine("Running Kinects:");
             for (int i = 0; i < server.kinects.Count; i++)
             {
-                Debug.WriteLine(server.kinects[i].kinectID.ToString() + ":   " + server.kinects[i].kinect.DeviceConnectionId);
+                Debug.WriteLine(server.kinects[i].kinectID.ToString() + ":   " + server.kinects[i].uniqueKinectID);
             }
 
             Debug.WriteLine("Kinect Setting:");
             for (int i = 0; i < server.serverMasterOptions.kinectOptionsList.Count; i++)
             {
-                Debug.WriteLine(server.serverMasterOptions.kinectOptionsList[i].kinectID.ToString() + ":   " + server.serverMasterOptions.kinectOptionsList[i].connectionID);
+                Debug.WriteLine(server.serverMasterOptions.kinectOptionsList[i].kinectID.ToString() + ":   " + server.serverMasterOptions.kinectOptionsList[i].uniqueKinectID);
             }
 
             Debug.WriteLine("GUI Pages:");
             for (int i = 0; i < kinectOptionGUIPages.Count; i++)
             {
-                Debug.WriteLine(kinectOptionGUIPages[i].KinectID.ToString() + ":   " + kinectOptionGUIPages[i].ConnectionID);
+                Debug.WriteLine(((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).kinectID.ToString() + ":   " + ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).ConnectionID);
             }
         }
         //Handles the linking of the connection status hyperlinks to the help messages
@@ -617,12 +723,12 @@ namespace KinectWithVRServer
             if (VoiceKinectComboBox.SelectedIndex == VoiceKinectComboBox.Items.Count - 1)
             {
                 server.serverMasterOptions.audioOptions.sourceID = -1;
-                voiceRecogSourceConnectionID = "";
+                voiceRecogSourceUniqueID = "";
             }
             else
             {
                 server.serverMasterOptions.audioOptions.sourceID = VoiceKinectComboBox.SelectedIndex;
-                voiceRecogSourceConnectionID = server.serverMasterOptions.kinectOptionsList[VoiceKinectComboBox.SelectedIndex].connectionID;
+                voiceRecogSourceUniqueID = server.serverMasterOptions.kinectOptionsList[VoiceKinectComboBox.SelectedIndex].uniqueKinectID;
             }
         }
         private void VoiceRecognitionEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -636,6 +742,21 @@ namespace KinectWithVRServer
         //Refreshes all the data on the GUI after a new settings file is loaded
         private void UpdateGUISettings()
         {
+            for (int i = 0; i < server.serverMasterOptions.kinectOptionsList.Count; i++)
+            {
+                for (int j = 0; j < kinectOptionGUIPages.Count; j++)
+                {
+                    if (kinectOptionGUIPages[j].version == server.serverMasterOptions.kinectOptionsList[i].version &&
+                        kinectOptionGUIPages[j].uniqueKinectID == server.serverMasterOptions.kinectOptionsList[i].uniqueKinectID)
+                    {
+                        kinectOptionGUIPages[j].kinectID = server.serverMasterOptions.kinectOptionsList[i].kinectID;
+                        kinectOptionGUIPages[j].UpdateGUI(server.serverMasterOptions);
+                        break;
+                    }
+                }
+            }
+            //TODO: Delete all kinect options pages with a null Kinect ID
+
             VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
             VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
 
@@ -645,9 +766,23 @@ namespace KinectWithVRServer
         {
             if (ColorSourcePickerComboBox.SelectedItem != null)
             {
+                //Remove the event from the previous selection
+                if (server != null)
+                {
+                    for (int i = 0; i < server.kinects.Count; i++)
+                    {
+                        if (server.kinects[i].uniqueKinectID == ColorStreamUniqueID)
+                        {
+                            server.kinects[i].ColorFrameReceived -= MainWindow_ColorFrameReceived;
+                            ColorStreamUniqueID = "";
+                        }
+                    }
+                }
+
+                //Add the new frame event
                 if (ColorSourcePickerComboBox.SelectedItem.ToString().ToLower() == "none")
                 {
-                    ColorStreamConnectionID = "";
+                    ColorStreamUniqueID = "";
                     ColorImage.Visibility = System.Windows.Visibility.Hidden;
                 }
                 else
@@ -656,9 +791,9 @@ namespace KinectWithVRServer
                     int kinectIndex = -1;
                     if (int.TryParse(temp, out kinectIndex))
                     {
-                        ColorStreamConnectionID = server.kinects[kinectIndex].kinect.DeviceConnectionId;
-                        ColorImage.Source = server.kinects[kinectIndex].colorImage;
+                        ColorStreamUniqueID = server.kinects[kinectIndex].uniqueKinectID;
                         ColorImage.Visibility = System.Windows.Visibility.Visible;
+                        server.kinects[kinectIndex].ColorFrameReceived += MainWindow_ColorFrameReceived;
                     }
                 }
             }
@@ -667,9 +802,23 @@ namespace KinectWithVRServer
         {
             if (DepthSourcePickerComboBox.SelectedItem != null)
             {
+                //Remove the event from the previous selection
+                if (server != null)
+                {
+                    for (int i = 0; i < server.kinects.Count; i++)
+                    {
+                        if (server.kinects[i].uniqueKinectID == DepthStreamUniqueID)
+                        {
+                            server.kinects[i].DepthFrameReceived -= MainWindow_DepthFrameReceived;
+                            DepthStreamUniqueID = "";
+                        }
+                    }
+                }
+
+                //Add the new frame event
                 if (DepthSourcePickerComboBox.SelectedItem.ToString().ToLower() == "none")
                 {
-                    DepthStreamConnectionID = "";
+                    DepthStreamUniqueID = "";
                     DepthImage.Visibility = System.Windows.Visibility.Hidden;
                 }
                 else
@@ -678,12 +827,52 @@ namespace KinectWithVRServer
                     int kinectIndex = -1;
                     if (int.TryParse(temp, out kinectIndex))
                     {
-                        DepthStreamConnectionID = server.kinects[kinectIndex].kinect.DeviceConnectionId;
-                        DepthImage.Source = server.kinects[kinectIndex].depthImage;
+                        DepthStreamUniqueID = server.kinects[kinectIndex].uniqueKinectID;
                         DepthImage.Visibility = System.Windows.Visibility.Visible;
+                        server.kinects[kinectIndex].DepthFrameReceived += MainWindow_DepthFrameReceived;
                     }
                 }
             }
+        }
+        void MainWindow_ColorFrameReceived(object sender, ColorFrameEventArgs e)
+        {
+            if (colorSource == null)
+            {
+                colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                ColorImage.Source = colorSource;
+            }
+            else if (colorSource.PixelWidth != e.width || colorSource.PixelHeight != e.height || colorSource.Format != e.pixelFormat)
+            {
+                colorSource = null;
+                colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                ColorImage.Source = colorSource;
+            }
+
+            colorSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+
+            //Calculate and display the frame rate
+            double tempFPS = CalculateFrameRate(e.timeStamp, ref lastColorTime, ref colorTimeIntervals);
+            ColorFPSTextBlock.Text = tempFPS.ToString("F1");
+        }
+        void MainWindow_DepthFrameReceived(object sender, DepthFrameEventArgs e)
+        {
+            if (depthSource == null)
+            {
+                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                DepthImage.Source = depthSource;
+            }
+            else if (depthSource.PixelWidth != e.width || depthSource.PixelHeight != e.height || depthSource.Format != e.pixelFormat)
+            {
+                depthSource = null;
+                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                DepthImage.Source = depthSource;
+            }
+
+            depthSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+
+            //Calculate the depth frame rate and display it
+            double tempFPS = CalculateFrameRate(e.timeStamp, ref lastDepthTime, ref depthTimeIntervals);
+            DepthFPSTextBlock.Text = tempFPS.ToString("F1");
         }
         private void GenerateImageSourcePickerLists()
         {
@@ -696,19 +885,19 @@ namespace KinectWithVRServer
             bool depthFound = false;
             for (int i = 0; i < server.kinects.Count; i++)
             {
-                if (server.kinects[i].kinect.ColorStream.IsEnabled)
+                if (server.kinects[i].ColorStreamEnabled)
                 {
                     ColorSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
-                    if (server.kinects[i].kinect.DeviceConnectionId == ColorStreamConnectionID)
+                    if (server.kinects[i].uniqueKinectID == ColorStreamUniqueID)
                     {
                         ColorSourcePickerComboBox.SelectedIndex = i + 1;
                         colorFound = true;
                     }
                 }
-                if (server.kinects[i].kinect.DepthStream.IsEnabled)
+                if (server.kinects[i].ColorStreamEnabled)
                 {
                     DepthSourcePickerComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
-                    if (server.kinects[i].kinect.DeviceConnectionId == DepthStreamConnectionID)
+                    if (server.kinects[i].uniqueKinectID == DepthStreamUniqueID)
                     {
                         DepthSourcePickerComboBox.SelectedIndex = i + 1;
                         depthFound = true;
@@ -734,7 +923,7 @@ namespace KinectWithVRServer
             for (int i = 0; i < server.kinects.Count; i++)
             {
                 VoiceKinectComboBox.Items.Add("Kinect " + server.kinects[i].kinectID);
-                if (server.kinects[i].kinect.DeviceConnectionId == voiceRecogSourceConnectionID)
+                if (server.kinects[i].uniqueKinectID == voiceRecogSourceUniqueID)
                 {
                     VoiceKinectComboBox.SelectedIndex = i;
                     sourceFound = true;
@@ -763,7 +952,7 @@ namespace KinectWithVRServer
         //Rejects any points that are not numbers or control characters or a period
         private void floatNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod && e.Key != Key.Decimal)
+            if (!KinectBase.HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod && e.Key != Key.Decimal)
             {
                 e.Handled = true;
             }
@@ -771,7 +960,7 @@ namespace KinectWithVRServer
         //Rejects any points that are not numbers or control charactes
         private void intNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!HelperMethods.NumberKeys.Contains(e.Key))
+            if (!KinectBase.HelperMethods.NumberKeys.Contains(e.Key))
             {
                 e.Handled = true;
             }
@@ -781,77 +970,78 @@ namespace KinectWithVRServer
         #region Skeleton Rendering Methods
         private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID, Matrix3D transform)
         {
-            if (startJoint.TrackingState == JointTrackingState.Tracked && endJoint.TrackingState == JointTrackingState.Tracked)
+            if (startJoint.TrackingState == TrackingState.Tracked && endJoint.TrackingState == TrackingState.Tracked)
             {
                 //Undo the transform from the skeleton merging
-                SkeletonPoint skelStartPoint = transformSkeletonPoint(startJoint.Position, transform);
-                SkeletonPoint skelEndPoint = transformSkeletonPoint(endJoint.Position, transform);
+                //SkeletonPoint skelStartPoint = transformSkeletonPoint(startJoint.Position, transform);
+                //SkeletonPoint skelEndPoint = transformSkeletonPoint(endJoint.Position, transform);
 
-                //Map the joint from the skeleton to the color image
-                ColorImagePoint startPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelStartPoint, server.kinects[kinectID].kinect.ColorStream.Format);
-                ColorImagePoint endPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelEndPoint, server.kinects[kinectID].kinect.ColorStream.Format);
+                ////Map the joint from the skeleton to the color image
+                //ColorImagePoint startPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelStartPoint, server.kinects[kinectID].kinect.ColorStream.Format);
+                //ColorImagePoint endPoint = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelEndPoint, server.kinects[kinectID].kinect.ColorStream.Format);
 
-                //Calculate the coordinates on the image (the offset of the image is added in the next section)
-                Point imagePointStart = new Point(0.0, 0.0);
-                imagePointStart.X = ((double)startPoint.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth;
-                imagePointStart.Y = ((double)startPoint.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight;
-                Point imagePointEnd = new Point(0.0, 0.0);
-                imagePointEnd.X = ((double)endPoint.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth;
-                imagePointEnd.Y = ((double)endPoint.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight;
+                ////Calculate the coordinates on the image (the offset of the image is added in the next section)
+                //Point imagePointStart = new Point(0.0, 0.0);
+                //imagePointStart.X = ((double)startPoint.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth;
+                //imagePointStart.Y = ((double)startPoint.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight;
+                //Point imagePointEnd = new Point(0.0, 0.0);
+                //imagePointEnd.X = ((double)endPoint.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth;
+                //imagePointEnd.Y = ((double)endPoint.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight;
 
-                //Generate the line for the bone
-                Line line = new Line();
-                line.Stroke = new SolidColorBrush(boneColor);
-                line.StrokeThickness = thickness;
-                line.X1 = imagePointStart.X + offset.X;
-                line.X2 = imagePointEnd.X + offset.X;
-                line.Y1 = imagePointStart.Y + offset.Y;
-                line.Y2 = imagePointEnd.Y + offset.Y;
-                ColorImageCanvas.Children.Add(line);
+                ////Generate the line for the bone
+                //Line line = new Line();
+                //line.Stroke = new SolidColorBrush(boneColor);
+                //line.StrokeThickness = thickness;
+                //line.X1 = imagePointStart.X + offset.X;
+                //line.X2 = imagePointEnd.X + offset.X;
+                //line.Y1 = imagePointStart.Y + offset.Y;
+                //line.Y2 = imagePointEnd.Y + offset.Y;
+                //ColorImageCanvas.Children.Add(line);
             }
         }
         private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset, int kinectID, Matrix3D transform)
         {
-            if (joint.TrackingState == JointTrackingState.Tracked)
+            if (joint.TrackingState == TrackingState.Tracked)
             {
                 //Undo the transform from the skeleton merging
-                SkeletonPoint skelPoint = transformSkeletonPoint(joint.Position, transform);
+                //SkeletonPoint skelPoint = transformSkeletonPoint(joint.Position, transform);
 
                 //Map the joint from the skeleton to the color image
-                ColorImagePoint point = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelPoint, server.kinects[kinectID].kinect.ColorStream.Format);
+                //ColorImagePoint point = server.kinects[kinectID].mapper.MapSkeletonPointToColorPoint(skelPoint, server.kinects[kinectID].kinect.ColorStream.Format);
 
                 //Calculate the coordinates on the image (the offset is also added in this section)
-                Point imagePoint = new Point(0.0, 0.0);
-                imagePoint.X = ((double)point.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth + offset.X;
-                imagePoint.Y = ((double)point.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight + offset.Y;
+                //Point imagePoint = new Point(0.0, 0.0);
+                //imagePoint.X = ((double)point.X / (double)server.kinects[kinectID].kinect.ColorStream.FrameWidth) * ColorImage.ActualWidth + offset.X;
+                //imagePoint.Y = ((double)point.Y / (double)server.kinects[kinectID].kinect.ColorStream.FrameHeight) * ColorImage.ActualHeight + offset.Y;
 
                 //Generate the circle for the joint
-                Ellipse circle = new Ellipse();
-                circle.Fill = new SolidColorBrush(jointColor);
-                circle.StrokeThickness = 0.0;
-                circle.Margin = new Thickness(imagePoint.X - radius, imagePoint.Y - radius, 0, 0);
-                circle.HorizontalAlignment = HorizontalAlignment.Left;
-                circle.VerticalAlignment = VerticalAlignment.Top;
-                circle.Height = radius * 2;
-                circle.Width = radius * 2;
-                ColorImageCanvas.Children.Add(circle);
+                //Ellipse circle = new Ellipse();
+                //circle.Fill = new SolidColorBrush(jointColor);
+                //circle.StrokeThickness = 0.0;
+                //circle.Margin = new Thickness(imagePoint.X - radius, imagePoint.Y - radius, 0, 0);
+                //circle.HorizontalAlignment = HorizontalAlignment.Left;
+                //circle.VerticalAlignment = VerticalAlignment.Top;
+                //circle.Height = radius * 2;
+                //circle.Width = radius * 2;
+                //ColorImageCanvas.Children.Add(circle);
             }
         }
-        internal void RenderSkeletonOnColor(Skeleton skeleton, Color renderColor)
+        internal void RenderSkeletonOnColor(List<Joint> skeleton, Color renderColor)
         {
-            if (ColorStreamConnectionID != null && ColorStreamConnectionID != "")
+            //TODO: Reimplement rendering the skeleton on top of the image stream
+            if (ColorStreamUniqueID != null && ColorStreamUniqueID != "")
             {
                 //Get the Kinect ID of the currently in view color stream
                 int inViewKinectID = -1;
                 bool found = false;
                 for (int i = 0; i < server.kinects.Count; i++)
                 {
-                    if (ColorStreamConnectionID == server.kinects[i].kinect.DeviceConnectionId)
-                    {
-                        found = true;
-                        inViewKinectID = i;
-                        break;
-                    }
+                    //if (ColorStreamConnectionID == server.kinects[i].kinect.DeviceConnectionId)
+                    //{
+                    //    found = true;
+                    //    inViewKinectID = i;
+                    //    break;
+                    //}
                 }
 
                 if (found)
@@ -869,47 +1059,50 @@ namespace KinectWithVRServer
                     }
 
                     //Invert the transform done to put skeletons on a universal coordinate system
-                    Matrix3D invertMat = server.kinects[inViewKinectID].skeletonTransformation;
-                    invertMat.Invert();
+                    //Matrix3D invertMat = server.kinects[inViewKinectID].skeletonTransformation;
+                    //invertMat.Invert();
+
+                    //Temporary invert matrix for testing purposes
+                    Matrix3D invertMat = Matrix3D.Identity;
 
                     //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
-                    DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowLeft], skeleton.Joints[JointType.WristLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.WristLeft], skeleton.Joints[JointType.HandLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderRight], skeleton.Joints[JointType.ElbowRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ElbowRight], skeleton.Joints[JointType.WristRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.WristRight], skeleton.Joints[JointType.HandRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.Spine], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.Spine], skeleton.Joints[JointType.HipCenter], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipLeft], skeleton.Joints[JointType.KneeLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.KneeLeft], skeleton.Joints[JointType.AnkleLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleLeft], skeleton.Joints[JointType.FootLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.HipRight], skeleton.Joints[JointType.KneeRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.KneeRight], skeleton.Joints[JointType.AnkleRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
-                    DrawBoneOnColor(skeleton.Joints[JointType.AnkleRight], skeleton.Joints[JointType.FootRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.Head], skeleton.Joints[JointType.ShoulderCenter], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ShoulderLeft], skeleton.Joints[JointType.ElbowLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ElbowLeft], skeleton.Joints[JointType.WristLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.WristLeft], skeleton.Joints[JointType.HandLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.ShoulderRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ShoulderRight], skeleton.Joints[JointType.ElbowRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ElbowRight], skeleton.Joints[JointType.WristRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.WristRight], skeleton.Joints[JointType.HandRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.ShoulderCenter], skeleton.Joints[JointType.Spine], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.Spine], skeleton.Joints[JointType.HipCenter], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.HipLeft], skeleton.Joints[JointType.KneeLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.KneeLeft], skeleton.Joints[JointType.AnkleLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.AnkleLeft], skeleton.Joints[JointType.FootLeft], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.HipCenter], skeleton.Joints[JointType.HipRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.HipRight], skeleton.Joints[JointType.KneeRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.KneeRight], skeleton.Joints[JointType.AnkleRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
+                    //DrawBoneOnColor(skeleton.Joints[JointType.AnkleRight], skeleton.Joints[JointType.FootRight], renderColor, 2.0, offset, inViewKinectID, invertMat);
 
-                    foreach (Joint joint in skeleton.Joints)
+                    foreach (Joint joint in skeleton)
                     {
                         DrawJointPointOnColor(joint, renderColor, 2.0, offset, inViewKinectID, invertMat);
                     }
                 }
             }
         }
-
-        private SkeletonPoint transformSkeletonPoint(SkeletonPoint position, Matrix3D rotation)
+        private Point3D transformSkeletonPoint(Point3D position, Matrix3D rotation)
         {
             Point3D adjustedVector = new Point3D(position.X, position.Y, position.Z);
             adjustedVector = Point3D.Multiply(adjustedVector, rotation);
-            SkeletonPoint adjustedPoint = new SkeletonPoint();
-            adjustedPoint.X = (float)adjustedVector.X;
-            adjustedPoint.Y = (float)adjustedVector.Y;
-            adjustedPoint.Z = (float)adjustedVector.Z;
-            return adjustedPoint;
+            //Vector3 adjustedPoint = new Vector3();
+            //adjustedPoint.X = (float)adjustedVector.X;
+            //adjustedPoint.Y = (float)adjustedVector.Y;
+            //adjustedPoint.Z = (float)adjustedVector.Z;
+            //return adjustedPoint;
+            return adjustedVector;
         }
         #endregion
 
@@ -917,9 +1110,30 @@ namespace KinectWithVRServer
         //Updates the data for the skeletons to reflect that a maximum of 6 times the number of kinects in use skeletons are available (only 1/2 of those skeletons support full skeleton tracking)
         private void GenerateSkeletonDataGridData()
         {
-            if (server.kinects.Count * 6 > server.serverMasterOptions.skeletonOptions.individualSkeletons.Count) //Add skeleton settings
+            int totalSkeletons = 0;
+
+            for (int i = 0; i < server.kinects.Count; i++)
             {
-                for (int i = server.serverMasterOptions.skeletonOptions.individualSkeletons.Count; i < server.kinects.Count * 6; i++)
+                if (server.kinects[i].version == KinectVersion.KinectV1)
+                {
+                    if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[i]).mergeSkeletons)
+                    {
+                        totalSkeletons += 6;
+                    }
+                }
+                else if (server.kinects[i].version == KinectVersion.KinectV2)
+                {
+                    //TODO: Add the number of skeletons for the each used Kinect v2
+                }
+                else if (server.kinects[i].version == KinectVersion.NetworkKinect)
+                {
+                    //TODO: Add the number of skeletons for each used networked kinect
+                }
+            }
+
+            if (server.kinects.Count * 6 > server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count) //Add skeleton settings
+            {
+                for (int i = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count; i < server.kinects.Count * 6; i++)
                 {
                     PerSkeletonSettings temp = new PerSkeletonSettings(); //Fill the skeleton information with the default settings
                     string tempServer = "Tracker" + i.ToString();
@@ -933,14 +1147,14 @@ namespace KinectWithVRServer
                     temp.useLeftHandGrip = true;
                     temp.leftGripServerName = tempServer;
                     temp.leftGripButtonNumber = 1;
-                    server.serverMasterOptions.skeletonOptions.individualSkeletons.Add(temp);
+                    server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Add(temp);
                 }
             }
-            else if (server.kinects.Count * 6 < server.serverMasterOptions.skeletonOptions.individualSkeletons.Count) //Remove skeleton settings
+            else if (server.kinects.Count * 6 < server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count) //Remove skeleton settings
             {
-                for (int i = server.serverMasterOptions.skeletonOptions.individualSkeletons.Count - 1; i >= server.kinects.Count * 6; i--)
+                for (int i = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count - 1; i >= server.kinects.Count * 6; i--)
                 {
-                    server.serverMasterOptions.skeletonOptions.individualSkeletons.RemoveAt(i);
+                    server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.RemoveAt(i);
                 }
             }
             SkeletonSettingsDataGrid.Items.Refresh();
@@ -1001,15 +1215,16 @@ namespace KinectWithVRServer
             }
             return Colors.Black;
         }
+        //Old method for doing seated mode tracking across all kinects - this has been superceded by a per kinect setting
         //Changes if the skeleton tracking is in seated mode
-        private void ChooseSeatedCheckBox_CheckChanged(object sender, RoutedEventArgs e)
-        {
-            server.serverMasterOptions.skeletonOptions.isSeatedMode = (bool)ChooseSeatedCheckBox.IsChecked;
-        }
+        //private void ChooseSeatedCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        //{
+        //    server.serverMasterOptions.mergedSkeletonOptions.isSeatedMode = (bool)ChooseSeatedCheckBox.IsChecked;
+        //}
         //Controls which skeleton sorting mode is used
         private void SkelSortModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            server.serverMasterOptions.skeletonOptions.skeletonSortMode = (SkeletonSortMethod)SkelSortModeComboBox.SelectedIndex;
+            server.serverMasterOptions.mergedSkeletonOptions.skeletonSortMode = (SkeletonSortMethod)SkelSortModeComboBox.SelectedIndex;
         }
         #endregion
 
@@ -1040,5 +1255,65 @@ namespace KinectWithVRServer
             server.serverMasterOptions.feedbackOptions.sensorJointType = (JointType)FeedbackJointTypeComboBox.SelectedIndex;
         }
         #endregion
+
+        private void SkeletonTab_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        {
+            //Remove any kinects that aren't in use anymore (doesn't check the first tab since that is always the merged skeletons
+            for (int i = SkeletonsTabControl.Items.Count - 1; i > 0; i--)
+            {
+                bool kinectFound = false;
+
+                for (int j = 0; j < server.kinects.Count; j++)
+                {
+                    if (((TabItem)SkeletonsTabControl.Items[i]).Header.ToString() == "Kinect " + server.kinects[j].kinectID.ToString())
+                    {
+                        if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
+                        {
+                            kinectFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!kinectFound)
+                {
+                    SkeletonsTabControl.Items.RemoveAt(i);
+                }
+            }
+
+            //Add the controls for Kinects that aren't on the list but need to be
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                if (server.kinects[i].version == KinectVersion.KinectV1)
+                {
+                    if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    {
+                        bool controlFound = false;
+
+                        for (int j = 0; j < SkeletonsTabControl.Items.Count; j++)
+                        {
+                            if (((TabItem)SkeletonsTabControl.Items[j]).Header.ToString() == "Kinect " + server.kinects[i].kinectID.ToString())
+                            {
+                                controlFound = true;
+                            }
+                        }
+
+                        if (!controlFound)
+                        {
+                            TabItem newTabItem = new TabItem();
+                            newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
+                            newTabItem.Content = ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
+                            SkeletonsTabControl.Items.Add(newTabItem);
+                        }
+                    }
+                }
+                else if (server.kinects[i].version == KinectVersion.KinectV2)
+                {
+                    //TODO: Add the code for the Kinect v2 skeleton user control here
+                }
+            }
+
+            //TODO: Add sorting method for the skeleton controls so it always lists 0 to X
+        }
     }
 }

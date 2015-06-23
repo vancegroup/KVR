@@ -38,7 +38,6 @@ namespace KinectWithVRServer
             }
         }
 
-        //TODO: Call this to launch the feedback when the server launches (if needed)
         public void StartFeedbackCore(string trackerName, int sensorNumber)
         {
             serverName = trackerName;
@@ -50,7 +49,6 @@ namespace KinectWithVRServer
             feedbackDelegate.BeginInvoke(null, null);
         }
 
-        //TODO: Call this to stop the feedback when the server stops (if needed)
         public void StopFeedbackCore()
         {
             forceStop = true;
@@ -96,7 +94,23 @@ namespace KinectWithVRServer
             {
                 //TODO: Does the feedback position need to be written to the GUI?
                 server.feedbackPosition = (System.Windows.Media.Media3D.Point3D)e.Position;
+
                 System.Diagnostics.Debug.WriteLine("Position: " + server.feedbackPosition.Value.X + ", " + server.feedbackPosition.Value.Y + ", " + server.feedbackPosition.Value.Z);
+            }
+        }
+
+        private void updateAudioBeamAngles(System.Windows.Media.Media3D.Point3D feedbackPosition)
+        {
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                if (server.kinects[i].version == KinectBase.KinectVersion.KinectV1)
+                {
+                    ((KinectV1Core.KinectCoreV1)server.kinects[i]).UpdateAudioAngle(feedbackPosition);
+                }
+                else if (server.kinects[i].version == KinectBase.KinectVersion.KinectV2)
+                {
+                    //TODO: Call the update method for the KinectV2 audio angle beamforming
+                }
             }
         }
 

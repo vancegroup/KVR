@@ -4,8 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Microsoft.Kinect;
+//using Microsoft.Kinect;
 using Microsoft.Speech.Recognition;
+using KinectBase;
 
 namespace KinectWithVRServer
 {
@@ -92,9 +93,10 @@ namespace KinectWithVRServer
 
             if (server.serverMasterOptions.audioOptions.sourceID >= 0 && server.serverMasterOptions.audioOptions.sourceID < server.kinects.Count)
             {
-                KinectAudioSource source = server.kinects[server.serverMasterOptions.audioOptions.sourceID].kinect.AudioSource;
-                audioStream = source.Start();
-                engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
+                //TODO: Start the Kinect audio source for the voice recognition
+                //KinectAudioSource source = server.kinects[server.serverMasterOptions.audioOptions.sourceID].kinect.AudioSource;
+                //audioStream = source.Start();
+                //engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
             }
             else
             {

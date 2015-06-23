@@ -11,7 +11,7 @@ namespace KinectWithVRServer
             Console.WriteLine("Welcome to the Kinect With VR (KVR) Server!");
             Console.WriteLine("Press the \"E\" key at any time to exit.");
 
-            MasterSettings settings = new MasterSettings();
+            KinectBase.MasterSettings settings = new KinectBase.MasterSettings();
 
             try
             {
@@ -25,7 +25,24 @@ namespace KinectWithVRServer
             ServerCore server = new ServerCore(isVerbose, settings);
             for (int i = 0; i < server.serverMasterOptions.kinectOptionsList.Count; i++) //Launch the Kinects
             {
-                server.kinects.Add(new KinectCore(server, null, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                if (server.serverMasterOptions.kinectOptionsList[i].version == KinectBase.KinectVersion.KinectV1)
+                {
+                    server.kinects.Add(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                }
+                else if (server.serverMasterOptions.kinectOptionsList[i].version == KinectBase.KinectVersion.KinectV2)
+                {
+                    //TODO: Implement opening kinect V2s from the console
+                    Console.WriteLine("Kinect number {0} is a Kinect V2, which is not yet supported.", i);
+                }
+                else if (server.serverMasterOptions.kinectOptionsList[i].version == KinectBase.KinectVersion.NetworkKinect)
+                {
+                    //TODO: Implement opening networked kinects from the console
+                    Console.WriteLine("Kinect number {0} is a networked Kinect, which is not yet supported.", i);
+                }
+                else
+                {
+                    Console.WriteLine("Kinect number {0} was of an unknown version and could not be opened.", i);
+                }
             }
             server.launchServer(); //This will still try to launch with default settings even if the settings load fails
 

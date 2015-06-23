@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectWithVRServer", "KinectWithVRServer\KinectWithVRServer.csproj", "{DF4941C5-2949-40B4-B4DB-4FEC3D345C19}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectV1Core", "KinectV1Core\KinectV1Core.csproj", "{1C1B1857-A092-41FA-9875-89ACF0D9710D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectBase", "KinectBase\KinectBase.csproj", "{E212EA42-C987-4D89-996F-C9DA49878CFD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -19,6 +23,22 @@ Global
 		{DF4941C5-2949-40B4-B4DB-4FEC3D345C19}.Release|x64.Build.0 = Release|x64
 		{DF4941C5-2949-40B4-B4DB-4FEC3D345C19}.Release|x86.ActiveCfg = Release|x86
 		{DF4941C5-2949-40B4-B4DB-4FEC3D345C19}.Release|x86.Build.0 = Release|x86
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Debug|x64.ActiveCfg = Debug|x64
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Debug|x64.Build.0 = Debug|x64
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Debug|x86.ActiveCfg = Debug|x86
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Debug|x86.Build.0 = Debug|x86
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Release|x64.ActiveCfg = Release|x64
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Release|x64.Build.0 = Release|x64
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Release|x86.ActiveCfg = Release|x86
+		{1C1B1857-A092-41FA-9875-89ACF0D9710D}.Release|x86.Build.0 = Release|x86
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Debug|x64.ActiveCfg = Debug|x64
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Debug|x64.Build.0 = Debug|x64
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Debug|x86.ActiveCfg = Debug|x86
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Debug|x86.Build.0 = Debug|x86
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Release|x64.ActiveCfg = Release|x64
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Release|x64.Build.0 = Release|x64
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Release|x86.ActiveCfg = Release|x86
+		{E212EA42-C987-4D89-996F-C9DA49878CFD}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
