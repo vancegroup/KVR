@@ -34,6 +34,7 @@ namespace KinectWithVRServer
         internal string DepthStreamUniqueID = "";
         System.Timers.Timer uptimeUpdateTimer;
         internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
+        internal ObservableCollection<ConfiguredServerData> configuredServers = new ObservableCollection<ConfiguredServerData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
         internal List<IKinectSettingsControl> kinectOptionGUIPages = new List<IKinectSettingsControl>();
         private string voiceRecogSourceUniqueID = "";
@@ -45,6 +46,7 @@ namespace KinectWithVRServer
         private Int64 lastColorTime = 0;
         private volatile bool drawingColorSkeleton = false;
         private volatile bool drawingDepthSkeleton = false;
+        private int lastSettingsTabIndex = 0;
 
         //TODO: Add a user control to allow the system to go into verbose mode on the fly (only in GUI mode?)
         //When this happens, we will have to update any other classes that store the verbose mode option
@@ -251,6 +253,9 @@ namespace KinectWithVRServer
             //Set defaults where needed
             FeedbackJointTypeComboBox.SelectedIndex = 0;
             SkelSortModeComboBox.SelectedIndex = 5;
+
+            //Set the items source for the servers display grid
+            ServersDataGrid.ItemsSource = configuredServers;
 
             if (startOnLaunch)
             {
@@ -732,7 +737,65 @@ namespace KinectWithVRServer
         #endregion
 
         #region Skeleton Tab GUI Stuff
+        private void SkeletonTab_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        {
+            //Remove any kinects that aren't in use anymore (doesn't check the first tab since that is always the merged skeletons
+            for (int i = SkeletonsTabControl.Items.Count - 1; i > 0; i--)
+            {
+                bool kinectFound = false;
 
+                for (int j = 0; j < server.kinects.Count; j++)
+                {
+                    if (((TabItem)SkeletonsTabControl.Items[i]).Header.ToString() == "Kinect " + server.kinects[j].kinectID.ToString())
+                    {
+                        if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
+                        {
+                            kinectFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!kinectFound)
+                {
+                    SkeletonsTabControl.Items.RemoveAt(i);
+                }
+            }
+
+            //Add the controls for Kinects that aren't on the list but need to be
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                if (server.kinects[i].version == KinectVersion.KinectV1)
+                {
+                    if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    {
+                        bool controlFound = false;
+
+                        for (int j = 0; j < SkeletonsTabControl.Items.Count; j++)
+                        {
+                            if (((TabItem)SkeletonsTabControl.Items[j]).Header.ToString() == "Kinect " + server.kinects[i].kinectID.ToString())
+                            {
+                                controlFound = true;
+                            }
+                        }
+
+                        if (!controlFound)
+                        {
+                            TabItem newTabItem = new TabItem();
+                            newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
+                            newTabItem.Content = ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
+                            SkeletonsTabControl.Items.Add(newTabItem);
+                        }
+                    }
+                }
+                else if (server.kinects[i].version == KinectVersion.KinectV2)
+                {
+                    //TODO: Add the code for the Kinect v2 skeleton user control here
+                }
+            }
+
+            //TODO: Add sorting method for the skeleton controls so it always lists 0 to X
+        }
         #endregion
 
         #region Voice Recognition GUI Stuff
@@ -1457,64 +1520,135 @@ namespace KinectWithVRServer
         }
         #endregion
 
-        private void SkeletonTab_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        #region Server Tab GUI Methods
+        private void SettingsTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //Remove any kinects that aren't in use anymore (doesn't check the first tab since that is always the merged skeletons
-            for (int i = SkeletonsTabControl.Items.Count - 1; i > 0; i--)
+            if (SettingsTabControl.SelectedIndex == 5 && SettingsTabControl.SelectedIndex != lastSettingsTabIndex)
             {
-                bool kinectFound = false;
-
-                for (int j = 0; j < server.kinects.Count; j++)
+                if (!server.isRunning)
                 {
-                    if (((TabItem)SkeletonsTabControl.Items[i]).Header.ToString() == "Kinect " + server.kinects[j].kinectID.ToString())
-                    {
-                        if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
-                        {
-                            kinectFound = true;
-                            break;
-                        }
-                    }
+                    string error;
+                    server.parseSettings(out error);
                 }
-
-                if (!kinectFound)
-                {
-                    SkeletonsTabControl.Items.RemoveAt(i);
-                }
+                UpdateServersDisplayCollection();
             }
 
-            //Add the controls for Kinects that aren't on the list but need to be
-            for (int i = 0; i < server.kinects.Count; i++)
-            {
-                if (server.kinects[i].version == KinectVersion.KinectV1)
-                {
-                    if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
-                    {
-                        bool controlFound = false;
-
-                        for (int j = 0; j < SkeletonsTabControl.Items.Count; j++)
-                        {
-                            if (((TabItem)SkeletonsTabControl.Items[j]).Header.ToString() == "Kinect " + server.kinects[i].kinectID.ToString())
-                            {
-                                controlFound = true;
-                            }
-                        }
-
-                        if (!controlFound)
-                        {
-                            TabItem newTabItem = new TabItem();
-                            newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
-                            newTabItem.Content = ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
-                            SkeletonsTabControl.Items.Add(newTabItem);
-                        }
-                    }
-                }
-                else if (server.kinects[i].version == KinectVersion.KinectV2)
-                {
-                    //TODO: Add the code for the Kinect v2 skeleton user control here
-                }
-            }
-
-            //TODO: Add sorting method for the skeleton controls so it always lists 0 to X
+            lastSettingsTabIndex = SettingsTabControl.SelectedIndex;
         }
+        private void UpdateServersDisplayCollection()
+        {
+            configuredServers.Clear();
+
+            //Check the analog servers, since this is first, we know a server with the same name doesn't exist, so we don't have to check
+            for (int i = 0; i < server.serverMasterOptions.analogServers.Count; i++)
+            {
+                ConfiguredServerData tempData = new ConfiguredServerData();
+                tempData.ServerName = server.serverMasterOptions.analogServers[i].serverName;
+                tempData.AnalogServer = true;
+                tempData.AnalogChannels = server.serverMasterOptions.analogServers[i].trueChannelCount;
+                configuredServers.Add(tempData);
+            }
+
+            //Check the button servers
+            for (int i = 0; i < server.serverMasterOptions.buttonServers.Count; i++)
+            {
+                bool found = false;
+                for (int j = 0; j < configuredServers.Count; j++)
+                {
+                    if (configuredServers[j].ServerName == server.serverMasterOptions.buttonServers[i].serverName)
+                    {
+                        found = true;
+                        configuredServers[j].ButtonServer = true;
+                        configuredServers[j].ButtonChannels = server.serverMasterOptions.buttonServers[i].trueButtonCount;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    ConfiguredServerData tempData = new ConfiguredServerData();
+                    tempData.ServerName = server.serverMasterOptions.buttonServers[i].serverName;
+                    tempData.ButtonServer = true;
+                    tempData.ButtonChannels = server.serverMasterOptions.buttonServers[i].trueButtonCount;
+                    configuredServers.Add(tempData);
+                }
+            }
+
+            //Check the image servers
+            for (int i = 0; i < server.serverMasterOptions.imagerServers.Count; i++)
+            {
+                bool found = false;
+                for (int j = 0; j < configuredServers.Count; j++)
+                {
+                    if (configuredServers[j].ServerName == server.serverMasterOptions.imagerServers[i].serverName)
+                    {
+                        found = true;
+                        configuredServers[j].ImageServer = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    ConfiguredServerData tempData = new ConfiguredServerData();
+                    tempData.ServerName = server.serverMasterOptions.imagerServers[i].serverName;
+                    tempData.ImageServer = true;
+                    configuredServers.Add(tempData);
+                }
+            }
+
+            //Check the text servers
+            for (int i = 0; i < server.serverMasterOptions.textServers.Count; i++)
+            {
+                bool found = false;
+                for (int j = 0; j < configuredServers.Count; j++)
+                {
+                    if (configuredServers[j].ServerName == server.serverMasterOptions.textServers[i].serverName)
+                    {
+                        found = true;
+                        configuredServers[j].TextServer = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    ConfiguredServerData tempData = new ConfiguredServerData();
+                    tempData.ServerName = server.serverMasterOptions.textServers[i].serverName;
+                    tempData.TextServer = true;
+                    configuredServers.Add(tempData);
+                }
+            }
+
+            //Check the tracker servers
+            for (int i = 0; i < server.serverMasterOptions.trackerServers.Count; i++)
+            {
+                bool found = false;
+                for (int j = 0; j < configuredServers.Count; j++)
+                {
+                    if (configuredServers[j].ServerName == server.serverMasterOptions.trackerServers[i].serverName)
+                    {
+                        found = true;
+                        configuredServers[j].TrackerServer = true;
+                        configuredServers[j].TrackerChannels = server.serverMasterOptions.trackerServers[i].sensorCount;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    ConfiguredServerData tempData = new ConfiguredServerData();
+                    tempData.ServerName = server.serverMasterOptions.trackerServers[i].serverName;
+                    tempData.TrackerServer = true;
+                    tempData.TrackerChannels = server.serverMasterOptions.trackerServers[i].sensorCount;
+                    configuredServers.Add(tempData);
+                }
+            }
+
+            ServersDataGrid.Items.Refresh();
+        }
+        #endregion
+
+
     }
 }

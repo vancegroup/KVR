@@ -204,6 +204,157 @@ namespace KinectWithVRServer
         }
     }
 
+    public class ConfiguredServerData : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void NotifyPropertyChanged(string info)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(info));
+            }
+        }
+
+        private string serverName = "";
+        public string ServerName
+        {
+            get { return serverName; }
+            set
+            {
+                serverName = value;
+                NotifyPropertyChanged("ServerName");
+            }
+        }
+
+        private bool analogServer = false;
+        public bool AnalogServer
+        {
+            get { return analogServer; }
+            set
+            {
+                analogServer = value;
+                NotifyPropertyChanged("AnalogServer");
+            }
+        }
+        private int analogChannels = 0;
+        public int AnalogChannels
+        {
+            get { return analogChannels; }
+            set
+            {
+                analogChannels = value;
+                NotifyPropertyChanged("AnalogChannels");
+            }
+        }
+        public string AnalogChannelsString
+        {
+            get
+            {
+                if (analogServer)
+                {
+                    return analogChannels.ToString();
+                }
+                else
+                {
+                    return "";
+                }
+            }
+        }
+
+        private bool buttonServer = false;
+        public bool ButtonServer
+        {
+            get { return buttonServer; }
+            set
+            {
+                buttonServer = value;
+                NotifyPropertyChanged("ButtonServer");
+            }
+        }
+        private int buttonChannels = 0;
+        public int ButtonChannels
+        {
+            get { return buttonChannels; }
+            set
+            {
+                buttonChannels = value;
+                NotifyPropertyChanged("ButtonChannels");
+            }
+        }
+        public string ButtonChannelsString
+        {
+            get
+            {
+                if (buttonServer)
+                {
+                    return buttonChannels.ToString();
+                }
+                else
+                {
+                    return "";
+                }
+            }
+        }
+
+        private bool imageServer = false;
+        public bool ImageServer
+        {
+            get { return imageServer; }
+            set
+            {
+                imageServer = value;
+                NotifyPropertyChanged("ImageServer");
+            }
+        }
+
+        private bool textServer = false;
+        public bool TextServer
+        {
+            get { return textServer; }
+            set
+            {
+                textServer = value;
+                NotifyPropertyChanged("TextServer");
+            }
+        }
+
+        private bool trackerServer = false;
+        public bool TrackerServer
+        {
+            get { return trackerServer; }
+            set
+            {
+                trackerServer = value;
+                NotifyPropertyChanged("TrackerServer");
+            }
+        }
+        private int trackerChannels = 0;
+        public int TrackerChannels
+        {
+            get { return trackerChannels; }
+            set
+            {
+                trackerChannels = value;
+                NotifyPropertyChanged("TrackerChannels");
+            }
+        }
+        public string TrackerChannelsString
+        {
+            get
+            {
+                if (trackerServer)
+                {
+                    return trackerChannels.ToString();
+                }
+                else
+                {
+                    return "";
+                }
+            }
+        }
+    }
+
     public class BoolToPressConverter : IValueConverter
     {
         public object Convert(object value, Type tagertType, object parameter, CultureInfo culture)

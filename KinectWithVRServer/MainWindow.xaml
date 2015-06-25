@@ -91,7 +91,7 @@
         <GridSplitter Grid.Row="1" VerticalAlignment="Bottom" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
         <GridSplitter Grid.Row="2" VerticalAlignment="Top" Height="5" ResizeDirection="Rows" HorizontalAlignment="Stretch" Background="Transparent"/>
 
-        <TabControl Name="SettingsTabControl" Grid.Row="2" SelectedIndex="0">
+        <TabControl Name="SettingsTabControl" Grid.Row="2" SelectedIndex="0" SelectionChanged="SettingsTabControl_SelectionChanged">
             <TabItem Name="StatusTab" Header="Status">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -379,7 +379,26 @@
             </TabItem>
             
             <TabItem Name="ServersTab" Header="Servers">
-
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Configured Servers" FontWeight="Bold" FontSize="14" Margin="2"/>
+                    <DataGrid Name="ServersDataGrid" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding}" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Server Name" Binding="{Binding ServerName}"/>
+                            <DataGridCheckBoxColumn Header="Analog"  Binding="{Binding AnalogServer}"/>
+                            <DataGridTextColumn Header="Analog Channels" Binding="{Binding AnalogChannelsString}"/>
+                            <DataGridCheckBoxColumn Header="Button" Binding="{Binding ButtonServer}"/>
+                            <DataGridTextColumn Header="Button Channels" Binding="{Binding ButtonChannelsString}"/>
+                            <DataGridCheckBoxColumn Header="Image" Binding="{Binding ImageServer}"/>
+                            <DataGridCheckBoxColumn Header="Text" Binding="{Binding TextServer}"/>
+                            <DataGridCheckBoxColumn Header="Tracker" Binding="{Binding TrackerServer}"/>
+                            <DataGridTextColumn Header="Tracker Channels" Binding="{Binding TrackerChannelsString}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
             </TabItem>
             
             <TabItem Name="LogTab" Header="Log">

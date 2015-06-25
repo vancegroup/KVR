@@ -1230,15 +1230,16 @@ namespace KinectWithVRServer
 
         #region Settings parsing functions
         //This was moved from the settings to here because it needs to know about the per kinect options which are dependent on the different core dlls
-        private bool parseSettings(out string errorMessage)
+        internal bool parseSettings(out string errorMessage)
         {
             bool settingsValid = true;
             errorMessage = "";
 
-            serverMasterOptions.analogServers = new List<KinectBase.AnalogServerSettings>();
-            serverMasterOptions.buttonServers = new List<KinectBase.ButtonServerSettings>();
-            serverMasterOptions.textServers = new List<KinectBase.TextServerSettings>();
-            serverMasterOptions.trackerServers = new List<KinectBase.TrackerServerSettings>();
+            serverMasterOptions.analogServers = new List<AnalogServerSettings>();
+            serverMasterOptions.buttonServers = new List<ButtonServerSettings>();
+            serverMasterOptions.textServers = new List<TextServerSettings>();
+            serverMasterOptions.trackerServers = new List<TrackerServerSettings>();
+            serverMasterOptions.imagerServers = new List<ImagerServerSettings>();
 
             #region Parse the Skeleton servers
             settingsValid &= parseIndividualSkeletons(serverMasterOptions.mergedSkeletonOptions.individualSkeletons, ref errorMessage);
