@@ -43,19 +43,10 @@ namespace KinectV1Core
             get { return isDepthStreamOn; }
         }
 
-
-        //MainWindow parent;
-        //short[] depthImagePixels;
-        //byte[] colorImagePixels;
         internal KinectBase.MasterSettings masterSettings;
         public int skelcount;
         private InteractionStream interactStream;
-        //private List<double> depthTimeIntervals = new List<double>();
-        //private List<double> colorTimeIntervals = new List<double>();
-        //private Int64 lastDepthTime = 0;
-        //private Int64 lastColorTime = 0;
         private System.Timers.Timer updateTimer;
-        //public KinectBase.KinectSkeletonsData skeletonData;
         private List<HandGrabInfo> skeletonHandGrabData = new List<HandGrabInfo>();
         private Matrix3D skeletonTransformation = Matrix3D.Identity;
         private Quaternion skeletonRotQuaternion = Quaternion.Identity;
@@ -64,7 +55,6 @@ namespace KinectV1Core
         private bool isDepthStreamOn = false;
         public bool? isXbox360Kinect = null;
         private bool isGUI = false;
-
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
@@ -87,7 +77,7 @@ namespace KinectV1Core
                     int globalIndex = -1;
                     for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
                     {
-                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).connectionID)
+                        if (KinectSensor.KinectSensors[i].UniqueKinectId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).uniqueKinectID)
                         {
                             globalIndex = i;
                             break;
@@ -247,7 +237,6 @@ namespace KinectV1Core
             KinectBase.KinectSkeleton transformedSkeleton = new KinectBase.KinectSkeleton();
             transformedSkeleton.leftHandClosed = skeleton.leftHandClosed;
             transformedSkeleton.rightHandClosed = skeleton.rightHandClosed;
-            //transformedSkeleton.masterSkeletonIndex = skeleton.masterSkeletonIndex;
             transformedSkeleton.TrackingId = skeleton.TrackingId;
             transformedSkeleton.SkeletonTrackingState = skeleton.SkeletonTrackingState;
             transformedSkeleton.utcSampleTime = skeleton.utcSampleTime;
@@ -255,10 +244,8 @@ namespace KinectV1Core
             transformedSkeleton.Position = skeletonTransformation.Transform(skeleton.Position);
 
             //Transform the joints
-            //transformedSkeleton.skeleton = new List<KinectBase.Joint>();
             for (int i = 0; i < skeleton.skeleton.Count; i++)
             {
-                //transformedSkeleton.skeleton[i] = TransformJoint(skeleton.skeleton[i]);
                 transformedSkeleton.skeleton[i] = TransformJoint(skeleton.skeleton[i]);
             }
 
@@ -270,7 +257,6 @@ namespace KinectV1Core
             transformedJoint.Confidence = joint.Confidence;
             transformedJoint.JointType = joint.JointType;
             transformedJoint.TrackingState = joint.TrackingState;
-            //TODO: Check that this is the correct way to rotate the joint's orientation
             transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
             transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
 
@@ -465,7 +451,6 @@ namespace KinectV1Core
                         kvrSkeletons[i].TrackingId = skeletons[i].TrackingId;
                         kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
                         kvrSkeletons[i].sourceKinectID = kinectID;
-                        //kvrSkeletons[i].skeleton = new List<KinectBase.Joint>();
                         for (int j = 0; j < skeletons[i].Joints.Count; j++)
                         {
                             KinectBase.Joint newJoint = new KinectBase.Joint();
@@ -500,7 +485,7 @@ namespace KinectV1Core
                 if (frame != null)
                 {
                     //Pass the data to the interaction frame for processing
-                    if (interactStream != null && frame.Format == DepthImageFormat.Resolution640x480Fps30 /* && parent.server.serverMasterOptions.kinectOptions[kinectID].trackSkeletons*/)
+                    if (interactStream != null && frame.Format == DepthImageFormat.Resolution640x480Fps30)
                     {
                         interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
                     }
@@ -554,7 +539,6 @@ namespace KinectV1Core
             {
                 if (interactFrame != null && ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).mergeSkeletons)
                 {
-                    bool changeMade = false;
                     UserInfo[] tempUserInfo = new UserInfo[6];
                     interactFrame.CopyInteractionDataTo(tempUserInfo);
 
@@ -571,12 +555,10 @@ namespace KinectV1Core
                                         if (hand.HandType == InteractionHandType.Left)
                                         {
                                             skeletonHandGrabData[i].leftHandClosed = true;
-                                            changeMade = true;
                                         }
                                         else if (hand.HandType == InteractionHandType.Right)
                                         {
                                             skeletonHandGrabData[i].rightHandClosed = true;
-                                            changeMade = true;
                                         }
                                         break;
                                     }
@@ -591,12 +573,10 @@ namespace KinectV1Core
                                         if (hand.HandType == InteractionHandType.Left)
                                         {
                                             skeletonHandGrabData[i].leftHandClosed = false;
-                                            changeMade = true;
                                         }
                                         else if (hand.HandType == InteractionHandType.Right)
                                         {
                                             skeletonHandGrabData[i].rightHandClosed = false;
-                                            changeMade = true;
                                         }
                                         break;
                                     }

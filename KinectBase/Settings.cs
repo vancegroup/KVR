@@ -27,6 +27,8 @@ namespace KinectBase
         public List<TextServerSettings> textServers;
         [XmlIgnore]
         public List<TrackerServerSettings> trackerServers;
+        [XmlIgnore]
+        public List<ImagerServerSettings> imagerServers;
 
         public ObservableCollection<VoiceButtonCommand> voiceButtonCommands;
         public ObservableCollection<VoiceTextCommand> voiceTextCommands;
@@ -113,9 +115,19 @@ namespace KinectBase
         public KinectBase.JointType sensorJointType { get; set; }
     }
 
-    public class AnalogServerSettings
+    public interface IServerSettings
+    {
+        string serverName { get; set; }
+        ServerType serverType { get; }
+    }
+
+    public class AnalogServerSettings : IServerSettings
     {
         public string serverName { get; set;}
+        public ServerType serverType
+        {
+            get { return ServerType.Analog; }
+        }
         public int trueChannelCount
         {
             get
@@ -147,9 +159,13 @@ namespace KinectBase
         public List<int> uniqueChannels { get; set; }
     }
 
-    public class ButtonServerSettings
+    public class ButtonServerSettings : IServerSettings
     {
         public string serverName { get; set; }
+        public ServerType serverType
+        {
+            get { return ServerType.Button; }
+        }
         public int trueButtonCount 
         {
             get
@@ -181,15 +197,32 @@ namespace KinectBase
         public List<int> uniqueChannels { get; set; }
     }
 
-    public class TextServerSettings
+    public class TextServerSettings : IServerSettings
     {
         public string serverName { get; set; }
+        public ServerType serverType
+        {
+            get { return ServerType.Text; }
+        }
     }
 
     public class TrackerServerSettings
     {
         public string serverName { get; set; }
+        public ServerType serverType
+        {
+            get { return ServerType.Tracker; }
+        }
         public int sensorCount { get; set; }
+    }
+
+    public class ImagerServerSettings
+    {
+        public string serverName { get; set; }
+        public ServerType serverType
+        {
+            get { return ServerType.Imager; }
+        }
     }
 
     public class Command

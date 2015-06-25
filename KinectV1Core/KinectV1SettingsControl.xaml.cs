@@ -21,7 +21,6 @@ namespace KinectV1Core
     public partial class KinectV1SettingsControl : UserControl, KinectBase.IKinectSettingsControl
     {
         public int? kinectID { get; set; }
-        public string ConnectionID = "";
         public string uniqueKinectID { get; set; }
         public KinectBase.KinectVersion version
         {
@@ -34,13 +33,12 @@ namespace KinectV1Core
         private KinectCoreV1 kinectCore;
 
 
-        public KinectV1SettingsControl(int kinectNumber, string connectionID, bool verboseOutput, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
+        public KinectV1SettingsControl(int kinectNumber, bool verboseOutput, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
         {
             if (settings != null)
             {
                 if (settings.kinectOptionsList[kinectNumber].version == KinectBase.KinectVersion.KinectV1)
                 {
-                    ConnectionID = connectionID;
                     masterSettings = settings;
                     kinectSettings = (KinectV1Settings)settings.kinectOptionsList[kinectNumber];
                     kinectID = kinectNumber;

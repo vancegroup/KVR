@@ -24,7 +24,7 @@ namespace KinectBase
 
     //(*)Need to hide CommandType and ServerType from visible columns
     public enum CommandType { Voice, Gesture/*, Analog */}
-    public enum ServerType { Button, Analog, Tracker, Text }
+    public enum ServerType { Button, Analog, Tracker, Text, Imager }
     public enum ButtonType { Setter, Toggle, Momentary }
     public enum SkeletonSortMethod
     {

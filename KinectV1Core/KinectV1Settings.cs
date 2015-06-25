@@ -13,9 +13,8 @@ namespace KinectV1Core
     public class KinectV1Settings : IKinectSettings
     {
         public KinectV1Settings() { } //Needed for serialization
-        public KinectV1Settings(string deviceConnectionID, string uniqueID, int kinectNumber)
+        public KinectV1Settings(string uniqueID, int kinectNumber)
         {
-            connectionID = deviceConnectionID;
             uniqueKinectID = uniqueID;
             kinectID = kinectNumber;
 
@@ -39,7 +38,6 @@ namespace KinectV1Core
             rawSkeletonSettings = new SkeletonSettings();
         }
 
-        public string connectionID { get; set; }
         public string uniqueKinectID { get; set; }
         public int kinectID { get; set; }
         public KinectVersion version

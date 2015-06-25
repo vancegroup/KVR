@@ -158,9 +158,9 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Kinect Type" IsReadOnly="True" Binding="{Binding KinectType}"/>
                             <DataGridTextColumn Header="Unique ID" IsReadOnly="True" Binding="{Binding UniqueID}"/>
-                            <!--TODO: Hide the connection ID once networked and Kinect 2 sensors are supported?-->
-                            <DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>
+                            <!--<DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>-->
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
