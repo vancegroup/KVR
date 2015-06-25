@@ -52,7 +52,6 @@ namespace KinectWithVRServer
         public void launchVoiceRecognizer()
         {
             //Get the info of the voice recognizer engine the user wants to use
-            //RecognizerInfo recognizer = GetKinectRecognizer();
             RecognizerInfo recognizer = null;
             ReadOnlyCollection<RecognizerInfo> allRecognizers = SpeechRecognitionEngine.InstalledRecognizers();
             for (int i = 0; i < allRecognizers.Count; i++)
@@ -93,10 +92,19 @@ namespace KinectWithVRServer
 
             if (server.serverMasterOptions.audioOptions.sourceID >= 0 && server.serverMasterOptions.audioOptions.sourceID < server.kinects.Count)
             {
-                //TODO: Start the Kinect audio source for the voice recognition
-                //KinectAudioSource source = server.kinects[server.serverMasterOptions.audioOptions.sourceID].kinect.AudioSource;
-                //audioStream = source.Start();
-                //engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
+                Stream audioStream = null;
+
+                if (server.kinects[server.serverMasterOptions.audioOptions.sourceID].version == KinectVersion.KinectV1)
+                {
+                    ((KinectV1Core.KinectCoreV1)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).StartKinectAudio();
+                    audioStream = ((KinectV1Core.KinectCoreV1)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).GetKinectAudioStream();
+                }
+                else if (server.kinects[server.serverMasterOptions.audioOptions.sourceID].version == KinectVersion.KinectV2)
+                {
+                    //TODO: Start Kinect v2 audio for voice recognition
+                }
+                
+                engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
             }
             else
             {
@@ -108,9 +116,8 @@ namespace KinectWithVRServer
 
         internal void stopVoiceRecognizer()
         {
+            engine.RecognizeAsyncCancel();
             engine.RecognizeAsyncStop();
-            audioStream.Close();
-            audioStream.Dispose();
             engine.Dispose();  //This was commented out.  Was it causing problems?
         }
 
@@ -211,19 +218,6 @@ namespace KinectWithVRServer
             {
                 server.buttonServers[buttonServerIndex].Buttons[buttonNumber] = state;
             }
-        }
-
-        //Note: there may be multiple recognizes installed on a computer, this picks the one for the Kinect
-        //However, we do not HAVE to use that one.  This should probably be an option somewhere.
-        private RecognizerInfo GetKinectRecognizer()
-        {
-            Func<RecognizerInfo, bool> matchingFunc = r =>
-            {
-                string value;
-                r.AdditionalInfo.TryGetValue("Kinect", out value);
-                return "True".Equals(value, StringComparison.InvariantCultureIgnoreCase) && "en-US".Equals(r.Culture.Name, StringComparison.InvariantCultureIgnoreCase);
-            };
-            return SpeechRecognitionEngine.InstalledRecognizers().Where(matchingFunc).FirstOrDefault();
         }
 
         private delegate void ToggleBackMomentaryButtonDelegate(int buttonServerIndex, int buttonNumber, bool state);

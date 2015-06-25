@@ -375,9 +375,18 @@ namespace KinectWithVRServer
             {
                 if (server.isRunning)
                 {
-                    uptimeUpdateTimer.Stop();
+                    startServerButton.Content = "...Stopping";
+                    ServerStatusItem.Content = "Server Stopping...";
+                    ServerStatusTextBlock.Text = "Stopping...";
 
+                    //Force the status tab to redraw before stopping the server
+                    StatusTab.InvalidateVisual();
+                    ForceGUIUpdate();
+                    System.Threading.Thread.Sleep(100);
+
+                    uptimeUpdateTimer.Stop();
                     server.stopServer();
+
                     startServerButton.Content = "Start";
                     ServerStatusItem.Content = "Server Stopped";
                     ServerStatusTextBlock.Text = "Stopped";

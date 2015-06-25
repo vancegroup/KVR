@@ -55,6 +55,7 @@ namespace KinectV1Core
         private bool isDepthStreamOn = false;
         public bool? isXbox360Kinect = null;
         private bool isGUI = false;
+        private System.IO.Stream audioStream = null;
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
@@ -64,7 +65,6 @@ namespace KinectV1Core
         public event KinectBase.AccelerationEventHandler AccelerationChanged;
         public event KinectBase.LogMessageEventHandler LogMessageGenerated;
 
-        //public KinectCore(ServerCore mainServer, MainWindow thisParent = null, int? kinectNumber = null)
         public KinectCoreV1(ref KinectBase.MasterSettings settings, bool isGUILaunched, int? kinectNumber = null)  //Why is the kinectNumber nullable if it is requried later?
         {
             if (kinectNumber != null)
@@ -114,10 +114,10 @@ namespace KinectV1Core
             if (kinect != null)
             {
                 //The "new" syntax is sort of odd, but these really do remove the handlers from the specified events
-                kinect.ColorFrameReady -= new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
-                kinect.DepthFrameReady -= new EventHandler<DepthImageFrameReadyEventArgs>(kinect_DepthFrameReady);
-                kinect.SkeletonFrameReady -= new EventHandler<SkeletonFrameReadyEventArgs>(kinect_SkeletonFrameReady);
-                interactStream.InteractionFrameReady -= new EventHandler<InteractionFrameReadyEventArgs>(interactStream_InteractionFrameReady);
+                kinect.ColorFrameReady -= kinect_ColorFrameReady;
+                kinect.DepthFrameReady -= kinect_DepthFrameReady;
+                kinect.SkeletonFrameReady -= kinect_SkeletonFrameReady;
+                interactStream.InteractionFrameReady -= interactStream_InteractionFrameReady;
                 if (updateTimer != null)
                 {
                     updateTimer.Stop();
@@ -130,6 +130,12 @@ namespace KinectV1Core
 
                 if (kinect.AudioSource != null)
                 {
+                    if (audioStream != null)
+                    {
+                        audioStream.Close();
+                        audioStream.Dispose();
+                    }
+
                     kinect.AudioSource.Stop();
                 }
                 kinect.Stop();
@@ -190,8 +196,19 @@ namespace KinectV1Core
                         kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
                     }
 
-                    kinect.AudioSource.Start();
+                    audioStream = kinect.AudioSource.Start();
                 }
+            }
+        }
+        public System.IO.Stream GetKinectAudioStream()
+        {
+            if (kinect.AudioSource != null)
+            {
+                return audioStream;
+            }
+            else
+            {
+                return null;
             }
         }
 
