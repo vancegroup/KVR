@@ -430,7 +430,6 @@ namespace KinectV1Core
         }
         private void irOnCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            //TODO: Reimplement IR control somehow...
             if ((bool)irOnCheckBox.IsChecked)
             {
                 kinectCore.kinect.ForceInfraredEmitterOff = false;

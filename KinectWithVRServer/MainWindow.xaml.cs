@@ -665,7 +665,6 @@ namespace KinectWithVRServer
         //Handles the linking of the connection status hyperlinks to the help messages
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
         {
-            //TODO: Link this to the pages in the help file for each error
             KinectStatus status = availableKinects[kinectsAvailableDataGrid.SelectedIndex].Status;
             switch (status)
             {

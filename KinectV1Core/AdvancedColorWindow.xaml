@@ -43,15 +43,15 @@
         </TextBlock>
         <Separator Grid.Column="3" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Background="Transparent"/>
         <TextBlock Grid.Column="4" Margin="3,6,3,6">
-            Exposure (ms)<LineBreak/>
-            <Slider Name="ExposureSlider" Width="100" Margin="6,0,0,3" Minimum="1.0" Maximum="400" Value="0.0" IsEnabled="False" ValueChanged="ExposureSlider_ValueChanged"/><TextBox Name="ExposureManSet" Width="45" Margin="0,0,0,3" Text="1.0" IsEnabled="False" LostFocus="ExposureManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
-            <CheckBox Name="ExposureAutoCheckBox" Content="Auto Exposure" Margin="5,0,0,3" IsChecked="True" Click="ExposureAutoCheckBox_Click"/><LineBreak/>
-            Frame Delay (ms)<LineBreak/>
-            <Slider Name="FrameIntervalSlider" Width="100" Margin="6,0,0,3" Minimum="0.0" Maximum="400" Value="0.0" ValueChanged="FrameIntervalSlider_ValueChanged"/><TextBox Name="FrameIntervalManSet" Width="45" Margin="0,0,0,3" Text="0.0" LostFocus="FrameIntervalManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
             Brightness<LineBreak/>
             <Slider Name="BrightSlider" Width="100" Margin="6,1,0,3" Minimum="0.0" Maximum="1.0" Value="0.2156" ValueChanged="BrightSlider_ValueChanged"/><TextBox Name="BrightManSet" Width="45" Margin="0,0,0,3" Text="0.2156" LostFocus="BrightManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
             Gain<LineBreak/>
-            <Slider Name="GainSlider" Width="100" Margin="6,0,0,0" Minimum="1.0" Maximum="16.0" Value="1.0" ValueChanged="GainSlider_ValueChanged"/><TextBox Name="GainManSet" Width="45" Margin="0,0,0,0" Text="1.0" LostFocus="GainManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
+            <Slider Name="GainSlider" Width="100" Margin="6,0,0,0" Minimum="1.0" Maximum="16.0" Value="1.0" ValueChanged="GainSlider_ValueChanged" IsEnabled="False"/><TextBox Name="GainManSet" Width="45" Margin="0,0,0,0" Text="1.0" IsEnabled="False" LostFocus="GainManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
+            Frame Delay (ms)<LineBreak/>
+            <Slider Name="FrameIntervalSlider" Width="100" Margin="6,0,0,3" Minimum="0.0" Maximum="400" Value="0.0" IsEnabled="False" ValueChanged="FrameIntervalSlider_ValueChanged"/><TextBox Name="FrameIntervalManSet" Width="45" Margin="0,0,0,3" Text="0.0" IsEnabled="False" LostFocus="FrameIntervalManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
+            Exposure (ms)<LineBreak/>
+            <Slider Name="ExposureSlider" Width="100" Margin="6,0,0,3" Minimum="1.0" Maximum="400" Value="0.0" IsEnabled="False" ValueChanged="ExposureSlider_ValueChanged"/><TextBox Name="ExposureManSet" Width="45" Margin="0,0,0,3" Text="1.0" IsEnabled="False" LostFocus="ExposureManSet_LostFocus" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/><LineBreak/>
+            <CheckBox Name="ExposureAutoCheckBox" Content="Auto Exposure" Margin="5,0,0,3" IsChecked="True" Click="ExposureAutoCheckBox_Click"/><LineBreak/>
         </TextBlock>
     </Grid>
 </Window>

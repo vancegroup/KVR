@@ -407,6 +407,12 @@ namespace KinectV1Core
 
             ExposureManSet.IsEnabled = !isAuto;
             ExposureSlider.IsEnabled = !isAuto;
+            GainManSet.IsEnabled = !isAuto;
+            GainSlider.IsEnabled = !isAuto;
+            FrameIntervalManSet.IsEnabled = !isAuto;
+            FrameIntervalSlider.IsEnabled = !isAuto;
+            BrightManSet.IsEnabled = isAuto;
+            BrightSlider.IsEnabled = isAuto;
             ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).autoExposure = isAuto;
             kinectCore.kinect.ColorStream.CameraSettings.AutoExposure = isAuto;
         }
@@ -415,7 +421,7 @@ namespace KinectV1Core
         #region Interframe Delay
         private void FrameIntervalManSet_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (IsInitialized)
+            if (IsInitialized && FrameIntervalManSet.IsEnabled)
             {
                 double intervalTemp = kinectCore.kinect.ColorStream.CameraSettings.FrameInterval;
 
@@ -438,10 +444,9 @@ namespace KinectV1Core
                 FrameIntervalSlider.Value = msInterval;
             }
         }
-
         private void FrameIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (IsInitialized && kinectCore != null)
+            if (IsInitialized && kinectCore != null && FrameIntervalSlider.IsEnabled)
             {
                 ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).FrameInterval = FrameIntervalSlider.Value * 10;
                 kinectCore.kinect.ColorStream.CameraSettings.FrameInterval = FrameIntervalSlider.Value * 10;
@@ -454,7 +459,7 @@ namespace KinectV1Core
         #region Brightness
         private void BrightManSet_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (IsInitialized)
+            if (IsInitialized && BrightManSet.IsEnabled)
             {
                 double brightnessTemp = kinectCore.kinect.ColorStream.CameraSettings.Brightness;
 
@@ -476,7 +481,7 @@ namespace KinectV1Core
         }
         private void BrightSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (IsInitialized && kinectCore != null)
+            if (IsInitialized && kinectCore != null && BrightSlider.IsEnabled)
             {
                 ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Brightness = BrightSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Brightness = BrightSlider.Value;
@@ -488,7 +493,7 @@ namespace KinectV1Core
         #region Gain
         private void GainManSet_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (IsInitialized)
+            if (IsInitialized && GainManSet.IsEnabled)
             {
                 double gainTemp = kinectCore.kinect.ColorStream.CameraSettings.Gain;
 
@@ -508,10 +513,9 @@ namespace KinectV1Core
                 GainSlider.Value = gainTemp;
             }
         }
-
         private void GainSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (IsInitialized && kinectCore != null)
+            if (IsInitialized && kinectCore != null && GainSlider.IsEnabled)
             {
                 ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Gain = GainSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Gain = GainSlider.Value;
