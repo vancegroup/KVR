@@ -84,7 +84,7 @@
                 </ComboBox>
             </Grid>
             <Image Name="DepthImage" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <!--<Canvas Name="DepthImageCanvas" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>-->
+            <Canvas Name="DepthImageCanvas" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
             <!--Info column has been removed pending a decision on what to put in it-->
             <!--<Label Content="Info:" Grid.Column="2"/>-->
         </Grid>

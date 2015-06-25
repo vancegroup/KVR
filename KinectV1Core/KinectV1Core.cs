@@ -262,6 +262,50 @@ namespace KinectV1Core
 
             return transformedJoint;
         }
+        public Point MapJointToColor(KinectBase.Joint joint, bool undoTransform)
+        {
+            Point mappedPoint = new Point(0, 0);
+            Point3D transformedPosition = joint.Position;
+
+            if (undoTransform)
+            {
+                Matrix3D inverseTransform = skeletonTransformation;
+                inverseTransform.Invert();
+                transformedPosition = inverseTransform.Transform(transformedPosition);
+            }
+
+            SkeletonPoint skelPoint = new SkeletonPoint();
+            skelPoint.X = (float)transformedPosition.X;
+            skelPoint.Y = (float)transformedPosition.Y;
+            skelPoint.Z = (float)transformedPosition.Z;
+            ColorImagePoint point = kinect.CoordinateMapper.MapSkeletonPointToColorPoint(skelPoint, kinect.ColorStream.Format);
+            mappedPoint.X = point.X;
+            mappedPoint.Y = point.Y;
+
+            return mappedPoint;
+        }
+        public Point MapJointToDepth(KinectBase.Joint joint, bool undoTransform)
+        {
+            Point mappedPoint = new Point(0, 0);
+            Point3D transformedPosition = joint.Position;
+
+            if (undoTransform)
+            {
+                Matrix3D inverseTransform = skeletonTransformation;
+                inverseTransform.Invert();
+                transformedPosition = inverseTransform.Transform(transformedPosition);
+            }
+
+            SkeletonPoint skelPoint = new SkeletonPoint();
+            skelPoint.X = (float)transformedPosition.X;
+            skelPoint.Y = (float)transformedPosition.Y;
+            skelPoint.Z = (float)transformedPosition.Z;
+            DepthImagePoint point = kinect.CoordinateMapper.MapSkeletonPointToDepthPoint(skelPoint, kinect.DepthStream.Format);
+            mappedPoint.X = point.X;
+            mappedPoint.Y = point.Y;
+
+            return mappedPoint;
+        }
 
         private void LaunchKinect()
         {

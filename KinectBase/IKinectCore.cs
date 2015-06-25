@@ -22,6 +22,8 @@ namespace KinectBase
         void ShutdownSensor();
         KinectSkeleton TransformSkeleton(KinectSkeleton skeleton);
         Joint TransformJoint(Joint joint);
+        System.Windows.Point MapJointToColor(Joint joint, bool undoTransform);
+        System.Windows.Point MapJointToDepth(Joint joint, bool undoTransform);
 
         //All versions of the Kinect core need to implement these events to pass the data up to the GUI
         event SkeletonEventHandler SkeletonChanged;
