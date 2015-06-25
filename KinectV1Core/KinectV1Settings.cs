@@ -21,7 +21,7 @@ namespace KinectV1Core
 
             //Set everything to the default value
             colorImageMode = ColorImageFormat.RgbResolution640x480Fps30;
-            lineFreq = PowerLineFrequency.SixtyHertz;
+            lineFrequency = PowerLineFrequency.SixtyHertz;
             autoWhiteBalance = true;
             autoExposure = true;
             backlightMode = BacklightCompensationMode.AverageBrightness;
@@ -49,7 +49,7 @@ namespace KinectV1Core
 
         #region Color Settings
         public ColorImageFormat colorImageMode { get; set; }
-        public PowerLineFrequency lineFreq { get; set; }
+        public PowerLineFrequency lineFrequency { get; set; }
         public bool autoWhiteBalance { get; set; }
         public bool autoExposure { get; set; }
         public BacklightCompensationMode backlightMode { get; set; }

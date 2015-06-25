@@ -47,7 +47,7 @@ namespace KinectV1Core
         //MainWindow parent;
         //short[] depthImagePixels;
         //byte[] colorImagePixels;
-        KinectBase.MasterSettings masterSettings;
+        internal KinectBase.MasterSettings masterSettings;
         public int skelcount;
         private InteractionStream interactStream;
         //private List<double> depthTimeIntervals = new List<double>();
@@ -340,8 +340,8 @@ namespace KinectV1Core
         {
             //Update the acceleration data
             bool dataValid = false;
-            Vector4? acceleration = new Vector4();
-            int? elevationAngle = 0;
+            Vector4? acceleration = null;
+            int? elevationAngle = null;
             lock (kinect)
             {
                 if (kinect.IsRunning)
@@ -357,14 +357,18 @@ namespace KinectV1Core
                         acceleration = null;
                         dataValid = false;
                     }
-                    try
+
+                    if (dataValid)  //We can't even try to calculate the elevation angle if the accelerometer doesn't read right
                     {
-                        elevationAngle = kinect.ElevationAngle;
-                    }
-                    catch
-                    {
-                        elevationAngle = null;
-                        dataValid = false;
+                        try
+                        {
+                            elevationAngle = kinect.ElevationAngle;
+                        }
+                        catch
+                        {
+                            elevationAngle = null;
+                            dataValid = false;
+                        }
                     }
                 }
             }
