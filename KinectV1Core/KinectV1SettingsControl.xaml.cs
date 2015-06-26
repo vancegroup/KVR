@@ -29,11 +29,10 @@ namespace KinectV1Core
         public UserControl skeletonUserControl;
         internal KinectBase.MasterSettings masterSettings;
         private KinectV1Settings kinectSettings;
-        bool isVerbose = false;  //TODO: This variable may not be needed...
         private KinectCoreV1 kinectCore;
 
 
-        public KinectV1SettingsControl(int kinectNumber, bool verboseOutput, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
+        public KinectV1SettingsControl(int kinectNumber, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
         {
             if (settings != null)
             {
@@ -45,7 +44,6 @@ namespace KinectV1Core
                     kinectCore = (KinectCoreV1)kinect;
                     kinectCore.AccelerationChanged += kinectCore_AccelerationChanged;
                     uniqueKinectID = kinect.uniqueKinectID;
-                    isVerbose = verboseOutput;
 
                     InitializeComponent();
 

@@ -18,7 +18,6 @@ namespace KinectBase
         bool ColorStreamEnabled { get; }
         bool DepthStreamEnabled { get; }
 
-        //TODO: Require a shutdown method?
         void ShutdownSensor();
         KinectSkeleton TransformSkeleton(KinectSkeleton skeleton);
         Joint TransformJoint(Joint joint);

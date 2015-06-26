@@ -48,10 +48,6 @@ namespace KinectWithVRServer
         private volatile bool drawingDepthSkeleton = false;
         private int lastSettingsTabIndex = 0;
 
-        //TODO: Add a user control to allow the system to go into verbose mode on the fly (only in GUI mode?)
-        //When this happens, we will have to update any other classes that store the verbose mode option
-        //We should also write a comment to the log when the system is entering or exiting verbose mode
-
         public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
         {
             verbose = isVerbose;
@@ -59,6 +55,9 @@ namespace KinectWithVRServer
             startupFile = startSettings;
 
             InitializeComponent();
+
+            //Set the initial state of the verbose option checkbox
+            verboseOutputCheckbox.IsChecked = isVerbose;
         }
 
         #region Menu Click Event Handlers
@@ -483,7 +482,7 @@ namespace KinectWithVRServer
                     }
                     if (!exists)
                     {
-                        IKinectSettingsControl tempControl = new KinectV1Core.KinectV1SettingsControl(availableKinects[i].KinectID.Value, verbose, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                        IKinectSettingsControl tempControl = new KinectV1Core.KinectV1SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
                         kinectOptionGUIPages.Add(tempControl);
                         KinectTabMasterGrid.Children.Add((UserControl)tempControl);
                     }
@@ -1653,6 +1652,21 @@ namespace KinectWithVRServer
             }
 
             ServersDataGrid.Items.Refresh();
+        }
+        #endregion
+
+        #region Log Tab GUI Methods
+        private void verboseOutputCheckbox_Click(object sender, RoutedEventArgs e)
+        {
+            if (verboseOutputCheckbox.IsChecked != null)
+            {
+                bool verboseTemp = verboseOutputCheckbox.IsChecked.Value;
+                verbose = verboseTemp;
+                if (server != null)
+                {
+                    server.Verbose = verboseTemp;
+                }
+            }
         }
         #endregion
     }

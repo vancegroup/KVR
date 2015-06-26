@@ -38,6 +38,22 @@ namespace KinectWithVRServer
         private System.Timers.Timer skeletonUpdateTimer;  //Use a timer to update the skeletons at a constant rate since we might have so much data coming in that updating them as we get data would just clog the network
         bool verbose = false;
         bool GUI = false;
+        public bool Verbose
+        {
+            get { return verbose; }
+            set
+            {
+                verbose = value;
+                if (voiceRecog != null)
+                {
+                    voiceRecog.verbose = value;
+                }
+                if (feedbackCore != null)
+                {
+                    feedbackCore.isVerbose = value;
+                }
+            }
+        }
         MainWindow parent;
         internal List<KinectBase.IKinectCore> kinects = new List<KinectBase.IKinectCore>();
         VoiceRecogCore voiceRecog;

@@ -22,8 +22,8 @@ namespace KinectWithVRServer
         private string serverName = "";
         private ServerCore server;
         private MainWindow parent;
-        private bool isGUI = false;
-        private bool isVerbose = false;
+        //private bool isGUI = false;
+        internal bool isVerbose = false;
         private int watchedSensor;
 
         public FeedbackCore(bool verboseOutput, ServerCore serverCore, MainWindow thisParent = null)
@@ -33,7 +33,7 @@ namespace KinectWithVRServer
 
             if (thisParent != null)
             {
-                isGUI = true;
+                //isGUI = true;
                 parent = thisParent;
             }
         }

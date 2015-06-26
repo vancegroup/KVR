@@ -402,11 +402,18 @@
             </TabItem>
             
             <TabItem Name="LogTab" Header="Log">
-                <ScrollViewer Name="LogScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled" AcceptsReturn="True"
-                             Text="Welcome to the Kinect With VR (KVR) Server!&#x0d;&#x0a;Note: For verbose logging, add -V as a Command Line Argument in the namespace Properties menu."
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScrollViewer Name="LogScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <TextBox Name="LogTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled" AcceptsReturn="True"
+                             Text="Welcome to the Kinect With VR (KVR) Server!"
                              IsReadOnly="True" IsReadOnlyCaretVisible="True" />
-                </ScrollViewer>
+                    </ScrollViewer>
+                    <CheckBox Name="verboseOutputCheckbox" Grid.Row="1" HorizontalAlignment="Right" Content="Verbose Output" IsChecked="False" Margin="2" Click="verboseOutputCheckbox_Click"/>
+                </Grid>
             </TabItem>
         </TabControl>
         

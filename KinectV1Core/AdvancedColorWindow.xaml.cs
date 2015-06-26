@@ -21,7 +21,6 @@ namespace KinectV1Core
     {
         private KinectCoreV1 kinectCore;
 
-        //TODO: Test all the correct advanced color options for correct operation
         public AdvancedColorWindow(KinectCoreV1 kinectV1Core)
         {
             if (kinectV1Core == null)

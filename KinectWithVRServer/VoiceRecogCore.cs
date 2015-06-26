@@ -14,8 +14,8 @@ namespace KinectWithVRServer
     {
         ServerCore server;
         MainWindow parent;
-        bool isGUI = false;
-        bool verbose = false;
+        //bool isGUI = false;
+        internal bool verbose = false;
         SpeechRecognitionEngine engine = null;
         Stream audioStream = null;
 
@@ -29,10 +29,10 @@ namespace KinectWithVRServer
             }
 
             parent = thisParent;
-            if (parent != null)
-            {
-                isGUI = true;
-            }
+            //if (parent != null)
+            //{
+            //    isGUI = true;
+            //}
         }
 
         //Need an explicit destructor to ensure cleanup of the audio stream and voice recognition engine
