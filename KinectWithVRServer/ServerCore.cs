@@ -493,7 +493,12 @@ namespace KinectWithVRServer
                         kinectSkel.kinectID = e.kinectID;
                         kinectSkel.utcTime = time;
                         perKinectSkeletons.Add(kinectSkel);
+                    }
 
+                    //Update the audio beam angle, if requested
+                    if (((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioTrackMode == AudioTrackingMode.LocalSkeletonX)
+                    {
+                        ((KinectV1Core.KinectCoreV1)kinects[e.kinectID]).UpdateAudioAngle(e.skeletons[((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioBeamTrackSkeletonNumber].Position);
                     }
                 }
                 else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
@@ -569,8 +574,23 @@ namespace KinectWithVRServer
                     SendHandStateVRPN(sortedSkeletons[i].leftHandClosed, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].leftGripServerName, serverMasterOptions.mergedSkeletonOptions.individualSkeletons[i].leftGripButtonNumber);
                 }
             }
-        }
 
+            //Update the audio beam angles
+            for (int i = 0; i < kinects.Count; i++)
+            {
+                if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                {
+                    if (((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).audioTrackMode == AudioTrackingMode.MergedSkeletonX)
+                    {
+                        ((KinectV1Core.KinectCoreV1)kinects[i]).UpdateAudioAngle(sortedSkeletons[((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).audioBeamTrackSkeletonNumber].Position);
+                    }
+                }
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
+                {
+
+                }
+            }
+        }
 
         private int GetSkeletonSensorNumber(JointType joint)
         {

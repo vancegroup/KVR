@@ -183,15 +183,7 @@ namespace KinectWithVRServer
 
                 tempData.UniqueID = currentStatuses[i].UniqueKinectID;
                 tempData.Status = currentStatuses[i].Status;
-
-                if (currentStatuses[i].isXBox360Kinect)
-                {
-                    tempData.KinectType = "Kinect v1 (Xbox)";
-                }
-                else
-                {
-                    tempData.KinectType = "Kinect v1";
-                }
+                tempData.KinectType = GetKinectTypeString(currentStatuses[i].Status, currentStatuses[i].isXBox360Kinect);
                 
                 if (i == 0 && tempData.Status == KinectStatus.Connected)
                 {
@@ -320,6 +312,8 @@ namespace KinectWithVRServer
                     if (e.Status != KinectStatus.Disconnected)
                     {
                         availableKinects[i].Status = e.Status;
+                        availableKinects[i].KinectType = GetKinectTypeString(e.Status, e.isXBox360Kinect);
+
                         if (e.Status != KinectStatus.Connected)
                         {
                             availableKinects[i].UseKinect = false;
@@ -327,6 +321,7 @@ namespace KinectWithVRServer
                     }
                     else
                     {
+                        availableKinects[i].UseKinect = false;
                         availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
                         availableKinects.RemoveAt(i);
 
@@ -345,19 +340,31 @@ namespace KinectWithVRServer
                 AvailableKinectData tempData = new AvailableKinectData();
                 tempData.KinectID = null;
                 tempData.UseKinect = false;
-                if (e.isXBox360Kinect)
-                {
-                    tempData.KinectType = "Kinect v1 (Xbox)";
-                }
-                else
-                {
-                    tempData.KinectType = "Kinect v1";
-                }
+                tempData.KinectType = GetKinectTypeString(e.Status, e.isXBox360Kinect);
                 tempData.PropertyChanged += useKinect_PropertyChanged;
                 tempData.Status = e.Status;
+                tempData.UniqueID = e.UniqueKinectID;
                 availableKinects.Add(tempData);
                 kinectsAvailableDataGrid.Items.Refresh();
             }
+        }
+        private string GetKinectTypeString(KinectStatus status, bool isXBox360Kinect)
+        {
+            string tempString = "Unknown";
+
+            if (status == KinectStatus.Connected)
+            {
+                if (isXBox360Kinect)
+                {
+                    tempString = "Kinect v1 (Xbox)";
+                }
+                else
+                {
+                    tempString = "Kinect v1";
+                }
+            }
+
+            return tempString;
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -1648,7 +1655,5 @@ namespace KinectWithVRServer
             ServersDataGrid.Items.Refresh();
         }
         #endregion
-
-
     }
 }

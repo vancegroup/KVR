@@ -22,7 +22,8 @@ namespace KinectV1Core
             {
                 if (kinect != null)
                 {
-                    return kinect.UniqueKinectId;
+                    //return kinect.UniqueKinectId;
+                    return kinect.DeviceConnectionId;
                 }
                 else
                 {
@@ -77,7 +78,8 @@ namespace KinectV1Core
                     int globalIndex = -1;
                     for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
                     {
-                        if (KinectSensor.KinectSensors[i].UniqueKinectId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).uniqueKinectID)
+                        //if (KinectSensor.KinectSensors[i].UniqueKinectId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).uniqueKinectID)
+                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).uniqueKinectID)
                         {
                             globalIndex = i;
                             break;
@@ -242,11 +244,8 @@ namespace KinectV1Core
         {
             if (kinect.AudioSource != null)
             {
-                if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).audioTrackMode == KinectBase.AudioTrackingMode.Feedback)
-                {
-                    double angle = Math.Atan2(position.X - ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition.X, position.Z - ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition.Z) * (180.0 / Math.PI);
-                    kinect.AudioSource.ManualBeamAngle = angle; //This will be rounded automatically to the nearest 10 degree increment, in the range -50 to 50 degrees
-                }
+                double angle = Math.Atan2(position.X - ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition.X, position.Z - ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition.Z) * (180.0 / Math.PI);
+                kinect.AudioSource.ManualBeamAngle = angle; //This will be rounded automatically to the nearest 10 degree increment, in the range -50 to 50 degrees
             }
         }
         public KinectBase.KinectSkeleton TransformSkeleton(KinectBase.KinectSkeleton skeleton)

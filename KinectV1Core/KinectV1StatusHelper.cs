@@ -25,8 +25,9 @@ namespace KinectV1Core
                 KinectV1StatusEventArgs temp = new KinectV1StatusEventArgs();
                 temp.KinectNumber = i;
                 //temp.ConnectionID = KinectSensor.KinectSensors[i].DeviceConnectionId;
+                //temp.UniqueKinectID = KinectSensor.KinectSensors[i].UniqueKinectId;
+                temp.UniqueKinectID = KinectSensor.KinectSensors[i].DeviceConnectionId;
                 temp.Status = (KinectBase.KinectStatus)KinectSensor.KinectSensors[i].Status;
-                temp.UniqueKinectID = KinectSensor.KinectSensors[i].UniqueKinectId;
 
                 //Test each Kinect to see if it is an XBox 360 Kinect
                 bool isXbox360Kinect = false;
@@ -75,7 +76,8 @@ namespace KinectV1Core
                 }
                 args.KinectNumber = sensorNumber;
                 //args.ConnectionID = e.Sensor.DeviceConnectionId;
-                args.UniqueKinectID = e.Sensor.UniqueKinectId;
+                //args.UniqueKinectID = e.Sensor.UniqueKinectId;
+                args.UniqueKinectID = e.Sensor.DeviceConnectionId;
                 args.isXBox360Kinect = isXbox360Kinect;
 
                 OnKinectV1StatusChanged(args);
