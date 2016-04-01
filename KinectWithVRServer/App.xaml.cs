@@ -77,6 +77,12 @@ namespace KinectWithVRServer
 
             if (!help)
             {
+                //For Testing
+                AvaliableDLLs dlls = new AvaliableDLLs();
+                dlls.HasKinectV1 = VerifyDLLs.Kinect1Avaliable();
+                dlls.HasKinectV2 = VerifyDLLs.Kinect2Avaliable();
+                dlls.HasNetworkedKinect = VerifyDLLs.NetworkedKinectAvaliable();
+
                 if (newCommandLine || parentCommandLine)
                 {
                     if (newCommandLine)
@@ -96,7 +102,8 @@ namespace KinectWithVRServer
 
                     if (connected)
                     {
-                        ConsoleUI.RunServerInConsole(verbose, autoStart, startupFile);
+                        //TODO: This call fails when one of the Kinects does not exist.  Why? Because the Kinect start call needs to be wrapped in another file to delay the dll load and prevent a failure.
+                        ConsoleUI.RunServerInConsole(verbose, autoStart, startupFile, dlls);
                     }
                 }
                 else

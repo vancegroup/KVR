@@ -1786,13 +1786,5 @@ namespace KinectWithVRServer
         private delegate void launchVoiceRecognizerDelegate();
     }
 
-    //TODO: Can we blow this class away and just use the KinectSkeleton class?
-    //class PassedSkeleton
-    //{
-    //    internal Skeleton skeletonData;
-    //    internal bool? leftHandGripped;
-    //    internal bool? rightHandGripped;
-    //}
-
     enum ServerRunState {Starting, Running, Stopping, Stopped}
 }

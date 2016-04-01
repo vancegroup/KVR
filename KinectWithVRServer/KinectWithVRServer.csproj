@@ -118,6 +118,7 @@
     <Compile Include="HelperMethods.cs" />
     <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
+    <Compile Include="VerifyDLLs.cs" />
     <Compile Include="VoiceRecogCore.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
