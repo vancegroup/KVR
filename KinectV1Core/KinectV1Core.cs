@@ -45,7 +45,7 @@ namespace KinectV1Core
         }
 
         internal KinectBase.MasterSettings masterSettings;
-        public int skelcount;
+        //public int skelcount;  //TODO: Where was this going to be used? I can't find any references to it.
         private InteractionStream interactStream;
         private System.Timers.Timer updateTimer;
         private List<HandGrabInfo> skeletonHandGrabData = new List<HandGrabInfo>();
@@ -54,7 +54,7 @@ namespace KinectV1Core
         private Vector4 lastAcceleration;
         private bool isColorStreamOn = false;
         private bool isDepthStreamOn = false;
-        public bool? isXbox360Kinect = null;
+        public bool? isXbox360Kinect = null;  //TODO: Can this be made internal?  It isn't used outside this assembly, unless the XAML parser uses it
         private bool isGUI = false;
         private System.IO.Stream audioStream = null;
 
@@ -214,12 +214,12 @@ namespace KinectV1Core
             }
         }
 
-        public void ChangeColorResolution(ColorImageFormat newResolution)
+        public void ChangeColorResolution(KinectBase.ColorImageFormat newResolution)  //TODO: Internal?
         {
             kinect.ColorStream.Disable();
-            if (newResolution != ColorImageFormat.Undefined)
+            if (newResolution != KinectBase.ColorImageFormat.Undefined)
             {
-                kinect.ColorStream.Enable(newResolution);
+                kinect.ColorStream.Enable(convertColorImageFormat(newResolution));
                 isColorStreamOn = true;
             }
             else
@@ -227,12 +227,12 @@ namespace KinectV1Core
                 isColorStreamOn = false;
             }
         }
-        public void ChangeDepthResolution(DepthImageFormat newResolution)
+        public void ChangeDepthResolution(KinectBase.DepthImageFormat newResolution)  //TODO: Internal?
         {
             kinect.DepthStream.Disable();
-            if (newResolution != DepthImageFormat.Undefined)
+            if (newResolution != KinectBase.DepthImageFormat.Undefined)
             {
-                kinect.DepthStream.Enable(newResolution);
+                kinect.DepthStream.Enable(convertDepthImageFormat(newResolution));
                 isDepthStreamOn = true;
             }
             else
@@ -323,12 +323,13 @@ namespace KinectV1Core
             return mappedPoint;
         }
 
+        //TODO: Ensure that all initial Kinect settings (like white balance, etc) get set on the actual Kinect for both GUI and console mode
         private void LaunchKinect()
         {
             //Setup default properties
-            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).colorImageMode != ColorImageFormat.Undefined)
+            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).colorImageMode != KinectBase.ColorImageFormat.Undefined)
             {
-                kinect.ColorStream.Enable(((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).colorImageMode);
+                kinect.ColorStream.Enable(convertColorImageFormat(((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).colorImageMode));
                 kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
                 isColorStreamOn = true;
 
@@ -344,9 +345,10 @@ namespace KinectV1Core
                     isXbox360Kinect = true;
                 }
             }
-            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).depthImageMode != DepthImageFormat.Undefined)
+            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).depthImageMode != KinectBase.DepthImageFormat.Undefined)
             {
-                kinect.DepthStream.Enable();
+                //kinect.DepthStream.Enable();
+                kinect.DepthStream.Enable(convertDepthImageFormat(((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).depthImageMode));
                 isDepthStreamOn = true;
 
                 kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
@@ -647,7 +649,7 @@ namespace KinectV1Core
                 }
             }
         }
-        void AudioSource_SoundSourceAngleChanged(object sender, SoundSourceAngleChangedEventArgs e)
+        private void AudioSource_SoundSourceAngleChanged(object sender, SoundSourceAngleChangedEventArgs e)
         {
             KinectBase.AudioPositionEventArgs audioE = new KinectBase.AudioPositionEventArgs();
             audioE.kinectID = this.kinectID;
@@ -749,6 +751,16 @@ namespace KinectV1Core
         {
             //The joint types are all numbered the same for the Kinect v1, so we can just do a straight cast
             return (KinectBase.JointType)jointType;
+        }
+        private ColorImageFormat convertColorImageFormat(KinectBase.ColorImageFormat format)
+        {
+            //The color formats are all numbered the same for the Kienct v1, so we can do a straight cast
+            return (ColorImageFormat)format;
+        }
+        private DepthImageFormat convertDepthImageFormat(KinectBase.DepthImageFormat format)
+        {
+            //The depth formats are all numbered the same for the Kienct v1, so we can do a straight cast
+            return (DepthImageFormat)format;
         }
 
         //Methods to fire the events

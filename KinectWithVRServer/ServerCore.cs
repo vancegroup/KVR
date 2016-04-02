@@ -86,7 +86,7 @@ namespace KinectWithVRServer
                 {
                     if (kinects[i].version == KinectVersion.KinectV1)
                     {
-                        ((KinectV1Core.KinectCoreV1)kinects[i]).StartKinectAudio(); 
+                        ((KinectV1Wrapper.Core)kinects[i]).StartKinectAudio(); 
                     }
                     else if (kinects[i].version == KinectVersion.KinectV2)
                     {
@@ -308,7 +308,7 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    KinectV1Core.KinectV1Settings tempSettings = (KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i];
+                    KinectV1Wrapper.Settings tempSettings = (KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
                     if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
                     {
                         kinects[i].SkeletonChanged += kinect_SkeletonChanged;
@@ -332,7 +332,7 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    KinectV1Core.KinectV1Settings tempSettings = (KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i];
+                    KinectV1Wrapper.Settings tempSettings = (KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
                     if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
                     {
                         kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
@@ -358,7 +358,7 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
                 {
-                    KinectV1Core.KinectV1Settings tempSettings = ((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendAcceleration)
                     {
                         for (int i = 0; i < analogServers.Count; i++)
@@ -383,7 +383,7 @@ namespace KinectWithVRServer
                 else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
                 {
                     //TODO: Setup transmitting for the Kinect v2
-                    //KinectV1Core.KinectV1Settings tempSettings = ((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    //KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     //if (tempSettings.sendAcceleration)
                     //{
                     //    for (int i = 0; i < analogServers.Count; i++)
@@ -410,7 +410,7 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
                 {
-                    KinectV1Core.KinectV1Settings tempSettings = ((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendAudioAngle)
                     {
                         for (int i = 0; i < analogServers.Count; i++)
@@ -442,7 +442,7 @@ namespace KinectWithVRServer
                 //Transmit the Kinect v1 Skeletons
                 if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
                 {
-                    KinectV1Core.KinectV1Settings tempSettings = (KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID];
+                    KinectV1Wrapper.Settings tempSettings = (KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID];
 
                     //Send the raw skeletons
                     if (tempSettings.sendRawSkeletons)
@@ -512,9 +512,9 @@ namespace KinectWithVRServer
                     }
 
                     //Update the audio beam angle, if requested
-                    if (((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioTrackMode == AudioTrackingMode.LocalSkeletonX)
+                    if (((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioTrackMode == AudioTrackingMode.LocalSkeletonX)
                     {
-                        ((KinectV1Core.KinectCoreV1)kinects[e.kinectID]).UpdateAudioAngle(e.skeletons[((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioBeamTrackSkeletonNumber].Position);
+                        ((KinectV1Wrapper.Core)kinects[e.kinectID]).UpdateAudioAngle(e.skeletons[((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioBeamTrackSkeletonNumber].Position);
                     }
                 }
                 else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
@@ -596,9 +596,9 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    if (((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).audioTrackMode == AudioTrackingMode.MergedSkeletonX)
+                    if (((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).audioTrackMode == AudioTrackingMode.MergedSkeletonX)
                     {
-                        ((KinectV1Core.KinectCoreV1)kinects[i]).UpdateAudioAngle(sortedSkeletons[((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).audioBeamTrackSkeletonNumber].Position);
+                        ((KinectV1Wrapper.Core)kinects[i]).UpdateAudioAngle(sortedSkeletons[((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).audioBeamTrackSkeletonNumber].Position);
                     }
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
@@ -1283,9 +1283,9 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    if (((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    if (((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
                     {
-                        settingsValid &= parseIndividualSkeletons(((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]).rawSkeletonSettings.individualSkeletons, ref errorMessage);
+                        settingsValid &= parseIndividualSkeletons(((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).rawSkeletonSettings.individualSkeletons, ref errorMessage);
                     }
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
@@ -1418,7 +1418,7 @@ namespace KinectWithVRServer
             {
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    settingsValid &= parseKinectV1Settings(((KinectV1Core.KinectV1Settings)serverMasterOptions.kinectOptionsList[i]), ref errorMessage);
+                    settingsValid &= parseKinectV1Settings(((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]), ref errorMessage);
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
@@ -1600,7 +1600,7 @@ namespace KinectWithVRServer
 
             return settingsValid;
         }
-        private bool parseKinectV1Settings(KinectV1Core.KinectV1Settings settings, ref string errorMessage)
+        private bool parseKinectV1Settings(KinectV1Wrapper.Settings settings, ref string errorMessage)
         {
             bool settingsValid = true;
             if (errorMessage == null)

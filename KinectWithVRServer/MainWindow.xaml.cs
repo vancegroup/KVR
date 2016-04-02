@@ -188,7 +188,7 @@ namespace KinectWithVRServer
                 {
                     tempData.UseKinect = true;
                     tempData.KinectID = 0;
-                    server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Core.KinectV1Settings(tempData.UniqueID, (int)tempData.KinectID)));
+                    server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(tempData.UniqueID, (int)tempData.KinectID)));
                     server.kinects.Add((IKinectCore)(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
                     tempData.ServerStatus = "Running";
                 }
@@ -473,16 +473,17 @@ namespace KinectWithVRServer
                     bool exists = false;
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
-                        if (((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).uniqueKinectID == availableKinects[i].UniqueID)
+                        if (((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).uniqueKinectID == availableKinects[i].UniqueID)
                         {
                             exists = true;
-                            ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).kinectID = availableKinects[i].KinectID.Value;
+                            ((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).kinectID = availableKinects[i].KinectID.Value;
                             break;
                         }
                     }
                     if (!exists)
                     {
-                        IKinectSettingsControl tempControl = new KinectV1Core.KinectV1SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                        //IKinectSettingsControl tempControl = new KinectV1Wrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                        IKinectSettingsControl tempControl = new KinectV1Wrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
                         kinectOptionGUIPages.Add(tempControl);
                         KinectTabMasterGrid.Children.Add((UserControl)tempControl);
                     }
@@ -494,9 +495,9 @@ namespace KinectWithVRServer
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
                         //TODO: Figure out a way to perserve the settings and the acceleration updating
-                        if (((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).uniqueKinectID == availableKinects[i].UniqueID)
+                        if (((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).uniqueKinectID == availableKinects[i].UniqueID)
                         {
-                            //((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[j]).kinectID = null;  //This will cause the page to be hidden, but not destroyed (which saves the settings on the GUI, but breaks acceleration updating)
+                            //((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).kinectID = null;  //This will cause the page to be hidden, but not destroyed (which saves the settings on the GUI, but breaks acceleration updating)
                             kinectOptionGUIPages.RemoveAt(j);  //This will destroy the page and cause it to be recreated when the Kinect is set to be used again (which saves the acceleration updating, but losses all the settings)
                             break;
                         }
@@ -575,7 +576,7 @@ namespace KinectWithVRServer
                     }
                     if (!found)
                     {
-                        server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Core.KinectV1Settings(availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
+                        server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
                     }
                 }
                 else
@@ -679,7 +680,7 @@ namespace KinectWithVRServer
             Debug.WriteLine("GUI Pages:");
             for (int i = 0; i < kinectOptionGUIPages.Count; i++)
             {
-                Debug.WriteLine(((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).kinectID.ToString() + ":   " + ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).uniqueKinectID);
+                Debug.WriteLine(((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[i]).kinectID.ToString() + ":   " + ((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[i]).uniqueKinectID);
             }
         }
         //Handles the linking of the connection status hyperlinks to the help messages
@@ -754,7 +755,7 @@ namespace KinectWithVRServer
                 {
                     if (((TabItem)SkeletonsTabControl.Items[i]).Header.ToString() == "Kinect " + server.kinects[j].kinectID.ToString())
                     {
-                        if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
+                        if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
                         {
                             kinectFound = true;
                             break;
@@ -773,7 +774,7 @@ namespace KinectWithVRServer
             {
                 if (server.kinects[i].version == KinectVersion.KinectV1)
                 {
-                    if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
                     {
                         bool controlFound = false;
 
@@ -789,7 +790,7 @@ namespace KinectWithVRServer
                         {
                             TabItem newTabItem = new TabItem();
                             newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
-                            newTabItem.Content = ((KinectV1Core.KinectV1SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
+                            newTabItem.Content = ((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
                             SkeletonsTabControl.Items.Add(newTabItem);
                         }
                     }
@@ -1392,7 +1393,7 @@ namespace KinectWithVRServer
             {
                 if (server.kinects[i].version == KinectVersion.KinectV1)
                 {
-                    if (((KinectV1Core.KinectV1Settings)server.serverMasterOptions.kinectOptionsList[i]).mergeSkeletons)
+                    if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).mergeSkeletons)
                     {
                         totalSkeletons += 6;
                     }

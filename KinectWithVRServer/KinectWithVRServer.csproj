@@ -116,10 +116,20 @@
     <Compile Include="ConsoleUI.cs" />
     <Compile Include="FeedbackCore.cs" />
     <Compile Include="HelperMethods.cs" />
+    <Compile Include="KinectV1Wrapper\KV1Core.cs" />
+    <Compile Include="KinectV1Wrapper\KV1SdkTest.cs" />
+    <Compile Include="KinectV1Wrapper\KV1Settings.cs" />
+    <Compile Include="KinectV1Wrapper\SettingsControl.xaml.cs">
+      <DependentUpon>SettingsControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
     <Compile Include="VerifyDLLs.cs" />
     <Compile Include="VoiceRecogCore.cs" />
+    <Page Include="KinectV1Wrapper\SettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

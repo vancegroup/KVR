@@ -43,7 +43,8 @@ namespace KinectWithVRServer
                 {
                     if (dlls.HasKinectV1)
                     {
-                        server.kinects.Add(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                        //server.kinects.Add(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                        server.kinects.Add(new KinectV1Wrapper.Core(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
                     }
                     else
                     {
@@ -81,6 +82,7 @@ namespace KinectWithVRServer
                 }
             }
 
+            Console.WriteLine(); //Write a blank so the next statement has its own line
             Console.WriteLine("Shutting down the server.  Please wait...");
             server.stopServer();
 

@@ -319,17 +319,17 @@ namespace KinectV1Core
                 if (powerLineComboBox.SelectedIndex == 0)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.PowerLineFrequency = PowerLineFrequency.SixtyHertz;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = PowerLineFrequency.SixtyHertz;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = KinectBase.PowerLineFrequency.SixtyHertz;
                 }
                 else if (powerLineComboBox.SelectedIndex == 1)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.PowerLineFrequency = PowerLineFrequency.FiftyHertz;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = PowerLineFrequency.FiftyHertz;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = KinectBase.PowerLineFrequency.FiftyHertz;
                 }
                 else
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.PowerLineFrequency = PowerLineFrequency.Disabled;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = PowerLineFrequency.Disabled;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = KinectBase.PowerLineFrequency.Disabled;
                 }
             }
         }
@@ -343,22 +343,22 @@ namespace KinectV1Core
                 if (BacklightCompComboBox.SelectedIndex == 1)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.CenterOnly;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = BacklightCompensationMode.CenterOnly;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.CenterOnly;
                 }
                 else if (BacklightCompComboBox.SelectedIndex == 2)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.CenterPriority;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = BacklightCompensationMode.CenterPriority;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.CenterPriority;
                 }
                 else if (BacklightCompComboBox.SelectedIndex == 3)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.LowlightsPriority;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = BacklightCompensationMode.LowlightsPriority;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.LowlightsPriority;
                 }
                 else
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.AverageBrightness;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = BacklightCompensationMode.AverageBrightness;
+                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.AverageBrightness;
                 }
             }
         }

@@ -31,8 +31,11 @@ namespace KinectWithVRServer
                 }
             }
 
-            //TODO: Add stage 2 check to see if the DLL actually functions
-
+            //Secondary check to see if the DLL actually functions
+            if (isAvaliable)
+            {
+                isAvaliable = KinectV1Wrapper.KV1SdkTest.IsSDKWorking();
+            }
             return isAvaliable;
         }
 

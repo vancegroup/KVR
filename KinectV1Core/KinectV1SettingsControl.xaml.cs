@@ -49,8 +49,9 @@ namespace KinectV1Core
 
                     this.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
                     this.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
-                    Grid.SetColumn(this, 2);
-                    this.Visibility = System.Windows.Visibility.Collapsed;
+                    //This moved to the wrapper
+                    //Grid.SetColumn(this, 2);  
+                    //this.Visibility = System.Windows.Visibility.Collapsed;
 
                     if (kinectCore.isXbox360Kinect != null && (bool)kinectCore.isXbox360Kinect)
                     {
@@ -78,17 +79,17 @@ namespace KinectV1Core
                 //Update the color options
                 switch (kinectSettings.colorImageMode)
                 {
-                    case Microsoft.Kinect.ColorImageFormat.RgbResolution640x480Fps30:
+                    case KinectBase.ColorImageFormat.RgbResolution640x480Fps30:
                     {
                         colorResComboBox.SelectedIndex = 0;
                         break;
                     }
-                    case Microsoft.Kinect.ColorImageFormat.RgbResolution1280x960Fps12:
+                    case KinectBase.ColorImageFormat.RgbResolution1280x960Fps12:
                     {
                         colorResComboBox.SelectedIndex = 1;
                         break;
                     }
-                    case Microsoft.Kinect.ColorImageFormat.InfraredResolution640x480Fps30:
+                    case KinectBase.ColorImageFormat.InfraredResolution640x480Fps30:
                     {
                         colorResComboBox.SelectedIndex = 2;
                         break;
@@ -112,12 +113,12 @@ namespace KinectV1Core
                 nearModeCheckBox.IsChecked = kinectSettings.isNearMode;
                 switch (kinectSettings.depthImageMode)
                 {
-                    case Microsoft.Kinect.DepthImageFormat.Resolution320x240Fps30:
+                    case KinectBase.DepthImageFormat.Resolution320x240Fps30:
                     {
                         depthResComboBox.SelectedIndex = 1;
                         break;
                     }
-                    case Microsoft.Kinect.DepthImageFormat.Resolution80x60Fps30:
+                    case KinectBase.DepthImageFormat.Resolution80x60Fps30:
                     {
                         depthResComboBox.SelectedIndex = 2;
                         break;
@@ -370,29 +371,29 @@ namespace KinectV1Core
         #region Depth Option Methods
         private void depthResComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Microsoft.Kinect.DepthImageFormat newFormat = Microsoft.Kinect.DepthImageFormat.Undefined;
+            KinectBase.DepthImageFormat newFormat = KinectBase.DepthImageFormat.Undefined;
 
             switch (depthResComboBox.SelectedIndex)
             {
                 case (0):
                     {
-                        newFormat = Microsoft.Kinect.DepthImageFormat.Resolution640x480Fps30;
+                        newFormat = KinectBase.DepthImageFormat.Resolution640x480Fps30;
                         break;
                     }
                 case (1):
                     {
-                        newFormat = Microsoft.Kinect.DepthImageFormat.Resolution320x240Fps30;
+                        newFormat = KinectBase.DepthImageFormat.Resolution320x240Fps30;
                         break;
                     }
                 case (2):
                     {
-                        newFormat = Microsoft.Kinect.DepthImageFormat.Resolution80x60Fps30;
+                        newFormat = KinectBase.DepthImageFormat.Resolution80x60Fps30;
                         break;
                     }
                 case (3):
                     {
                         //Note: This case should never be hit.  In order for skeleton tracking to work, we must have the depth image so turning it off is currently not available from the GUI
-                        newFormat = Microsoft.Kinect.DepthImageFormat.Undefined;
+                        newFormat = KinectBase.DepthImageFormat.Undefined;
                         break;
                     }
             }
@@ -455,28 +456,28 @@ namespace KinectV1Core
         #region Color Option Methods
         private void colorResComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Microsoft.Kinect.ColorImageFormat newFormat = Microsoft.Kinect.ColorImageFormat.Undefined;
+            KinectBase.ColorImageFormat newFormat = KinectBase.ColorImageFormat.Undefined;
 
             switch (colorResComboBox.SelectedIndex)
             {
                 case (0):
                 {
-                    newFormat = Microsoft.Kinect.ColorImageFormat.RgbResolution640x480Fps30;
+                    newFormat = KinectBase.ColorImageFormat.RgbResolution640x480Fps30;
                     break;
                 }
                 case (1):
                 {
-                    newFormat = Microsoft.Kinect.ColorImageFormat.RgbResolution1280x960Fps12;
+                    newFormat = KinectBase.ColorImageFormat.RgbResolution1280x960Fps12;
                     break;
                 }
                 case (2):
                 {
-                    newFormat = Microsoft.Kinect.ColorImageFormat.InfraredResolution640x480Fps30;
+                    newFormat = KinectBase.ColorImageFormat.InfraredResolution640x480Fps30;
                     break;
                 }
                 case (3):
                 {
-                    newFormat = Microsoft.Kinect.ColorImageFormat.Undefined;
+                    newFormat = KinectBase.ColorImageFormat.Undefined;
                     break;
                 }
             }

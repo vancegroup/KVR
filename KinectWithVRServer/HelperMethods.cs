@@ -116,12 +116,12 @@ namespace KinectWithVRServer
         internal static void SaveSettings(string fileName, KinectBase.MasterSettings settings)
         {
             //Create a serializable version of the settings (basically, move the Kinect options from the Master settings to a type specific array)
-            List<KinectV1Core.KinectV1Settings> kinect1Settings = new List<KinectV1Core.KinectV1Settings>();
+            List<KinectV1Wrapper.Settings> kinect1Settings = new List<KinectV1Wrapper.Settings>();
             for (int i = 0; i < settings.kinectOptionsList.Count; i++)
             {
                 if (settings.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
-                    kinect1Settings.Add((KinectV1Core.KinectV1Settings)settings.kinectOptionsList[i]);
+                    kinect1Settings.Add((KinectV1Wrapper.Settings)settings.kinectOptionsList[i]);
                 }
                 else if (settings.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
@@ -519,6 +519,6 @@ namespace KinectWithVRServer
     public class SerializableSettings
     {
         public KinectBase.MasterSettings masterSettings { get; set; }
-        public KinectV1Core.KinectV1Settings[] kinectV1Settings { get; set; }
+        public KinectV1Wrapper.Settings[] kinectV1Settings { get; set; }
     }
 }
