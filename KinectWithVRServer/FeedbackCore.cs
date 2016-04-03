@@ -107,7 +107,7 @@ namespace KinectWithVRServer
                 {
                     if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).audioTrackMode == KinectBase.AudioTrackingMode.Feedback)
                     {
-                        ((KinectV1Core.KinectCoreV1)server.kinects[i]).UpdateAudioAngle(feedbackPosition);
+                        ((KinectV1Wrapper.Core)server.kinects[i]).UpdateAudioAngle(feedbackPosition);
                     }
                 }
                 else if (server.kinects[i].version == KinectBase.KinectVersion.KinectV2)

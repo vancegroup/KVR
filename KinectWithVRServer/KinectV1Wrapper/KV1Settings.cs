@@ -39,11 +39,10 @@ namespace KinectWithVRServer.KinectV1Wrapper
         {
             realSettings = new KinectV1Settings(uniqueID, kinectNumber);
         }
-        public Settings()
+        public Settings()  //Needed for serialization
         {
             realSettings = new KinectV1Settings();
         }
-        //TODO: Is a constructor with no arguements required for serialization?  If it is, will it still work without the realSettings variable?
 
         //Public properties specific to the Kinect v1
         #region Color Settings
@@ -220,5 +219,11 @@ namespace KinectWithVRServer.KinectV1Wrapper
             set { realSettings.audioAngleChannel = value; }
         }
         #endregion
+
+        //Custom conversion operator so this class can be cast as a KinectV1Settings class
+        public static explicit operator KinectV1Settings(Settings settings)
+        {
+            return settings.realSettings;
+        }
     }
 }

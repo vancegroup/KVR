@@ -189,7 +189,7 @@ namespace KinectWithVRServer
                     tempData.UseKinect = true;
                     tempData.KinectID = 0;
                     server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(tempData.UniqueID, (int)tempData.KinectID)));
-                    server.kinects.Add((IKinectCore)(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
+                    server.kinects.Add((new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
                     tempData.ServerStatus = "Running";
                 }
                 else
@@ -618,7 +618,7 @@ namespace KinectWithVRServer
                         kinectsAvailableDataGrid.InvalidateVisual();
                         System.Threading.Thread.Sleep(10); //Yes, it is a dirty hack, but it is the only way I can find to get the GUI to update reliably
                         ForceGUIUpdate();
-                        server.kinects.Add((IKinectCore)(new KinectV1Core.KinectCoreV1(ref server.serverMasterOptions, true, availableKinects[i].KinectID)));
+                        server.kinects.Add(new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, availableKinects[i].KinectID));
                         availableKinects[i].ServerStatus = "Running";
                     }
                 }

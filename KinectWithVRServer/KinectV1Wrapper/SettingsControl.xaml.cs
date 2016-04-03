@@ -61,7 +61,9 @@ namespace KinectWithVRServer.KinectV1Wrapper
             Grid.SetColumn(this, 2);
             this.Visibility = System.Windows.Visibility.Collapsed;
 
-            realControl = new KinectV1SettingsControl(kinectNumber, ref settings, kinect);
+            Core coreWrapper = (Core)kinect;
+            KinectCoreV1 kinectCore = (KinectCoreV1)coreWrapper;
+            realControl = new KinectV1SettingsControl(kinectNumber, ref settings, kinectCore);
             realControl.Visibility = System.Windows.Visibility.Visible;
             this.MasterGrid.Children.Add((UserControl)realControl);
         }

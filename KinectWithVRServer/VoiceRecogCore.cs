@@ -96,8 +96,8 @@ namespace KinectWithVRServer
 
                 if (server.kinects[server.serverMasterOptions.audioOptions.sourceID].version == KinectVersion.KinectV1)
                 {
-                    ((KinectV1Core.KinectCoreV1)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).StartKinectAudio();
-                    audioStream = ((KinectV1Core.KinectCoreV1)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).GetKinectAudioStream();
+                    ((KinectV1Wrapper.Core)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).StartKinectAudio();
+                    audioStream = ((KinectV1Wrapper.Core)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).GetKinectAudioStream();
                 }
                 else if (server.kinects[server.serverMasterOptions.audioOptions.sourceID].version == KinectVersion.KinectV2)
                 {

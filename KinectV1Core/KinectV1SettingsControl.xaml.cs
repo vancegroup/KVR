@@ -28,7 +28,7 @@ namespace KinectV1Core
         }
         public UserControl skeletonUserControl;
         internal KinectBase.MasterSettings masterSettings;
-        private KinectV1Settings kinectSettings;
+        internal KinectV1Settings kinectSettings;
         private KinectCoreV1 kinectCore;
 
 
@@ -39,7 +39,8 @@ namespace KinectV1Core
                 if (settings.kinectOptionsList[kinectNumber].version == KinectBase.KinectVersion.KinectV1)
                 {
                     masterSettings = settings;
-                    kinectSettings = (KinectV1Settings)settings.kinectOptionsList[kinectNumber];
+                    dynamic tempSettings = settings.kinectOptionsList[kinectNumber];
+                    kinectSettings = (KinectV1Settings)tempSettings;
                     kinectID = kinectNumber;
                     kinectCore = (KinectCoreV1)kinect;
                     kinectCore.AccelerationChanged += kinectCore_AccelerationChanged;

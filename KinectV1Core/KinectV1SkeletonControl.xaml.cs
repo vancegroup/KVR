@@ -30,19 +30,19 @@ namespace KinectV1Core
             InitializeComponent();
 
             SkelSortModeComboBox.SelectedIndex = 0;
-            SkeletonSettingsDataGrid.ItemsSource = ((KinectV1Settings)parent.masterSettings.kinectOptionsList[parent.kinectID.Value]).rawSkeletonSettings.individualSkeletons;
+            SkeletonSettingsDataGrid.ItemsSource = parent.kinectSettings.rawSkeletonSettings.individualSkeletons;
             SkeletonSettingsDataGrid.Items.Refresh();
         }
 
         //Changes if the skeleton tracking is in seated mode
         private void ChooseSeatedCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            ((KinectV1Settings)parent.masterSettings.kinectOptionsList[parent.kinectID.Value]).rawSkeletonSettings.isSeatedMode = (bool)ChooseSeatedCheckBox.IsChecked;
+            parent.kinectSettings.rawSkeletonSettings.isSeatedMode = (bool)ChooseSeatedCheckBox.IsChecked;
         }
         //Controls which skeleton sorting mode is used
         private void SkelSortModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ((KinectV1Settings)parent.masterSettings.kinectOptionsList[parent.kinectID.Value]).rawSkeletonSettings.skeletonSortMode = (SkeletonSortMethod)SkelSortModeComboBox.SelectedIndex;
+            parent.kinectSettings.rawSkeletonSettings.skeletonSortMode = (SkeletonSortMethod)SkelSortModeComboBox.SelectedIndex;
         }
     }
 }

@@ -45,6 +45,7 @@ namespace KinectV1Core
         }
 
         internal KinectBase.MasterSettings masterSettings;
+        internal KinectV1Settings masterKinectSettings;
         //public int skelcount;  //TODO: Where was this going to be used? I can't find any references to it.
         private InteractionStream interactStream;
         private System.Timers.Timer updateTimer;
@@ -71,6 +72,8 @@ namespace KinectV1Core
             if (kinectNumber != null)
             {
                 masterSettings = settings;
+                dynamic tempSettings = masterSettings.kinectOptionsList[(int)kinectNumber];  //We have to use dynamic because the type of the Kinect settings in the master list isn't defined until runtime
+                masterKinectSettings = (KinectV1Settings)tempSettings;
 
                 if (KinectSensor.KinectSensors.Count > kinectNumber)
                 {
@@ -78,8 +81,7 @@ namespace KinectV1Core
                     int globalIndex = -1;
                     for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
                     {
-                        //if (KinectSensor.KinectSensors[i].UniqueKinectId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).uniqueKinectID)
-                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == ((KinectV1Settings)masterSettings.kinectOptionsList[(int)kinectNumber]).uniqueKinectID)
+                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == masterSettings.kinectOptionsList[(int)kinectNumber].uniqueKinectID)
                         {
                             globalIndex = i;
                             break;
@@ -162,16 +164,16 @@ namespace KinectV1Core
             if (kinect.IsRunning)
             {
                 //Start the audio streams, if necessary -- NOTE: This must be after the skeleton stream is started (which it should be here)
-                if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).sendAudioAngle || masterSettings.audioOptions.sourceID == kinectID)
+                if (masterKinectSettings.sendAudioAngle || masterSettings.audioOptions.sourceID == kinectID)
                 {
                     if (masterSettings.audioOptions.sourceID == kinectID)
                     {
                         kinect.AudioSource.EchoCancellationMode = (EchoCancellationMode)masterSettings.audioOptions.echoMode;
                         kinect.AudioSource.AutomaticGainControlEnabled = masterSettings.audioOptions.autoGainEnabled;
                         kinect.AudioSource.NoiseSuppression = masterSettings.audioOptions.noiseSurpression;
-                        if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).sendAudioAngle)
+                        if (masterKinectSettings.sendAudioAngle)
                         {
-                            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).audioTrackMode != KinectBase.AudioTrackingMode.Loudest)
+                            if (masterKinectSettings.audioTrackMode != KinectBase.AudioTrackingMode.Loudest)
                             {
                                 kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
                             }
@@ -182,12 +184,12 @@ namespace KinectV1Core
                             kinect.AudioSource.SoundSourceAngleChanged += AudioSource_SoundSourceAngleChanged;
                         }
                     }
-                    else if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).sendAudioAngle)
+                    else if (masterKinectSettings.sendAudioAngle)
                     {
                         kinect.AudioSource.EchoCancellationMode = Microsoft.Kinect.EchoCancellationMode.None;
                         kinect.AudioSource.AutomaticGainControlEnabled = false;
                         kinect.AudioSource.NoiseSuppression = true;
-                        if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).audioTrackMode != KinectBase.AudioTrackingMode.Loudest)
+                        if (masterKinectSettings.audioTrackMode != KinectBase.AudioTrackingMode.Loudest)
                         {
                             kinect.AudioSource.BeamAngleMode = BeamAngleMode.Manual;
                         }
@@ -244,7 +246,7 @@ namespace KinectV1Core
         {
             if (kinect.AudioSource != null)
             {
-                double angle = Math.Atan2(position.X - ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition.X, position.Z - ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition.Z) * (180.0 / Math.PI);
+                double angle = Math.Atan2(position.X - masterKinectSettings.kinectPosition.X, position.Z - masterKinectSettings.kinectPosition.Z) * (180.0 / Math.PI);
                 kinect.AudioSource.ManualBeamAngle = angle; //This will be rounded automatically to the nearest 10 degree increment, in the range -50 to 50 degrees
             }
         }
@@ -327,9 +329,9 @@ namespace KinectV1Core
         private void LaunchKinect()
         {
             //Setup default properties
-            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).colorImageMode != KinectBase.ColorImageFormat.Undefined)
+            if (masterKinectSettings.colorImageMode != KinectBase.ColorImageFormat.Undefined)
             {
-                kinect.ColorStream.Enable(convertColorImageFormat(((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).colorImageMode));
+                kinect.ColorStream.Enable(convertColorImageFormat(masterKinectSettings.colorImageMode));
                 kinect.ColorFrameReady += new EventHandler<ColorImageFrameReadyEventArgs>(kinect_ColorFrameReady);
                 isColorStreamOn = true;
 
@@ -345,10 +347,10 @@ namespace KinectV1Core
                     isXbox360Kinect = true;
                 }
             }
-            if (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).depthImageMode != KinectBase.DepthImageFormat.Undefined)
+            if (masterKinectSettings.depthImageMode != KinectBase.DepthImageFormat.Undefined)
             {
                 //kinect.DepthStream.Enable();
-                kinect.DepthStream.Enable(convertDepthImageFormat(((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).depthImageMode));
+                kinect.DepthStream.Enable(convertDepthImageFormat(masterKinectSettings.depthImageMode));
                 isDepthStreamOn = true;
 
                 kinect.SkeletonStream.Enable(); //Note, the audio stream MUST be started AFTER this (known issue with SDK v1.7).  Currently not an issue as the audio isn't started until the server is launched later in the code.
@@ -466,8 +468,7 @@ namespace KinectV1Core
         {
             using (SkeletonFrame skelFrame = e.OpenSkeletonFrame())
             {
-                if (skelFrame != null && masterSettings.kinectOptionsList.Count > kinectID && 
-                    (((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).mergeSkeletons || ((KinectV1Core.KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).sendRawSkeletons))
+                if (skelFrame != null && masterSettings.kinectOptionsList.Count > kinectID && (masterKinectSettings.mergeSkeletons || masterKinectSettings.sendRawSkeletons))
                 {
                     Skeleton[] skeletons = new Skeleton[skelFrame.SkeletonArrayLength];
                     skelFrame.CopySkeletonDataTo(skeletons);
@@ -478,8 +479,8 @@ namespace KinectV1Core
                     }
 
                     //Generate the transformation matrix for the skeletons
-                    double kinectYaw = ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectYaw;
-                    Point3D kinectPosition = ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).kinectPosition;
+                    double kinectYaw = masterKinectSettings.kinectYaw;
+                    Point3D kinectPosition = masterKinectSettings.kinectPosition;
                     Matrix3D gravityBasedKinectRotation = findRotation(new Vector3D(lastAcceleration.X, lastAcceleration.Y, lastAcceleration.Z), new Vector3D(0, -1, 0));
                     AxisAngleRotation3D yawRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), -kinectYaw);
                     RotateTransform3D tempTrans = new RotateTransform3D(yawRotation);
@@ -599,7 +600,7 @@ namespace KinectV1Core
         {
             using (InteractionFrame interactFrame = e.OpenInteractionFrame())
             {
-                if (interactFrame != null && ((KinectV1Settings)masterSettings.kinectOptionsList[kinectID]).mergeSkeletons)
+                if (interactFrame != null && masterKinectSettings.mergeSkeletons)
                 {
                     UserInfo[] tempUserInfo = new UserInfo[6];
                     interactFrame.CopyInteractionDataTo(tempUserInfo);

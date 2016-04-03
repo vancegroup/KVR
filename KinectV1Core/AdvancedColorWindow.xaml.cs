@@ -125,7 +125,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null && WhiteBalSlider.IsEnabled)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).WhiteBalance = (int)WhiteBalSlider.Value;
+                kinectCore.masterKinectSettings.WhiteBalance = (int)WhiteBalSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.WhiteBalance = (int)WhiteBalSlider.Value;
                 WhiteBalManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.WhiteBalance.ToString();
             }
@@ -136,7 +136,7 @@ namespace KinectV1Core
 
             WhiteBalManSet.IsEnabled = !isAuto;
             WhiteBalSlider.IsEnabled = !isAuto;
-            ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).autoWhiteBalance = isAuto;
+            kinectCore.masterKinectSettings.autoWhiteBalance = isAuto;
             kinectCore.kinect.ColorStream.CameraSettings.AutoWhiteBalance = isAuto;
         }
         #endregion
@@ -168,7 +168,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Saturation = SaturationSlider.Value;
+                kinectCore.masterKinectSettings.Saturation = SaturationSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Saturation = SaturationSlider.Value;
                 SaturationManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Saturation.ToString();
             }
@@ -202,7 +202,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Gamma = GammaSlider.Value;
+                kinectCore.masterKinectSettings.Gamma = GammaSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Gamma = GammaSlider.Value;
                 GammaManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Gamma.ToString();
             }
@@ -236,7 +236,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Hue = HueSlider.Value;
+                kinectCore.masterKinectSettings.Hue = HueSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Hue = HueSlider.Value;
                 HueManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Hue.ToString();
             }
@@ -270,7 +270,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Sharpness = SharpnessSlider.Value;
+                kinectCore.masterKinectSettings.Sharpness = SharpnessSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Sharpness = SharpnessSlider.Value;
                 SharpnessManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Sharpness.ToString();
             }
@@ -304,7 +304,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Contrast = ContrastSlider.Value;
+                kinectCore.masterKinectSettings.Contrast = ContrastSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Contrast = ContrastSlider.Value;
                 ContrastManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Contrast.ToString();
             }
@@ -319,17 +319,17 @@ namespace KinectV1Core
                 if (powerLineComboBox.SelectedIndex == 0)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.PowerLineFrequency = PowerLineFrequency.SixtyHertz;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = KinectBase.PowerLineFrequency.SixtyHertz;
+                    kinectCore.masterKinectSettings.lineFrequency = KinectBase.PowerLineFrequency.SixtyHertz;
                 }
                 else if (powerLineComboBox.SelectedIndex == 1)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.PowerLineFrequency = PowerLineFrequency.FiftyHertz;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = KinectBase.PowerLineFrequency.FiftyHertz;
+                    kinectCore.masterKinectSettings.lineFrequency = KinectBase.PowerLineFrequency.FiftyHertz;
                 }
                 else
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.PowerLineFrequency = PowerLineFrequency.Disabled;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).lineFrequency = KinectBase.PowerLineFrequency.Disabled;
+                    kinectCore.masterKinectSettings.lineFrequency = KinectBase.PowerLineFrequency.Disabled;
                 }
             }
         }
@@ -343,22 +343,22 @@ namespace KinectV1Core
                 if (BacklightCompComboBox.SelectedIndex == 1)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.CenterOnly;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.CenterOnly;
+                    kinectCore.masterKinectSettings.backlightMode = KinectBase.BacklightCompensationMode.CenterOnly;
                 }
                 else if (BacklightCompComboBox.SelectedIndex == 2)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.CenterPriority;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.CenterPriority;
+                    kinectCore.masterKinectSettings.backlightMode = KinectBase.BacklightCompensationMode.CenterPriority;
                 }
                 else if (BacklightCompComboBox.SelectedIndex == 3)
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.LowlightsPriority;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.LowlightsPriority;
+                    kinectCore.masterKinectSettings.backlightMode = KinectBase.BacklightCompensationMode.LowlightsPriority;
                 }
                 else
                 {
                     kinectCore.kinect.ColorStream.CameraSettings.BacklightCompensationMode = BacklightCompensationMode.AverageBrightness;
-                    ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).backlightMode = KinectBase.BacklightCompensationMode.AverageBrightness;
+                    kinectCore.masterKinectSettings.backlightMode = KinectBase.BacklightCompensationMode.AverageBrightness;
                 }
             }
         }
@@ -394,7 +394,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null && ExposureSlider.IsEnabled)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).ExposureTime = ExposureSlider.Value * 10;
+                kinectCore.masterKinectSettings.ExposureTime = ExposureSlider.Value * 10;
                 kinectCore.kinect.ColorStream.CameraSettings.ExposureTime = ExposureSlider.Value * 10;
                 double msExposure = kinectCore.kinect.ColorStream.CameraSettings.ExposureTime / 10.0;
                 ExposureManSet.Text = msExposure.ToString();
@@ -412,7 +412,7 @@ namespace KinectV1Core
             FrameIntervalSlider.IsEnabled = !isAuto;
             BrightManSet.IsEnabled = isAuto;
             BrightSlider.IsEnabled = isAuto;
-            ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).autoExposure = isAuto;
+            kinectCore.masterKinectSettings.autoExposure = isAuto;
             kinectCore.kinect.ColorStream.CameraSettings.AutoExposure = isAuto;
         }
         #endregion
@@ -447,7 +447,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null && FrameIntervalSlider.IsEnabled)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).FrameInterval = FrameIntervalSlider.Value * 10;
+                kinectCore.masterKinectSettings.FrameInterval = FrameIntervalSlider.Value * 10;
                 kinectCore.kinect.ColorStream.CameraSettings.FrameInterval = FrameIntervalSlider.Value * 10;
                 double msInterval = kinectCore.kinect.ColorStream.CameraSettings.FrameInterval / 10.0;
                 FrameIntervalManSet.Text = msInterval.ToString();
@@ -482,7 +482,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null && BrightSlider.IsEnabled)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Brightness = BrightSlider.Value;
+                kinectCore.masterKinectSettings.Brightness = BrightSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Brightness = BrightSlider.Value;
                 BrightManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Brightness.ToString();
             }
@@ -516,7 +516,7 @@ namespace KinectV1Core
         {
             if (IsInitialized && kinectCore != null && GainSlider.IsEnabled)
             {
-                ((KinectV1Settings)kinectCore.masterSettings.kinectOptionsList[kinectCore.kinectID]).Gain = GainSlider.Value;
+                kinectCore.masterKinectSettings.Gain = GainSlider.Value;
                 kinectCore.kinect.ColorStream.CameraSettings.Gain = GainSlider.Value;
                 GainManSet.Text = kinectCore.kinect.ColorStream.CameraSettings.Gain.ToString();
             }

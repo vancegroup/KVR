@@ -138,5 +138,11 @@ namespace KinectWithVRServer.KinectV1Wrapper
         {
             realCore.UpdateAudioAngle(position);
         }
+
+        //Custom conversion operator so this class can be cast as a KinectV1Settings class
+        public static explicit operator KinectCoreV1(Core kinectCore)
+        {
+            return kinectCore.realCore;
+        }
     }
 }
