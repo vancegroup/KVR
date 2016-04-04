@@ -122,6 +122,7 @@
     <Compile Include="KinectV1Wrapper\SettingsControl.xaml.cs">
       <DependentUpon>SettingsControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="KinectV1Wrapper\StatusHelper.cs" />
     <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
     <Compile Include="VerifyDLLs.cs" />

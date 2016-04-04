@@ -54,7 +54,7 @@ namespace KinectWithVRServer
         }
     }
 
-    internal class AvaliableDLLs
+    public class AvaliableDLLs
     {
         internal AvaliableDLLs() { }
 

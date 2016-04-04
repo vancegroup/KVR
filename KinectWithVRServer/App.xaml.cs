@@ -109,7 +109,7 @@ namespace KinectWithVRServer
                 else
                 {
                     //Note: You can't put the Try/Catch here to handle if there are no Kinects because the GUI will try to launch on a different thread, and thus it can't pass the error down
-                    MainWindow gui = new MainWindow(verbose, autoStart, startupFile);
+                    MainWindow gui = new MainWindow(verbose, autoStart, dlls, startupFile);
                     gui.ShowDialog();
                 }
             }

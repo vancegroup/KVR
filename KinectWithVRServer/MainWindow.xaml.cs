@@ -28,6 +28,7 @@ namespace KinectWithVRServer
         internal string startupFile = "";
         internal bool verbose = false;
         internal bool startOnLaunch = false;
+        private AvaliableDLLs avaliableDLLs;
         internal ServerCore server;
         internal DateTime serverStartTime = DateTime.MaxValue;
         internal string ColorStreamUniqueID = "";
@@ -48,11 +49,12 @@ namespace KinectWithVRServer
         private volatile bool drawingDepthSkeleton = false;
         private int lastSettingsTabIndex = 0;
 
-        public MainWindow(bool isVerbose, bool isAutoStart, string startSettings = "")
+        public MainWindow(bool isVerbose, bool isAutoStart, AvaliableDLLs dlls, string startSettings = "")
         {
             verbose = isVerbose;
             startOnLaunch = isAutoStart;
             startupFile = startSettings;
+            avaliableDLLs = dlls;
 
             InitializeComponent();
 
@@ -145,6 +147,20 @@ namespace KinectWithVRServer
         #region Window Events
         private void Window_Initialized(object sender, EventArgs e)
         {
+            //Report to the log which Kinect versions are unavaliable
+            if (!avaliableDLLs.HasKinectV1)
+            {
+                HelperMethods.WriteToLog("Warning: Kinect v1 support is unvaliable due to missing DLLs!", this);
+            }
+            if (!avaliableDLLs.HasKinectV2)
+            {
+                HelperMethods.WriteToLog("Warning: Kinect v2 support is unvaliable due to missing DLLs!", this);
+            }
+            if (!avaliableDLLs.HasNetworkedKinect)
+            {
+                HelperMethods.WriteToLog("Warning: Networked Kinect support is unvaliable due to missing DLLs!", this);
+            }
+
             //Setup the timer to update the GUI with the server runtime
             uptimeUpdateTimer = new System.Timers.Timer();
             uptimeUpdateTimer.Interval = 500;
@@ -175,32 +191,37 @@ namespace KinectWithVRServer
 
             //TODO: Handle starting Kinects based on the loaded settings file
             //Initialize the data for the available Kinect v1s
-            KinectV1Core.KinectV1StatusEventArgs[] currentStatuses = KinectV1Core.KinectV1StatusHelper.GetAllKinectsStatus();
-            for (int i = 0; i < currentStatuses.Length; i++)
+            if (avaliableDLLs.HasKinectV1)
             {
-                AvailableKinectData tempData = new AvailableKinectData();
+                KinectV1Wrapper.StatusEventArgs[] currentStatuses = KinectV1Wrapper.StatusHelper.GetAllKinectsStatus();
+                for (int i = 0; i < currentStatuses.Length; i++)
+                {
+                    AvailableKinectData tempData = new AvailableKinectData();
 
-                tempData.UniqueID = currentStatuses[i].UniqueKinectID;
-                tempData.Status = currentStatuses[i].Status;
-                tempData.KinectType = GetKinectTypeString(currentStatuses[i].Status, currentStatuses[i].isXBox360Kinect);
-                
-                if (i == 0 && tempData.Status == KinectStatus.Connected)
-                {
-                    tempData.UseKinect = true;
-                    tempData.KinectID = 0;
-                    server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(tempData.UniqueID, (int)tempData.KinectID)));
-                    server.kinects.Add((new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
-                    tempData.ServerStatus = "Running";
+                    tempData.UniqueID = currentStatuses[i].UniqueKinectID;
+                    tempData.Status = currentStatuses[i].Status;
+                    tempData.KinectType = GetKinectTypeString(currentStatuses[i].Status, currentStatuses[i].isXBox360Kinect);
+
+                    if (i == 0 && tempData.Status == KinectStatus.Connected)
+                    {
+                        tempData.UseKinect = true;
+                        tempData.KinectID = 0;
+                        server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(tempData.UniqueID, (int)tempData.KinectID)));
+                        server.kinects.Add((new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
+                        tempData.ServerStatus = "Running";
+                    }
+                    else
+                    {
+                        tempData.UseKinect = false;
+                        tempData.KinectID = null;
+                    }
+                    tempData.PropertyChanged += useKinect_PropertyChanged;
+                    availableKinects.Add(tempData);
                 }
-                else
-                {
-                    tempData.UseKinect = false;
-                    tempData.KinectID = null;
-                }
-                tempData.PropertyChanged += useKinect_PropertyChanged;
-                availableKinects.Add(tempData);
             }
 
+            if (avaliableDLLs.HasKinectV2)
+            {
 #if Kinect2
             //Initialize the data for the available Kinect v2s
             KinectV2Core.KinectV2StatusEventArgs[] currentStatuses2 = KinectV2Core.KinectV2StatusHelper.GetAllKinectsStatus();
@@ -218,19 +239,27 @@ namespace KinectWithVRServer
                 availableKinects.Add(tempData);
             }
 #endif
+            }
 
             KinectStatusBlock.Text = availableKinects.Count.ToString();
             kinectsAvailableDataGrid.ItemsSource = availableKinects;
             UpdatePageListing();
             GenerateImageSourcePickerLists();
-            //Subscribe to the v1 status changed event
-            KinectV1Core.KinectV1StatusHelper v1StatusHelper = new KinectV1Core.KinectV1StatusHelper();
-            v1StatusHelper.KinectV1StatusChanged += v1StatusHelper_KinectV1StatusChanged;
+
+            if (avaliableDLLs.HasKinectV1)
+            {
+                //Subscribe to the v1 status changed event
+                KinectV1Wrapper.StatusHelper v1StatusHelper = new KinectV1Wrapper.StatusHelper();
+                v1StatusHelper.StatusChanged += v1StatusHelper_KinectV1StatusChanged;
+            }
+            if (avaliableDLLs.HasKinectV2)
+            {
 #if Kinect2
             //Subscribe to the v2 status changed event
             KinectV2Core.KinectV2StatusHelper v2StatusHelper = new KinectV2Core.KinectV2StatusHelper();
             v2StatusHelper.KinectV2StatusChanged += v2StatusHelper_KinectV2StatusChanged;
 #endif
+            }
 
             //Populate the skeleton data and set the binding for the data grid
             GenerateSkeletonDataGridData();
@@ -300,7 +329,7 @@ namespace KinectWithVRServer
         }
 #endif
 
-        void v1StatusHelper_KinectV1StatusChanged(object sender, KinectV1Core.KinectV1StatusEventArgs e)
+        void v1StatusHelper_KinectV1StatusChanged(object sender, KinectV1Wrapper.StatusEventArgs e)
         {
             bool kinectFound = false;
 
