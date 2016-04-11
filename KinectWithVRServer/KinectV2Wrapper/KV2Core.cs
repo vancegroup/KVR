@@ -4,20 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using KinectBase;
-using KinectV1Core;
+using KinectV2Core;
 
-namespace KinectWithVRServer.KinectV1Wrapper
+namespace KinectWithVRServer.KinectV2Wrapper
 {
-    //This class wraps the KinectV1Core class to delay the DLL loading and prevent a crash in the event that the KinectV1 dll is missing
+    //This class wraps the KinectV2Core class to delay the DLL loading and prevent a crash in the event that the KinectV2Core DLL doesn't exist
     class Core : IKinectCore
     {
         //Private variables to manage the wrapping
-        private KinectCoreV1 realCore;
+        private KinectCoreV2 realCore;
 
         //Public properties required by the interface
         public string uniqueKinectID
         {
-            get { return realCore.uniqueKinectID; } 
+            get { return realCore.uniqueKinectID; }
         }
         public int kinectID
         {
@@ -67,10 +67,10 @@ namespace KinectWithVRServer.KinectV1Wrapper
         public event AudioPositionEventHandler AudioPositionChanged;
         public event LogMessageEventHandler LogMessageGenerated;
 
-        //Constructor to setup the real KinectV1Core object
-        public Core(ref MasterSettings settings, bool isGUILaunched, int? kinectNumber = null)
+        //Constructor to setup the real KinectV2Core object
+        public Core(ref MasterSettings settings, bool isGUILaunched, int kinectNumber)
         {
-            realCore = new KinectCoreV1(ref settings, isGUILaunched, kinectNumber);
+            realCore = new KinectCoreV2(ref settings, isGUILaunched, kinectNumber);
 
             //Subscribe to the events so they can be forwarded
             realCore.SkeletonChanged += realCore_SkeletonChanged;
@@ -125,22 +125,14 @@ namespace KinectWithVRServer.KinectV1Wrapper
             }
         }
 
-        //Kinect v1 specific methods
+        //Kinect v2 specific methods
         public void StartKinectAudio()
         {
             realCore.StartKinectAudio();
         }
-        public System.IO.Stream GetKinectAudioStream()
-        {
-            return realCore.GetKinectAudioStream();
-        }
-        public void UpdateAudioAngle(System.Windows.Media.Media3D.Point3D position)
-        {
-            realCore.UpdateAudioAngle(position);
-        }
 
-        //Custom conversion operator so this class can be cast as a KinectV1Core class
-        public static explicit operator KinectCoreV1(Core kinectCore)
+        //Custom conversion operator so this class can be cast as a KinectV2Core class
+        public static explicit operator KinectCoreV2(Core kinectCore)
         {
             return kinectCore.realCore;
         }

@@ -7,7 +7,7 @@ using KinectV1Core;
 
 namespace KinectWithVRServer.KinectV1Wrapper
 {
-    //This class wraps the KinectV1CStatusHelper class to delay the DLL loading and prevent a crash in the event that the KinectV1 dll is missing
+    //This class wraps the KinectV1StatusHelper class to delay the DLL loading and prevent a crash in the event that the KinectV1 dll is missing
     public class StatusHelper
     {
         public event StatusEventHandler StatusChanged;

@@ -17,6 +17,7 @@ namespace KinectWithVRServer
 
             Assembly thisAssm = Assembly.GetExecutingAssembly();
 
+            //Check to see if KinectV1Core.dll exists
             AssemblyName[] refs = thisAssm.GetReferencedAssemblies();
             for (int i = 0; i < refs.Length; i++)
             {
@@ -42,6 +43,29 @@ namespace KinectWithVRServer
         internal static bool Kinect2Avaliable()
         {
             bool isAvaliable = false;
+
+            Assembly thisAssm = Assembly.GetExecutingAssembly();
+
+            //Check to see if KinectV1Core.dll exists
+            AssemblyName[] refs = thisAssm.GetReferencedAssemblies();
+            for (int i = 0; i < refs.Length; i++)
+            {
+                if (refs[i].Name == "KinectV2Core")
+                {
+                    try
+                    {
+                        Assembly.Load(refs[i]);
+                        isAvaliable = true;
+                    }
+                    catch { }
+                }
+            }
+
+            //Secondary check to see if the DLL actually functions
+            if (isAvaliable)
+            {
+                isAvaliable = KinectV2Wrapper.KV2SdkTest.IsSDKWorking();
+            }
 
             return isAvaliable;
         }

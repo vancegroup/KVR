@@ -170,7 +170,8 @@ namespace KinectWithVRServer
 
         public string UniqueID { get; set; }
         //public string ConnectionID { get; set; }
-        public string KinectType { get; set; }
+        public string KinectTypeString { get; set; }
+        public KinectVersion kinectType { get; set; }
         private int? kinectID;
         public int? KinectID
         {

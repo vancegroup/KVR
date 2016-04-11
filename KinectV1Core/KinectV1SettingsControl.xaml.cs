@@ -31,7 +31,6 @@ namespace KinectV1Core
         internal KinectV1Settings kinectSettings;
         private KinectCoreV1 kinectCore;
 
-
         public KinectV1SettingsControl(int kinectNumber, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
         {
             if (settings != null)
@@ -61,12 +60,12 @@ namespace KinectV1Core
                 }
                 else
                 {
-                    throw new ArgumentException("The provided KienctID is not for a Kinect v1 sensor.");
+                    throw new ArgumentException("The provided KinectID is not for a Kinect v1 sensor.");
                 }
             }
             else
             {
-                throw new NotSupportedException("Method arguements are invalid!");
+                throw new NotSupportedException("Method arguments are invalid!");
             }
         }
 

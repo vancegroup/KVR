@@ -200,7 +200,8 @@ namespace KinectWithVRServer
 
                     tempData.UniqueID = currentStatuses[i].UniqueKinectID;
                     tempData.Status = currentStatuses[i].Status;
-                    tempData.KinectType = GetKinectTypeString(currentStatuses[i].Status, currentStatuses[i].isXBox360Kinect);
+                    tempData.KinectTypeString = GetKinectTypeString(currentStatuses[i].Status, currentStatuses[i].isXBox360Kinect);
+                    tempData.kinectType = KinectVersion.KinectV1;
 
                     if (i == 0 && tempData.Status == KinectStatus.Connected)
                     {
@@ -220,25 +221,25 @@ namespace KinectWithVRServer
                 }
             }
 
+            //Initialize the data for the available Kinect v2s
             if (avaliableDLLs.HasKinectV2)
             {
-#if Kinect2
-            //Initialize the data for the available Kinect v2s
-            KinectV2Core.KinectV2StatusEventArgs[] currentStatuses2 = KinectV2Core.KinectV2StatusHelper.GetAllKinectsStatus();
-            for (int i = 0; i < currentStatuses2.Length; i++)
-            {
-                AvailableKinectData tempData = new AvailableKinectData();
+                KinectV2Wrapper.StatusHelper.StartKinectV2Service();
+                KinectV2Wrapper.StatusEventArgs[] currentStatuses2 = KinectV2Wrapper.StatusHelper.GetAllKinectsStatus();
+                for (int i = 0; i < currentStatuses2.Length; i++)
+                {
+                    AvailableKinectData tempData = new AvailableKinectData();
 
-                tempData.UniqueID = currentStatuses2[i].UniqueKinectID;
-                tempData.Status = currentStatuses2[i].Status;
-                //Note: Unlike the Kinect v1, we don't automatically launch a Kinect v2
-                //TODO: Do we want to automatically launch a Kinect v2 here?
-                tempData.UseKinect = false;
-                tempData.KinectID = null;
-                tempData.PropertyChanged += useKinect_PropertyChanged;
-                availableKinects.Add(tempData);
-            }
-#endif
+                    tempData.UniqueID = currentStatuses2[i].UniqueKinectID;
+                    tempData.Status = currentStatuses2[i].Status;
+                    tempData.KinectTypeString = "Kinect v2";
+                    tempData.kinectType = KinectVersion.KinectV2;
+                    //Note: Unlike the Kinect v1, we don't automatically launch a Kinect v2
+                    tempData.UseKinect = false;
+                    tempData.KinectID = null;
+                    tempData.PropertyChanged += useKinect_PropertyChanged;
+                    availableKinects.Add(tempData);
+                }
             }
 
             KinectStatusBlock.Text = availableKinects.Count.ToString();
@@ -254,11 +255,9 @@ namespace KinectWithVRServer
             }
             if (avaliableDLLs.HasKinectV2)
             {
-#if Kinect2
-            //Subscribe to the v2 status changed event
-            KinectV2Core.KinectV2StatusHelper v2StatusHelper = new KinectV2Core.KinectV2StatusHelper();
-            v2StatusHelper.KinectV2StatusChanged += v2StatusHelper_KinectV2StatusChanged;
-#endif
+                //Subscribe to the v2 status changed event
+                KinectV2Wrapper.StatusHelper v2StatusHelper = new KinectV2Wrapper.StatusHelper();
+                v2StatusHelper.StatusChanged += v2StatusHelper_KinectV2StatusChanged;
             }
 
             //Populate the skeleton data and set the binding for the data grid
@@ -282,53 +281,6 @@ namespace KinectWithVRServer
                 startServerButton_Click(this, new RoutedEventArgs());
             }
         }
-
-#if Kinect2
-        void v2StatusHelper_KinectV2StatusChanged(object sender, KinectV2Core.KinectV2StatusEventArgs e)
-        {
-            bool kinectFound = false;
-
-            for (int i = 0; i < availableKinects.Count; i++)
-            {
-                if (availableKinects[i].UniqueID == e.UniqueKinectID)
-                {
-                    if (e.Status != KinectStatus.Disconnected)
-                    {
-                        availableKinects[i].Status = e.Status;
-                        if (e.Status != KinectStatus.Connected)
-                        {
-                            availableKinects[i].UseKinect = false;
-                        }
-                    }
-                    else
-                    {
-                        availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
-                        availableKinects.RemoveAt(i);
-
-                        renumberKinectIDs();
-                    }
-                    kinectsAvailableDataGrid.Items.Refresh();
-                    kinectFound = true;
-                }
-            }
-
-            //Update the number of Kinects attached to the computer
-            KinectStatusBlock.Text = availableKinects.Count.ToString();
-
-            if (!kinectFound)
-            {
-                AvailableKinectData tempData = new AvailableKinectData();
-                tempData.UniqueID = e.UniqueKinectID;
-                tempData.KinectID = null;
-                tempData.UseKinect = false;
-                tempData.PropertyChanged += useKinect_PropertyChanged;
-                tempData.Status = e.Status;
-                availableKinects.Add(tempData);
-                kinectsAvailableDataGrid.Items.Refresh();
-            }
-        }
-#endif
-
         void v1StatusHelper_KinectV1StatusChanged(object sender, KinectV1Wrapper.StatusEventArgs e)
         {
             bool kinectFound = false;
@@ -340,7 +292,8 @@ namespace KinectWithVRServer
                     if (e.Status != KinectStatus.Disconnected)
                     {
                         availableKinects[i].Status = e.Status;
-                        availableKinects[i].KinectType = GetKinectTypeString(e.Status, e.isXBox360Kinect);
+                        availableKinects[i].KinectTypeString = GetKinectTypeString(e.Status, e.isXBox360Kinect);
+                        availableKinects[i].kinectType = KinectVersion.KinectV1;
 
                         if (e.Status != KinectStatus.Connected)
                         {
@@ -360,21 +313,71 @@ namespace KinectWithVRServer
                 }
             }
 
-            //Update the number of Kinects attached to the computer
-            KinectStatusBlock.Text = availableKinects.Count.ToString();
-
             if (!kinectFound)
             {
                 AvailableKinectData tempData = new AvailableKinectData();
                 tempData.KinectID = null;
                 tempData.UseKinect = false;
-                tempData.KinectType = GetKinectTypeString(e.Status, e.isXBox360Kinect);
+                tempData.KinectTypeString = GetKinectTypeString(e.Status, e.isXBox360Kinect);
+                tempData.kinectType = KinectVersion.KinectV1;
                 tempData.PropertyChanged += useKinect_PropertyChanged;
                 tempData.Status = e.Status;
                 tempData.UniqueID = e.UniqueKinectID;
                 availableKinects.Add(tempData);
                 kinectsAvailableDataGrid.Items.Refresh();
             }
+
+            //Update the number of Kinects attached to the computer
+            KinectStatusBlock.Text = availableKinects.Count.ToString();
+        }
+        void v2StatusHelper_KinectV2StatusChanged(object sender, KinectV2Wrapper.StatusEventArgs e)
+        {
+            bool kinectFound = false;
+
+            for (int i = 0; i < availableKinects.Count; i++)
+            {
+                if (availableKinects[i].UniqueID == e.UniqueKinectID)
+                {
+                    if (e.Status != KinectStatus.Disconnected)
+                    {
+                        availableKinects[i].Status = e.Status;
+                        availableKinects[i].KinectTypeString = "Kinect v2";
+                        availableKinects[i].kinectType = KinectVersion.KinectV2;
+
+                        if (e.Status != KinectStatus.Connected)
+                        {
+                            availableKinects[i].UseKinect = false;
+                        }
+                    }
+                    else
+                    {
+                        availableKinects[i].UseKinect = false;
+                        availableKinects[i].PropertyChanged -= useKinect_PropertyChanged;
+                        availableKinects.RemoveAt(i);
+
+                        renumberKinectIDs();
+                    }
+                    kinectsAvailableDataGrid.Items.Refresh();
+                    kinectFound = true;
+                }
+            }
+
+            if (!kinectFound)
+            {
+                AvailableKinectData tempData = new AvailableKinectData();
+                tempData.UniqueID = e.UniqueKinectID;
+                tempData.KinectID = null;
+                tempData.UseKinect = false;
+                tempData.KinectTypeString = "Kinect v2";
+                tempData.kinectType = KinectVersion.KinectV2;
+                tempData.PropertyChanged += useKinect_PropertyChanged;
+                tempData.Status = e.Status;
+                availableKinects.Add(tempData);
+                kinectsAvailableDataGrid.Items.Refresh();
+            }
+
+            //Update the number of Kinects attached to the computer
+            KinectStatusBlock.Text = availableKinects.Count.ToString();
         }
         private string GetKinectTypeString(KinectStatus status, bool isXBox360Kinect)
         {
@@ -404,6 +407,11 @@ namespace KinectWithVRServer
             for (int i = 0; i < server.kinects.Count; i++)
             {
                 server.kinects[i].ShutdownSensor();
+            }
+
+            if (avaliableDLLs.HasKinectV2)
+            {
+                KinectV2Wrapper.StatusHelper.StopKinectV2Service();
             }
         }
         #endregion
@@ -502,19 +510,31 @@ namespace KinectWithVRServer
                     bool exists = false;
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
-                        if (((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).uniqueKinectID == availableKinects[i].UniqueID)
+                        if (kinectOptionGUIPages[j].uniqueKinectID == availableKinects[i].UniqueID)
                         {
                             exists = true;
-                            ((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).kinectID = availableKinects[i].KinectID.Value;
+                            kinectOptionGUIPages[j].kinectID = availableKinects[i].KinectID.Value;
                             break;
                         }
                     }
                     if (!exists)
                     {
-                        //IKinectSettingsControl tempControl = new KinectV1Wrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
-                        IKinectSettingsControl tempControl = new KinectV1Wrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
-                        kinectOptionGUIPages.Add(tempControl);
-                        KinectTabMasterGrid.Children.Add((UserControl)tempControl);
+                        if (availableKinects[i].kinectType == KinectVersion.KinectV1)
+                        {
+                            IKinectSettingsControl tempControl = new KinectV1Wrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                            kinectOptionGUIPages.Add(tempControl);
+                            KinectTabMasterGrid.Children.Add((UserControl)tempControl);
+                        }
+                        else if (availableKinects[i].kinectType == KinectVersion.KinectV2)
+                        {
+                            IKinectSettingsControl tempControl = new KinectV2Wrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                            kinectOptionGUIPages.Add(tempControl);
+                            KinectTabMasterGrid.Children.Add((UserControl)tempControl);
+                        }
+                        else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
+                        {
+                            //TODO: Add code to add the networked Kinect settings control to the main window here?  (Or maybe not, since it will always be added manually...)
+                        }
                     }
                     kinectsPageList.Add("Kinect " + availableKinects[i].KinectID.ToString());
                 }
@@ -524,7 +544,7 @@ namespace KinectWithVRServer
                     for (int j = 0; j < kinectOptionGUIPages.Count; j++)
                     {
                         //TODO: Figure out a way to perserve the settings and the acceleration updating
-                        if (((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).uniqueKinectID == availableKinects[i].UniqueID)
+                        if (kinectOptionGUIPages[j].uniqueKinectID == availableKinects[i].UniqueID)
                         {
                             //((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[j]).kinectID = null;  //This will cause the page to be hidden, but not destroyed (which saves the settings on the GUI, but breaks acceleration updating)
                             kinectOptionGUIPages.RemoveAt(j);  //This will destroy the page and cause it to be recreated when the Kinect is set to be used again (which saves the acceleration updating, but losses all the settings)
@@ -605,7 +625,18 @@ namespace KinectWithVRServer
                     }
                     if (!found)
                     {
-                        server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
+                        if (availableKinects[i].kinectType == KinectVersion.KinectV1)
+                        {
+                            server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
+                        }
+                        else if (availableKinects[i].kinectType == KinectVersion.KinectV2)
+                        {
+                            server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV2Wrapper.Settings(availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
+                        }
+                        else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
+                        {
+                            //TODO: Add the networked kinect settings stuff here
+                        }
                     }
                 }
                 else
@@ -647,7 +678,18 @@ namespace KinectWithVRServer
                         kinectsAvailableDataGrid.InvalidateVisual();
                         System.Threading.Thread.Sleep(10); //Yes, it is a dirty hack, but it is the only way I can find to get the GUI to update reliably
                         ForceGUIUpdate();
-                        server.kinects.Add(new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, availableKinects[i].KinectID));
+                        if (availableKinects[i].kinectType == KinectVersion.KinectV1)
+                        {
+                            server.kinects.Add(new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, availableKinects[i].KinectID));
+                        }
+                        else if (availableKinects[i].kinectType == KinectVersion.KinectV2)
+                        {
+                            server.kinects.Add(new KinectV2Wrapper.Core(ref server.serverMasterOptions, true, (int)availableKinects[i].KinectID));
+                        }
+                        else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
+                        {
+                            //TODO: Launch the networked kinect server here (unless I have a VRPN limitation I need to work around)
+                        }
                         availableKinects[i].ServerStatus = "Running";
                     }
                 }
@@ -709,7 +751,7 @@ namespace KinectWithVRServer
             Debug.WriteLine("GUI Pages:");
             for (int i = 0; i < kinectOptionGUIPages.Count; i++)
             {
-                Debug.WriteLine(((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[i]).kinectID.ToString() + ":   " + ((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[i]).uniqueKinectID);
+                Debug.WriteLine(kinectOptionGUIPages[i].kinectID.ToString() + ":   " + kinectOptionGUIPages[i].uniqueKinectID);
             }
         }
         //Handles the linking of the connection status hyperlinks to the help messages
@@ -784,11 +826,23 @@ namespace KinectWithVRServer
                 {
                     if (((TabItem)SkeletonsTabControl.Items[i]).Header.ToString() == "Kinect " + server.kinects[j].kinectID.ToString())
                     {
-                        if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
+                        if (server.kinects[j].version == KinectVersion.KinectV1)
                         {
-                            kinectFound = true;
-                            break;
+                            if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
+                            {
+                                kinectFound = true;
+                                break;
+                            }
                         }
+                        else if (server.kinects[j].version == KinectVersion.KinectV2)
+                        {
+                            if (((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
+                            {
+                                kinectFound = true;
+                                break;
+                            }
+                        }
+                        //Note: Send raw skeletons shouldn't be an option on networked Kinects.  If you want the raw skeletons, connect to the original server instead!
                     }
                 }
 
@@ -826,8 +880,28 @@ namespace KinectWithVRServer
                 }
                 else if (server.kinects[i].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Add the code for the Kinect v2 skeleton user control here
+                    if (((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    {
+                        bool controlFound = false;
+
+                        for (int j = 0; j < SkeletonsTabControl.Items.Count; j++)
+                        {
+                            if (((TabItem)SkeletonsTabControl.Items[j]).Header.ToString() == "Kinect " + server.kinects[i].kinectID.ToString())
+                            {
+                                controlFound = true;
+                            }
+                        }
+
+                        if (!controlFound)
+                        {
+                            TabItem newTabItem = new TabItem();
+                            newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
+                            newTabItem.Content = ((KinectV2Wrapper.SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
+                            SkeletonsTabControl.Items.Add(newTabItem);
+                        }
+                    }
                 }
+                //NOTE: The networked kinects shouldn't need a control for raw skeletons, since the user will connect to the original VRPN server to get those instead of retransmitting the data again
             }
 
             //TODO: Add sorting method for the skeleton controls so it always lists 0 to X
@@ -1413,7 +1487,7 @@ namespace KinectWithVRServer
         #endregion
 
         #region Skeleton GUI methods
-        //Updates the data for the skeletons to reflect that a maximum of 6 times the number of kinects in use skeletons are available (only 1/2 of those skeletons support full skeleton tracking)
+        //Updates the data for the skeletons to reflect that a maximum of 6 times the number of kinects in use skeletons are available (not all of those skeletons support full skeleton tracking)
         private void GenerateSkeletonDataGridData()
         {
             int totalSkeletons = 0;
@@ -1424,12 +1498,15 @@ namespace KinectWithVRServer
                 {
                     if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).mergeSkeletons)
                     {
-                        totalSkeletons += 6;
+                        totalSkeletons += 6; //Each Kinect supports 6 people, but only 2 with full skeleton tracking
                     }
                 }
                 else if (server.kinects[i].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Add the number of skeletons for the each used Kinect v2
+                    if (((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).mergeSkeletons)
+                    {
+                        totalSkeletons += 6;  //Each Kinect supports 6 people with full skeleton tracking
+                    }
                 }
                 else if (server.kinects[i].version == KinectVersion.NetworkKinect)
                 {
@@ -1437,9 +1514,9 @@ namespace KinectWithVRServer
                 }
             }
 
-            if (server.kinects.Count * 6 > server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count) //Add skeleton settings
+            if (totalSkeletons > server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count) //Add skeleton settings
             {
-                for (int i = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count; i < server.kinects.Count * 6; i++)
+                for (int i = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count; i < totalSkeletons; i++)
                 {
                     PerSkeletonSettings temp = new PerSkeletonSettings(); //Fill the skeleton information with the default settings
                     string tempServer = "Tracker" + i.ToString();
@@ -1456,9 +1533,9 @@ namespace KinectWithVRServer
                     server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Add(temp);
                 }
             }
-            else if (server.kinects.Count * 6 < server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count) //Remove skeleton settings
+            else if (totalSkeletons < server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count) //Remove skeleton settings
             {
-                for (int i = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count - 1; i >= server.kinects.Count * 6; i--)
+                for (int i = server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count - 1; i >= totalSkeletons; i--)
                 {
                     server.serverMasterOptions.mergedSkeletonOptions.individualSkeletons.RemoveAt(i);
                 }

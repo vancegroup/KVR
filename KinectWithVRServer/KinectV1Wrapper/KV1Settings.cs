@@ -122,7 +122,7 @@ namespace KinectWithVRServer.KinectV1Wrapper
             set { realSettings.WhiteBalance = value; }
         }
         #endregion
-        #region Depth Settings        
+        #region Depth Settings
         public DepthImageFormat depthImageMode
         {
             get { return realSettings.depthImageMode; }

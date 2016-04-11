@@ -119,15 +119,26 @@
     <Compile Include="KinectV1Wrapper\KV1Core.cs" />
     <Compile Include="KinectV1Wrapper\KV1SdkTest.cs" />
     <Compile Include="KinectV1Wrapper\KV1Settings.cs" />
-    <Compile Include="KinectV1Wrapper\SettingsControl.xaml.cs">
-      <DependentUpon>SettingsControl.xaml</DependentUpon>
+    <Compile Include="KinectV1Wrapper\KV1SettingsControl.xaml.cs">
+      <DependentUpon>KV1SettingsControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="KinectV1Wrapper\StatusHelper.cs" />
+    <Compile Include="KinectV1Wrapper\KV1StatusHelper.cs" />
+    <Compile Include="KinectV2Wrapper\KV2Core.cs" />
+    <Compile Include="KinectV2Wrapper\KV2SdkTest.cs" />
+    <Compile Include="KinectV2Wrapper\KV2Settings.cs" />
+    <Compile Include="KinectV2Wrapper\KV2SettingsControl.xaml.cs">
+      <DependentUpon>KV2SettingsControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="KinectV2Wrapper\KV2StatusHelper.cs" />
     <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
     <Compile Include="VerifyDLLs.cs" />
     <Compile Include="VoiceRecogCore.cs" />
-    <Page Include="KinectV1Wrapper\SettingsControl.xaml">
+    <Page Include="KinectV1Wrapper\KV1SettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="KinectV2Wrapper\KV2SettingsControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -201,6 +212,10 @@
     <ProjectReference Include="..\KinectV1Core\KinectV1Core.csproj">
       <Project>{1c1b1857-a092-41fa-9875-89acf0d9710d}</Project>
       <Name>KinectV1Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\KinectV2Core\KinectV2Core.csproj">
+      <Project>{ba6c3333-ee04-4238-8b0b-eeef5951f51a}</Project>
+      <Name>KinectV2Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
