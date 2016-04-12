@@ -514,6 +514,7 @@ namespace KinectV1Core
                         kvrSkeletons[i].TrackingId = skeletons[i].TrackingId;
                         kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
                         kvrSkeletons[i].sourceKinectID = kinectID;
+
                         for (int j = 0; j < skeletons[i].Joints.Count; j++)
                         {
                             KinectBase.Joint newJoint = new KinectBase.Joint();

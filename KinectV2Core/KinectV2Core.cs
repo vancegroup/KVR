@@ -253,7 +253,29 @@ namespace KinectV2Core
         {
             using (DepthFrame depthFrame = e.FrameReference.AcquireFrame())
             {
+                if (depthFrame != null)
+                {
+                    FrameDescription desc = depthFrame.FrameDescription;
 
+                    KinectBase.DepthFrameEventArgs depthE = new KinectBase.DepthFrameEventArgs();
+                    depthE.bytesPerPixel = 2; //TBD
+                    depthE.pixelFormat = PixelFormats.Gray16; //TBD
+                    depthE.height = desc.Height;
+                    depthE.width = desc.Width;
+                    depthE.kinectID = kinectID;
+                    depthE.timeStamp = depthFrame.RelativeTime.Ticks; //TODO: Is there a better way to handle the timestamp?  How do we keep time stamps synced?
+
+                    //All this junk is to copy the image data to a short array by going through unmanaged memory
+                    int byteLength = (int)(desc.LengthInPixels * depthE.bytesPerPixel);
+                    depthE.image = new short[desc.LengthInPixels];
+                    IntPtr tempPtr = new IntPtr();
+                    tempPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(byteLength);
+                    depthFrame.CopyFrameDataToIntPtr(tempPtr, (uint)(byteLength));
+                    System.Runtime.InteropServices.Marshal.Copy(tempPtr, depthE.image, 0, (int)desc.LengthInPixels);
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal(tempPtr);
+
+                    OnDepthFrameReceived(depthE);
+                }
             }
         }
         void skeletonReader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
@@ -265,9 +287,52 @@ namespace KinectV2Core
                     Body[] skeletons = new Body[6];
                     skelFrame.GetAndRefreshBodyData(skeletons);
 
-                    KinectBase.SkeletonEventArgs skelE = new KinectBase.SkeletonEventArgs();
+                    //Convert from Kinect v2 skeletons to KVR skeletons
+                    KinectBase.KinectSkeleton[] kvrSkeletons = new KinectBase.KinectSkeleton[skeletons.Length];
+                    for (int i = 0; i < kvrSkeletons.Length; i++)
+                    {
+                        kvrSkeletons[i] = new KinectBase.KinectSkeleton();
+                        kvrSkeletons[i].Position = new Point3D(skeletons[i].Joints[JointType.SpineBase].Position.X, skeletons[i].Joints[JointType.SpineBase].Position.Y, skeletons[i].Joints[JointType.SpineBase].Position.Z);
+                        kvrSkeletons[i].SkeletonTrackingState = convertTrackingState(skeletons[i].IsTracked);
+                        kvrSkeletons[i].TrackingId = (int)skeletons[i].TrackingId;
+                        kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
+                        kvrSkeletons[i].sourceKinectID = kinectID;
 
-                    //TODO: Copy the skeleton data into the event args and fire the event
+                        for (int j = 0; j < skeletons[i].Joints.Count; j++)
+                        {
+                            KinectBase.Joint newJoint = new KinectBase.Joint();
+                            newJoint.JointType = convertJointType(skeletons[i].Joints[(JointType)j].JointType);
+                            newJoint.Position = convertJointPosition(skeletons[i].Joints[(JointType)j].Position);
+                            newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
+                            newJoint.Orientation = convertJointOrientation(skeletons[i].JointOrientations[(JointType)j].Orientation);
+
+                            //Tracking confidence only exists for the hand states, so set those and leave the rest as unknown
+                            if (newJoint.JointType == KinectBase.JointType.HandLeft)
+                            {
+                                newJoint.Confidence = convertTrackingConfidence(skeletons[i].HandLeftConfidence);
+                            }
+                            else if (newJoint.JointType == KinectBase.JointType.HandRight)
+                            {
+                                newJoint.Confidence = convertTrackingConfidence(skeletons[i].HandRightConfidence);
+                            }
+                            else
+                            {
+                                newJoint.Confidence = KinectBase.TrackingConfidence.Unknown;
+                            }
+
+                            kvrSkeletons[i].skeleton[newJoint.JointType] = newJoint;
+                        }
+
+                        kvrSkeletons[i].rightHandClosed = convertHandState(skeletons[i].HandRightState);
+                        kvrSkeletons[i].leftHandClosed = convertHandState(skeletons[i].HandLeftState);
+                    }
+
+                    //Add the skeleton data to the event handler and throw the event
+                    KinectBase.SkeletonEventArgs skelE = new KinectBase.SkeletonEventArgs();
+                    skelE.skeletons = kvrSkeletons;
+                    skelE.kinectID = kinectID;
+
+                    OnSkeletonChanged(skelE);
                 }
             }
         }
@@ -317,6 +382,52 @@ namespace KinectV2Core
             if (LogMessageGenerated != null)
             {
                 LogMessageGenerated(this, e);
+            }
+        }
+
+        //Misc methods
+        private KinectBase.TrackingState convertTrackingState(bool trackingState)
+        {
+            if (trackingState)
+            {
+                return KinectBase.TrackingState.Tracked;
+            }
+            else
+            {
+                return KinectBase.TrackingState.NotTracked;
+            }
+        }
+        private KinectBase.TrackingState convertTrackingState(TrackingState trackingState)
+        {
+            //Both enums are numbered the same, so we can do a straight cast
+            return (KinectBase.TrackingState)trackingState;
+        }
+        private KinectBase.TrackingConfidence convertTrackingConfidence(TrackingConfidence confidence)
+        {
+            //The enums are numbered the same, so we can do a straight cast
+            return (KinectBase.TrackingConfidence)confidence;
+        }
+        private KinectBase.JointType convertJointType(JointType jointType)
+        {
+            return (KinectBase.JointType)jointType;
+        }
+        private Point3D convertJointPosition(CameraSpacePoint position)
+        {
+            return new Point3D(position.X, position.Y, position.Z);
+        }
+        private Quaternion convertJointOrientation(Vector4 orientation)
+        {
+            return new Quaternion(orientation.X, orientation.Y, orientation.Z, orientation.W);
+        }
+        private bool convertHandState(HandState handState)
+        {
+            if (handState == HandState.Closed)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
