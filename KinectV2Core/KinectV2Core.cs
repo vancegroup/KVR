@@ -35,7 +35,8 @@ namespace KinectV2Core
         }
         public bool ColorStreamEnabled
         {
-            get { return isColorStreamOn; }
+            //get { return isColorStreamOn; }
+            get { return true; }
         }
         public bool DepthStreamEnabled
         {
@@ -109,14 +110,11 @@ namespace KinectV2Core
                 irReader = null;
             }
 
-            if (kinect != null)
-            {
-                kinect.Close();
-            }
+            //Note: we don't close the Kinect here because it would remove it from the list of avaliable Kinects
         }
         public void StartKinectAudio()
         {
-
+            
         }
         public KinectBase.KinectSkeleton TransformSkeleton(KinectBase.KinectSkeleton skeleton)
         {
@@ -142,7 +140,8 @@ namespace KinectV2Core
         private void LaunchKinect()
         {
             //TODO: Update this Kinect v2 launch method to support loaded options
-            kinect.Open();
+
+            //Note: The Kinect.Open function is not called here because it has to be opened previously to show up on the list of avaliable Kinects
 
             //Setup the skeleton reader
             skeletonReader = kinect.BodyFrameSource.OpenReader();
@@ -160,7 +159,6 @@ namespace KinectV2Core
             irReader = kinect.InfraredFrameSource.OpenReader();
             irReader.FrameArrived += irReader_FrameArrived;
         }
-
 
         void colorReader_FrameArrived(object sender, ColorFrameArrivedEventArgs e)
         {
@@ -197,7 +195,7 @@ namespace KinectV2Core
             {
                 if (skelFrame != null)
                 {
-                    List<Body> skeletons = new List<Body>();
+                    Body[] skeletons = new Body[6];
                     skelFrame.GetAndRefreshBodyData(skeletons);
 
                     KinectBase.SkeletonEventArgs skelE = new KinectBase.SkeletonEventArgs();

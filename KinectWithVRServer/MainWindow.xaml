@@ -158,7 +158,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Kinect Type" IsReadOnly="True" Binding="{Binding KinectType}"/>
+                            <DataGridTextColumn Header="Kinect Type" IsReadOnly="True" Binding="{Binding KinectTypeString}"/>
                             <DataGridTextColumn Header="Unique ID" IsReadOnly="True" Binding="{Binding UniqueID}"/>
                             <!--<DataGridTextColumn Header="Connection ID" IsReadOnly="True" Binding="{Binding ConnectionID}"/>-->
                         </DataGrid.Columns>

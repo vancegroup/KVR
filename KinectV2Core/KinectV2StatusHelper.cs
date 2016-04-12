@@ -22,18 +22,31 @@ namespace KinectV2Core
         }
 
         //This is really goofy, but apparently the Kinect needs to be open before it can be avaliable
-        public static void StartKinectV2Service()
+        public static bool StartKinectV2Service()
         {
             KinectSensor tempKinect = KinectSensor.GetDefault();
             tempKinect.Open();
-            System.Threading.Thread.Sleep(100); //Open seems to be asynchronous, so let's give it a little time to run
+
+            bool started = false;
+            int timeoutCount = 0;
+            while (!started && timeoutCount < 20)
+            {
+                if (tempKinect.IsAvailable)
+                {
+                    started = true;
+                }
+                System.Threading.Thread.Sleep(50);
+                timeoutCount++;
+            }
+            
+
+            return started;
         }
 
         public static void StopKinectV2Service()
         {
             KinectSensor tempKinect = KinectSensor.GetDefault();
             tempKinect.Close();
-            System.Threading.Thread.Sleep(100);
         }
 
         public static KinectV2StatusEventArgs[] GetAllKinectsStatus()
@@ -52,10 +65,12 @@ namespace KinectV2Core
                 if (tempKinect.IsAvailable)
                 {
                     temp.Status = KinectBase.KinectStatus.Connected;
+                    System.Diagnostics.Debug.WriteLine("Kinect 2 connected.");
                 }
                 else
                 {
                     temp.Status = KinectBase.KinectStatus.Disconnected;
+                    System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected.");
                 }
                 statusArray[i] = temp;
             }
@@ -71,6 +86,7 @@ namespace KinectV2Core
                 if (e.IsAvailable)
                 {
                     args.Status = KinectBase.KinectStatus.Connected;
+                    System.Diagnostics.Debug.WriteLine("Kinect 2 connected.");
                 }
                 else
                 {
@@ -79,6 +95,7 @@ namespace KinectV2Core
                 }
                 args.KinectNumber = 0; //This is always 0 because the Kinect v2 only supports 1 Kinect
                 args.UniqueKinectID = KinectSensor.GetDefault().UniqueKinectId;
+                System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected.");
 
                 OnKinectV2StatusChanged(args);
             }

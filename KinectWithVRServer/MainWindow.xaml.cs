@@ -336,7 +336,8 @@ namespace KinectWithVRServer
 
             for (int i = 0; i < availableKinects.Count; i++)
             {
-                if (availableKinects[i].UniqueID == e.UniqueKinectID)
+                //Check the Kinect by version, not by ID, because the ID is not preserved when the Kinect is disconnected
+                if (availableKinects[i].kinectType == KinectVersion.KinectV2)
                 {
                     if (e.Status != KinectStatus.Disconnected)
                     {
@@ -362,7 +363,7 @@ namespace KinectWithVRServer
                 }
             }
 
-            if (!kinectFound)
+            if (!kinectFound && e.Status != KinectStatus.Disconnected)
             {
                 AvailableKinectData tempData = new AvailableKinectData();
                 tempData.UniqueID = e.UniqueKinectID;
