@@ -51,7 +51,7 @@ namespace KinectV1Core
         private System.Timers.Timer updateTimer;
         private List<HandGrabInfo> skeletonHandGrabData = new List<HandGrabInfo>();
         private Matrix3D skeletonTransformation = Matrix3D.Identity;
-        private Quaternion skeletonRotQuaternion = Quaternion.Identity;
+        private Quaternion skeletonRotQuaternion = Quaternion.Identity;  //TODO: This needs to be set to rotate the joint orientations appropriately
         private Vector4 lastAcceleration;
         private bool isColorStreamOn = false;
         private bool isDepthStreamOn = false;

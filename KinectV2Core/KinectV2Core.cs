@@ -49,7 +49,8 @@ namespace KinectV2Core
         private bool isDepthStreamOn = false;
         private System.Timers.Timer updateTimer;
         public KinectBase.KinectSkeletonsData skeletonData;
-        internal Matrix3D skeletonTransformation = Matrix3D.Identity;
+        private Matrix3D skeletonTransformation = Matrix3D.Identity;
+        private Quaternion skeletonRotQuaternion = Quaternion.Identity;
         private Vector4 lastAcceleration;
         private BodyFrameReader skeletonReader;  //TODO: The readers need to be disposed
         private DepthFrameReader depthReader;
@@ -118,23 +119,89 @@ namespace KinectV2Core
         }
         public KinectBase.KinectSkeleton TransformSkeleton(KinectBase.KinectSkeleton skeleton)
         {
-            //TODO: Implement translating the Kinect v2 skeleton
-            return skeleton;
+            KinectBase.KinectSkeleton transformedSkeleton = new KinectBase.KinectSkeleton();
+            transformedSkeleton.leftHandClosed = skeleton.leftHandClosed;
+            transformedSkeleton.rightHandClosed = skeleton.rightHandClosed;
+            transformedSkeleton.TrackingId = skeleton.TrackingId;
+            transformedSkeleton.SkeletonTrackingState = skeleton.SkeletonTrackingState;
+            transformedSkeleton.utcSampleTime = skeleton.utcSampleTime;
+            transformedSkeleton.sourceKinectID = skeleton.sourceKinectID;
+            transformedSkeleton.Position = skeletonTransformation.Transform(skeleton.Position);
+
+            //Transform the joints
+            for (int i = 0; i < skeleton.skeleton.Count; i++)
+            {
+                transformedSkeleton.skeleton[i] = TransformJoint(skeleton.skeleton[i]);
+            }
+
+            return transformedSkeleton;
         }
         public KinectBase.Joint TransformJoint(KinectBase.Joint joint)
         {
-            //TODO: Implement translating the Kinect v2 joint
-            return joint;
+            KinectBase.Joint transformedJoint = new KinectBase.Joint();
+            transformedJoint.Confidence = joint.Confidence;
+            transformedJoint.JointType = joint.JointType;
+            transformedJoint.TrackingState = joint.TrackingState;
+            transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
+            transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
+
+            return transformedJoint;
         }
         public Point MapJointToColor(KinectBase.Joint joint, bool undoTransform)
         {
-            //TODO: Update this to actually do the transform
-            return new Point();
+            //TODO: Update this so it takes a joint array instead of a single joint (this is supposed to be more efficient for the Kinect 2)
+            Point mappedPoint = new Point(0, 0);
+            Point3D transformedPosition = joint.Position;
+
+            if (undoTransform)
+            {
+                Matrix3D inverseTransform = skeletonTransformation;
+                inverseTransform.Invert();
+                transformedPosition = inverseTransform.Transform(transformedPosition);
+            }
+
+            //Setup the Kinect v2 objects to do the transformation
+            CameraSpacePoint[] skelPoints = new CameraSpacePoint[1];
+            skelPoints[0] = new CameraSpacePoint();
+            skelPoints[0].X = (float)transformedPosition.X;
+            skelPoints[0].Y = (float)transformedPosition.Y;
+            skelPoints[0].Z = (float)transformedPosition.Z;
+            ColorSpacePoint[] points = new ColorSpacePoint[1];
+            kinect.CoordinateMapper.MapCameraPointsToColorSpace(skelPoints, points);
+
+            //Convert back to the base object type
+            mappedPoint.X = points[0].X;
+            mappedPoint.Y = points[0].Y;
+
+            return mappedPoint;
         }
         public Point MapJointToDepth(KinectBase.Joint joint, bool undoTransform)
         {
-            //TODO: Update this to actually do the transform
-            return new Point();
+            //TODO: Update this so it takes a joint array instead of a single joint (this is supposed to be more efficient for the Kinect 2)
+            Point mappedPoint = new Point(0, 0);
+            Point3D transformedPosition = joint.Position;
+
+            if (undoTransform)
+            {
+                Matrix3D inverseTransform = skeletonTransformation;
+                inverseTransform.Invert();
+                transformedPosition = inverseTransform.Transform(transformedPosition);
+            }
+
+            //Setup the Kinect v2 objects to do the transformation
+            CameraSpacePoint[] skelPoints = new CameraSpacePoint[1];
+            skelPoints[0] = new CameraSpacePoint();
+            skelPoints[0].X = (float)transformedPosition.X;
+            skelPoints[0].Y = (float)transformedPosition.Y;
+            skelPoints[0].Z = (float)transformedPosition.Z;
+            DepthSpacePoint[] points = new DepthSpacePoint[1];
+            kinect.CoordinateMapper.MapCameraPointsToDepthSpace(skelPoints, points);
+
+            //Convert back to the base object type
+            mappedPoint.X = points[0].X;
+            mappedPoint.Y = points[0].Y;
+
+            return mappedPoint;
         }
 
         private void LaunchKinect()
