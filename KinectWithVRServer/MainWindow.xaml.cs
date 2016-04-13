@@ -1011,6 +1011,15 @@ namespace KinectWithVRServer
                         DepthImage.Visibility = System.Windows.Visibility.Visible;
                         server.kinects[kinectIndex].DepthFrameReceived += MainWindow_DepthFrameReceived;
                         server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedDepth;
+
+                        //TODO: Make this optional (right now it is just testing)
+                        if (server.kinects[kinectIndex].version == KinectVersion.KinectV2)
+                        {
+                            Shaders.DepthScalingEffect effect = new Shaders.DepthScalingEffect();
+                            effect.Minimum = 0.0076295109483482f;
+                            effect.Maximum = 0.0686655985351339f;
+                            DepthImage.Effect = effect;
+                        }
                     }
                 }
             }

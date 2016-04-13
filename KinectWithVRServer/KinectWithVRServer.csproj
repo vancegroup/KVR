@@ -114,6 +114,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ConsoleUI.cs" />
+    <Compile Include="Shaders\DepthScalingShader\DepthScalingEffectWrapper.cs" />
     <Compile Include="FeedbackCore.cs" />
     <Compile Include="HelperMethods.cs" />
     <Compile Include="KinectV1Wrapper\KV1Core.cs" />
@@ -175,6 +176,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <Resource Include="Shaders\DepthScalingShader\DepthScalingEffect.ps" />
     <None Include="Joint Mapping.xlsx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -217,6 +219,10 @@
       <Project>{ba6c3333-ee04-4238-8b0b-eeef5951f51a}</Project>
       <Name>KinectV2Core</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <None Include="Shaders\DepthScalingShader\DepthScalingEffect.fx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

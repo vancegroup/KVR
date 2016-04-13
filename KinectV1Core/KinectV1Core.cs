@@ -561,9 +561,9 @@ namespace KinectV1Core
                     depthE.height = frame.Height;
                     depthE.bytesPerPixel = frame.BytesPerPixel;
                     depthE.timeStamp = frame.Timestamp;
-                    depthE.image = new short[frame.PixelDataLength];
-                    frame.CopyPixelDataTo(depthE.image);
-                    OnDepthFrameReceived(depthE);
+                    //depthE.image = new short[frame.PixelDataLength];
+                    //frame.CopyPixelDataTo(depthE.image);
+                    //OnDepthFrameReceived(depthE);
 
                     //TODO: Subscribe the server to this event to transmit the depth data using the imager
                 }
