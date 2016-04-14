@@ -284,12 +284,12 @@ namespace KinectV2Core
             {
                 if (skelFrame != null)
                 {
-                    Body[] skeletons = new Body[6];
+                    Body[] skeletons = new Body[skelFrame.BodyCount];
                     skelFrame.GetAndRefreshBodyData(skeletons);
 
                     //Convert from Kinect v2 skeletons to KVR skeletons
-                    KinectBase.KinectSkeleton[] kvrSkeletons = new KinectBase.KinectSkeleton[skeletons.Length];
-                    for (int i = 0; i < kvrSkeletons.Length; i++)
+                    KinectBase.KinectSkeleton[] kvrSkeletons = new KinectBase.KinectSkeleton[skelFrame.BodyCount];
+                    for (int i = 0; i < skelFrame.BodyCount; i++)
                     {
                         kvrSkeletons[i] = new KinectBase.KinectSkeleton();
                         kvrSkeletons[i].Position = new Point3D(skeletons[i].Joints[JointType.SpineBase].Position.X, skeletons[i].Joints[JointType.SpineBase].Position.Y, skeletons[i].Joints[JointType.SpineBase].Position.Z);
@@ -298,7 +298,7 @@ namespace KinectV2Core
                         kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
                         kvrSkeletons[i].sourceKinectID = kinectID;
 
-                        for (int j = 0; j < skeletons[i].Joints.Count; j++)
+                        for (int j = 0; j < Body.JointCount; j++)
                         {
                             KinectBase.Joint newJoint = new KinectBase.Joint();
                             newJoint.JointType = convertJointType(skeletons[i].Joints[(JointType)j].JointType);
