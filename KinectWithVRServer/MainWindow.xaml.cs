@@ -636,7 +636,7 @@ namespace KinectWithVRServer
                         }
                         else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
                         {
-                            //TODO: Add the networked kinect settings stuff here
+                            server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new NetworkKinectWrapper.Settings(availableKinects[i].UniqueID, (int)availableKinects[i].KinectID)));
                         }
                     }
                 }
@@ -1013,7 +1013,11 @@ namespace KinectWithVRServer
                         server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedDepth;
 
                         //TODO: Make this optional (right now it is just testing)
-                        if (server.kinects[kinectIndex].version == KinectVersion.KinectV2)
+                        if (server.kinects[kinectIndex].version == KinectVersion.KinectV1)
+                        {
+                            DepthImage.Effect = new Shaders.NoScalingEffect();
+                        }
+                        else if (server.kinects[kinectIndex].version == KinectVersion.KinectV2)
                         {
                             Shaders.DepthScalingEffect effect = new Shaders.DepthScalingEffect();
                             effect.Minimum = 0.0076295109483482f;
@@ -1219,6 +1223,12 @@ namespace KinectWithVRServer
                 //Map the joint from the skeleton to the color image
                 Point startPoint = server.kinects[kinectID].MapJointToColor(startJoint, false);
                 Point endPoint = server.kinects[kinectID].MapJointToColor(endJoint, false);
+
+                //Don't draw bones that are off the image
+                if (startPoint.X < 0 || startPoint.Y < 0 || endPoint.X >= colorSource.PixelWidth || endPoint.Y >= colorSource.PixelHeight)
+                {
+                    return;
+                }
 
                 //Calculate the coordinates on the image (the offset of the image is added in the next section)
                 Point imagePointStart = new Point(0.0, 0.0);

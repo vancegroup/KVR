@@ -119,7 +119,7 @@
     <Compile Include="NetworkKinectWrapper\NKSettingsControl.xaml.cs">
       <DependentUpon>NKSettingsControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Shaders\DepthScalingShader\DepthScalingEffectWrapper.cs" />
+    <Compile Include="Shaders\DepthScalingEffect\DepthScalingEffectWrapper.cs" />
     <Compile Include="FeedbackCore.cs" />
     <Compile Include="HelperMethods.cs" />
     <Compile Include="KinectV1Wrapper\KV1Core.cs" />
@@ -138,6 +138,7 @@
     <Compile Include="KinectV2Wrapper\KV2StatusHelper.cs" />
     <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
+    <Compile Include="Shaders\NoScalingEffect\NoScalingEffectWrapper.cs" />
     <Compile Include="VerifyDLLs.cs" />
     <Compile Include="VoiceRecogCore.cs" />
     <Page Include="KinectV1Wrapper\KV1SettingsControl.xaml">
@@ -185,7 +186,8 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
-    <Resource Include="Shaders\DepthScalingShader\DepthScalingEffect.ps" />
+    <Resource Include="Shaders\NoScalingEffect\NoScalingEffect.ps" />
+    <Resource Include="Shaders\DepthScalingEffect\DepthScalingEffect.ps" />
     <None Include="Joint Mapping.xlsx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -233,9 +235,11 @@
       <Name>NetworkKinectCore</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <None Include="Shaders\DepthScalingShader\DepthScalingEffect.fx" />
+    <None Include="Shaders\NoScalingEffect\NoScalingEffect.fx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\DepthScalingEffect\DepthScalingEffect.fx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

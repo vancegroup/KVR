@@ -10,7 +10,7 @@ namespace KinectWithVRServer.Shaders
 {
     public class DepthScalingEffect : ShaderEffect
     {
-        private static PixelShader scalingPixelShader = new PixelShader() { UriSource = new Uri(@"pack://application:,,,/KinectWithVRServer;component/Shaders/DepthScalingShader/DepthScalingEffect.ps") };
+        private static PixelShader scalingPixelShader = new PixelShader() { UriSource = new Uri(@"pack://application:,,,/KinectWithVRServer;component/Shaders/DepthScalingEffect/DepthScalingEffect.ps") };
 
         public DepthScalingEffect()
         {

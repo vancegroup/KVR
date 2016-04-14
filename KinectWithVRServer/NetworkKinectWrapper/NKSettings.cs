@@ -8,7 +8,7 @@ using NetworkKinectCore;
 
 namespace KinectWithVRServer.NetworkKinectWrapper
 {
-    class Settings : IKinectSettings
+    public class Settings : IKinectSettings
     {
         //Private variable to manage the wrapped class
         private NetworkKinectSettings realSettings;

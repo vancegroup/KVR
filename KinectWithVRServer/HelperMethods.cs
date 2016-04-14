@@ -105,8 +105,14 @@ namespace KinectWithVRServer
             {
                 settings.kinectOptionsList.Add(tempSettings.kinectV1Settings[i]);
             }
-            //TODO: Add support for loading the Kinect v2 options
-            //TODO: Add support for loading the networked Kinect options
+            for (int i = 0; i < tempSettings.kinectV2Settings.Length; i++)
+            {
+                settings.kinectOptionsList.Add(tempSettings.kinectV2Settings[i]);
+            }
+            for (int i = 0; i < tempSettings.networkKinectSettings.Length; i++)
+            {
+                settings.kinectOptionsList.Add(tempSettings.networkKinectSettings[i]);
+            }
 
             settings.kinectOptionsList.Sort(new KinectBase.KinectSettingsComparer());
 
@@ -117,6 +123,8 @@ namespace KinectWithVRServer
         {
             //Create a serializable version of the settings (basically, move the Kinect options from the Master settings to a type specific array)
             List<KinectV1Wrapper.Settings> kinect1Settings = new List<KinectV1Wrapper.Settings>();
+            List<KinectV2Wrapper.Settings> kinect2Settings = new List<KinectV2Wrapper.Settings>();
+            List<NetworkKinectWrapper.Settings> networkSettings = new List<NetworkKinectWrapper.Settings>();
             for (int i = 0; i < settings.kinectOptionsList.Count; i++)
             {
                 if (settings.kinectOptionsList[i].version == KinectVersion.KinectV1)
@@ -125,16 +133,18 @@ namespace KinectWithVRServer
                 }
                 else if (settings.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Add Kinect v2 support for saving
+                    kinect2Settings.Add((KinectV2Wrapper.Settings)settings.kinectOptionsList[i]);
                 }
                 else if (settings.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
                 {
-                    //TODO: Add networked Kinect saving support
+                    networkSettings.Add((NetworkKinectWrapper.Settings)settings.kinectOptionsList[i]);
                 }
             }
             SerializableSettings serialSettings = new SerializableSettings();
             serialSettings.masterSettings = settings;
             serialSettings.kinectV1Settings = kinect1Settings.ToArray();
+            serialSettings.kinectV2Settings = kinect2Settings.ToArray();
+            serialSettings.networkKinectSettings = networkSettings.ToArray();
 
             //Do the actual serialization
             XmlSerializer serializer = new XmlSerializer(typeof(SerializableSettings));
@@ -521,5 +531,7 @@ namespace KinectWithVRServer
     {
         public KinectBase.MasterSettings masterSettings { get; set; }
         public KinectV1Wrapper.Settings[] kinectV1Settings { get; set; }
+        public KinectV2Wrapper.Settings[] kinectV2Settings { get; set; }
+        public NetworkKinectWrapper.Settings[] networkKinectSettings { get; set; }
     }
 }

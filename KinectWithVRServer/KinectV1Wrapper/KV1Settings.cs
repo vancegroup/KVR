@@ -8,7 +8,7 @@ using KinectV1Core;
 
 namespace KinectWithVRServer.KinectV1Wrapper
 {
-    //TODO: Can this class be internal?  Similiarly, can all wrapper classes be internal?
+    //Note: The settings classes must be public so they can be serialized
     public class Settings : IKinectSettings
     {
         //Private variables to manage the wrapping
