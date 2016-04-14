@@ -241,7 +241,7 @@ namespace KinectV2Core
                     colorE.height = desc.Height;
                     colorE.width = desc.Width;
                     colorE.kinectID = kinectID;
-                    colorE.timeStamp = frame.RelativeTime.Ticks; //TODO: Is there a better way to handle the timestamp?  How do we keep time stamps synced?
+                    colorE.timeStamp = frame.RelativeTime;
                     colorE.image = new byte[desc.LengthInPixels * colorE.bytesPerPixel];
                     frame.CopyConvertedFrameDataToArray(colorE.image, ColorImageFormat.Bgra);
 
@@ -258,12 +258,12 @@ namespace KinectV2Core
                     FrameDescription desc = depthFrame.FrameDescription;
 
                     KinectBase.DepthFrameEventArgs depthE = new KinectBase.DepthFrameEventArgs();
-                    depthE.bytesPerPixel = 2; //TBD
-                    depthE.pixelFormat = PixelFormats.Gray16; //TBD
+                    depthE.bytesPerPixel = 2;  //This is fixed to 2 because we are using a ushort to hold the depth image
+                    depthE.pixelFormat = PixelFormats.Gray16;
                     depthE.height = desc.Height;
                     depthE.width = desc.Width;
                     depthE.kinectID = kinectID;
-                    depthE.timeStamp = depthFrame.RelativeTime.Ticks; //TODO: Is there a better way to handle the timestamp?  How do we keep time stamps synced?
+                    depthE.timeStamp = depthFrame.RelativeTime;
 
                     //All this junk is to copy the image data to a short array by going through unmanaged memory
                     int byteLength = (int)(desc.LengthInPixels * depthE.bytesPerPixel);

@@ -560,7 +560,7 @@ namespace KinectV1Core
                     depthE.width = frame.Width;
                     depthE.height = frame.Height;
                     depthE.bytesPerPixel = frame.BytesPerPixel;
-                    depthE.timeStamp = frame.Timestamp;
+                    depthE.timeStamp = new TimeSpan(frame.Timestamp * 10000);  //Convert from milliseconds to ticks and set the time span
                     depthE.image = new short[frame.PixelDataLength];
                     frame.CopyPixelDataTo(depthE.image);
                     OnDepthFrameReceived(depthE);
@@ -588,7 +588,7 @@ namespace KinectV1Core
                     colorE.width = frame.Width;
                     colorE.height = frame.Height;
                     colorE.bytesPerPixel = frame.BytesPerPixel;
-                    colorE.timeStamp = frame.Timestamp;
+                    colorE.timeStamp = new TimeSpan(frame.Timestamp * 10000);  //Convert from milliseconds to ticks and set the time span
                     colorE.image = new byte[frame.PixelDataLength];
                     frame.CopyPixelDataTo(colorE.image);
                     OnColorFrameReceived(colorE);

@@ -43,8 +43,8 @@ namespace KinectWithVRServer
         private WriteableBitmap colorSource;
         private List<double> depthTimeIntervals = new List<double>();
         private List<double> colorTimeIntervals = new List<double>();
-        private Int64 lastDepthTime = 0;
-        private Int64 lastColorTime = 0;
+        private TimeSpan lastDepthTime = new TimeSpan(0);
+        private TimeSpan lastColorTime = new TimeSpan(0);
         private volatile bool drawingColorSkeleton = false;
         private volatile bool drawingDepthSkeleton = false;
         private int lastSettingsTabIndex = 0;
@@ -465,12 +465,12 @@ namespace KinectWithVRServer
             }), null
             );
         }
-        private static double CalculateFrameRate(Int64 currentTimeStamp, ref Int64 lastTimeStamp, ref List<double> oldIntervals)
+        private static double CalculateFrameRate(TimeSpan currentTimeStamp, ref TimeSpan lastTimeStamp, ref List<double> oldIntervals)
         {
-            double newInterval = (double)(currentTimeStamp - lastTimeStamp);
+            double newInterval = currentTimeStamp.TotalMilliseconds - lastTimeStamp.TotalMilliseconds;
             lastTimeStamp = currentTimeStamp;
 
-            if (oldIntervals.Count >= 10) //Computes a running average of 10 frames for stability
+            if (oldIntervals.Count >= 20) //Computes a running average of 20 frames for stability
             {
                 oldIntervals.RemoveAt(0);
             }
@@ -962,6 +962,11 @@ namespace KinectWithVRServer
                 {
                     ColorStreamUniqueID = "";
                     ColorImage.Visibility = System.Windows.Visibility.Hidden;
+
+                    //Set the frame rate display to 0
+                    ColorFPSTextBlock.Text = "0.0";
+                    colorTimeIntervals.Clear();
+                    lastColorTime = new TimeSpan(0);
                 }
                 else
                 {
@@ -1000,6 +1005,11 @@ namespace KinectWithVRServer
                 {
                     DepthStreamUniqueID = "";
                     DepthImage.Visibility = System.Windows.Visibility.Hidden;
+
+                    //Set the frame rate display to 0
+                    DepthFPSTextBlock.Text = "0.0";
+                    depthTimeIntervals.Clear();
+                    lastDepthTime = new TimeSpan(0);
                 }
                 else
                 {

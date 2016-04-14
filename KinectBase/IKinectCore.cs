@@ -60,7 +60,7 @@ namespace KinectBase
         public int width;
         public int height;
         public int bytesPerPixel;
-        public Int64 timeStamp;
+        public TimeSpan timeStamp;
         public int kinectID;
     }
     public class ColorFrameEventArgs : EventArgs
@@ -70,7 +70,7 @@ namespace KinectBase
         public int width;
         public int height;
         public int bytesPerPixel;
-        public Int64 timeStamp;
+        public TimeSpan timeStamp;
         public int kinectID;
     }
     public class AccelerationEventArgs : EventArgs
