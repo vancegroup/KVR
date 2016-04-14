@@ -1225,7 +1225,8 @@ namespace KinectWithVRServer
                 Point endPoint = server.kinects[kinectID].MapJointToColor(endJoint, false);
 
                 //Don't draw bones that are off the image
-                if (startPoint.X < 0 || startPoint.Y < 0 || endPoint.X >= colorSource.PixelWidth || endPoint.Y >= colorSource.PixelHeight)
+                if (startPoint.X < 0 || startPoint.Y < 0 || startPoint.X >= colorSource.PixelWidth || startPoint.Y >= colorSource.PixelHeight ||
+                    endPoint.X < 0 || endPoint.Y < 0 || endPoint.X >= colorSource.PixelWidth || endPoint.Y >= colorSource.PixelHeight)
                 {
                     return;
                 }
@@ -1262,6 +1263,13 @@ namespace KinectWithVRServer
                 Point startPoint = server.kinects[kinectID].MapJointToDepth(startJoint, false);
                 Point endPoint = server.kinects[kinectID].MapJointToDepth(endJoint, false);
 
+                //Don't draw bones that are off the image
+                if (startPoint.X < 0 || startPoint.Y < 0 || startPoint.X >= depthSource.PixelWidth || startPoint.Y >= depthSource.PixelHeight ||
+                    endPoint.X < 0 || endPoint.Y < 0 || endPoint.X >= depthSource.PixelWidth || endPoint.Y >= depthSource.PixelHeight)
+                {
+                    return;
+                }
+
                 //Calculate the coordinates on the image (the offset of the image is added in the next section)
                 Point imagePointStart = new Point(0.0, 0.0);
                 imagePointStart.X = ((double)startPoint.X / depthSource.PixelWidth) * DepthImage.ActualWidth;
@@ -1293,6 +1301,12 @@ namespace KinectWithVRServer
                 //Map the joint from the skeleton to the color image
                 Point point = server.kinects[kinectID].MapJointToColor(joint, false);
 
+                //Don't draw points that are off the image
+                if (point.X < 0 || point.Y < 0 || point.X >= colorSource.PixelWidth || point.Y >= colorSource.PixelHeight)
+                {
+                    return;
+                }
+
                 //Calculate the coordinates on the image (the offset is also added in this section)
                 Point imagePoint = new Point(0.0, 0.0);
                 imagePoint.X = ((double)point.X / colorSource.PixelWidth) * ColorImage.ActualWidth + offset.X;
@@ -1321,6 +1335,12 @@ namespace KinectWithVRServer
             {
                 //Map the joint from the skeleton to the depth image
                 Point point = server.kinects[kinectID].MapJointToDepth(joint, false);
+
+                //Don't draw points that are off the image
+                if (point.X < 0 || point.Y < 0 || point.X >= depthSource.PixelWidth || point.Y >= depthSource.PixelHeight)
+                {
+                    return;
+                }
 
                 //Calculate the coordinates on the image (the offset is also added in this section)
                 Point imagePoint = new Point(0.0, 0.0);
@@ -1447,6 +1467,12 @@ namespace KinectWithVRServer
                 //Map the joint from the skeleton to the depth image
                 Point point = server.kinects[kinectID].MapJointToColor(joint, false);
 
+                //Don't draw points that are off the image
+                if (point.X < 0 || point.Y < 0 || point.X >= colorSource.PixelWidth || point.Y >= colorSource.PixelHeight)
+                {
+                    return;
+                }
+
                 //Calculate the coordinates on the image (the offset is also added in this section)
                 Point imagePoint = new Point(0.0, 0.0);
                 imagePoint.X = ((double)point.X / colorSource.PixelWidth) * ColorImage.ActualWidth + offset.X;
@@ -1478,6 +1504,12 @@ namespace KinectWithVRServer
             {
                 //Map the joint from the skeleton to the depth image
                 Point point = server.kinects[kinectID].MapJointToDepth(joint, false);
+
+                //Don't draw points that are off the image
+                if (point.X < 0 || point.Y < 0 || point.X >= depthSource.PixelWidth || point.Y >= depthSource.PixelHeight)
+                {
+                    return;
+                }
 
                 //Calculate the coordinates on the image (the offset is also added in this section)
                 Point imagePoint = new Point(0.0, 0.0);
