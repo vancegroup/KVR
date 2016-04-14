@@ -65,7 +65,7 @@ namespace KinectV1Core
             }
             else
             {
-                throw new NotSupportedException("Method arguments are invalid!");
+                throw new ArgumentNullException("settings");
             }
         }
 

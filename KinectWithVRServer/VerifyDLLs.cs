@@ -74,6 +74,23 @@ namespace KinectWithVRServer
         {
             bool isAvaliable = false;
 
+            Assembly thisAssm = Assembly.GetExecutingAssembly();
+
+            //Check to see if KinectV1Core.dll exists
+            AssemblyName[] refs = thisAssm.GetReferencedAssemblies();
+            for (int i = 0; i < refs.Length; i++)
+            {
+                if (refs[i].Name == "NetworkKinectCore")
+                {
+                    try
+                    {
+                        Assembly.Load(refs[i]);
+                        isAvaliable = true;
+                    }
+                    catch { }
+                }
+            }
+
             return isAvaliable;
         }
     }

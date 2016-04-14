@@ -114,6 +114,11 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ConsoleUI.cs" />
+    <Compile Include="NetworkKinectWrapper\NKCore.cs" />
+    <Compile Include="NetworkKinectWrapper\NKSettings.cs" />
+    <Compile Include="NetworkKinectWrapper\NKSettingsControl.xaml.cs">
+      <DependentUpon>NKSettingsControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Shaders\DepthScalingShader\DepthScalingEffectWrapper.cs" />
     <Compile Include="FeedbackCore.cs" />
     <Compile Include="HelperMethods.cs" />
@@ -155,6 +160,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="NetworkKinectWrapper\NKSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NativeInterop.cs" />
@@ -218,6 +227,10 @@
     <ProjectReference Include="..\KinectV2Core\KinectV2Core.csproj">
       <Project>{ba6c3333-ee04-4238-8b0b-eeef5951f51a}</Project>
       <Name>KinectV2Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NetworkKinectCore\NetworkKinectCore.csproj">
+      <Project>{fea65975-74fa-4e87-b571-a53591ce0c42}</Project>
+      <Name>NetworkKinectCore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

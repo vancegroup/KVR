@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{BA6C3333-EE04-4238-8B0B-EEEF5951F51A}</ProjectGuid>
+    <ProjectGuid>{FEA65975-74FA-4E87-B571-A53591CE0C42}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>KinectV2Core</RootNamespace>
-    <AssemblyName>KinectV2Core</AssemblyName>
+    <RootNamespace>NetworkKinectCore</RootNamespace>
+    <AssemblyName>NetworkKinectCore</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -49,7 +49,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Kinect, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -60,35 +59,30 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="VrpnNet">
+      <HintPath>..\3rd Party\VrpnNet\Win32\Debug\VrpnNet.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="KinectV2Core.cs" />
-    <Compile Include="KinectV2Settings.cs" />
-    <Compile Include="KinectV2SettingsControl.xaml.cs">
-      <DependentUpon>KinectV2SettingsControl.xaml</DependentUpon>
+    <Compile Include="NetworkKinectCore.cs" />
+    <Compile Include="NetworkKinectSettings.cs" />
+    <Compile Include="NetworkKinectSettingsControl.xaml.cs">
+      <DependentUpon>NetworkKinectSettingsControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="KinectV2SkeletonControl.xaml.cs">
-      <DependentUpon>KinectV2SkeletonControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="KinectV2StatusHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="KinectV2SettingsControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="KinectV2SkeletonControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KinectBase\KinectBase.csproj">
       <Project>{e212ea42-c987-4d89-996f-c9da49878cfd}</Project>
       <Name>KinectBase</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="NetworkKinectSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

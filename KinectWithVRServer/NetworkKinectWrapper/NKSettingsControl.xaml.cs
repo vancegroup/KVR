@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using KinectBase;
-using KinectV1Core;
+using NetworkKinectCore;
 
-namespace KinectWithVRServer.KinectV1Wrapper
+namespace KinectWithVRServer.NetworkKinectWrapper
 {
     public partial class SettingsControl : UserControl, IKinectSettingsControl
     {
-        //Private variable to manage the wrapping
-        private KinectV1SettingsControl realControl;
+        //Private variable to manage the wrapped settings control
+        private NetworkKinectSettingsControl realControl;
 
         //Public properties required by the IKinectSettingsControl interface
         public int? kinectID
@@ -38,12 +38,7 @@ namespace KinectWithVRServer.KinectV1Wrapper
             set { realControl.uniqueKinectID = value; }
         }
 
-        //Public properties specific to the Kinect v1
-        public UserControl skeletonUserControl
-        {
-            get { return realControl.skeletonUserControl; }
-            set { realControl.skeletonUserControl = value; }
-        }
+        //Public properties specific to the network Kinect
 
         //Public methods required by the IKinectSettingsControl interface
         public void UpdateGUI(MasterSettings newSettings)
@@ -51,7 +46,7 @@ namespace KinectWithVRServer.KinectV1Wrapper
             realControl.UpdateGUI(newSettings);
         }
 
-        //Constructor to setup the real KinectV1SettingsControl
+        //Constructor to setup the real NetworkKinectSettingsControl
         public SettingsControl(int kinectNumber, ref MasterSettings settings, IKinectCore kinect)
         {
             InitializeComponent();
@@ -59,8 +54,8 @@ namespace KinectWithVRServer.KinectV1Wrapper
             this.Visibility = System.Windows.Visibility.Collapsed;
 
             Core coreWrapper = (Core)kinect;
-            KinectCoreV1 kinectCore = (KinectCoreV1)coreWrapper;
-            realControl = new KinectV1SettingsControl(kinectNumber, ref settings, kinectCore);
+            NetworkKinectCore.NetworkKinectCore kinectCore = (NetworkKinectCore.NetworkKinectCore)coreWrapper;
+            realControl = new NetworkKinectSettingsControl(kinectNumber, ref settings, kinectCore);
             realControl.Visibility = System.Windows.Visibility.Visible;
             this.MasterGrid.Children.Add((UserControl)realControl);
         }
