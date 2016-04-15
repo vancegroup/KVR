@@ -3,8 +3,122 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d">
-    <Grid>
-        <TextBlock Text="Kinect v2 options are not yet implemented!" FontSize="40"/>
-    </Grid>
+             mc:Ignorable="d"
+             d:DesignHeight="222" d:DesignWidth="530">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" MaxHeight="85"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Vertical" Grid.RowSpan="2">
+                <GroupBox Header="Color Preview Settings" Margin="2">
+                    <StackPanel Orientation="Vertical">
+                        <RadioButton Name="useColorRadioButton" Content="Use Color Image" Margin="0,2,0,2" Checked="colorPreviewRadioButton_CheckChanged" IsChecked="True"/>
+                        <RadioButton Name="useIRRadionButton" Content="Use IR Image" Margin="0,2,0,2" Checked="colorPreviewRadioButton_CheckChanged"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="Depth Preview Settings" Grid.Column="1">
+                    <StackPanel Orientation="Vertical">
+                        <CheckBox Name="ScaleDepthCheckBox" Content="Scale Depth to Reliable Range" Margin="0,2,0,2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
+                        <CheckBox Name="ColorizeDepthCheckBox" Content="Colorize Depth" Margin="0,2,0,2" IsEnabled="False" Checked="ColorizeDepthCheckBox_CheckChanged" Unchecked="colorPreviewRadioButton_CheckChanged"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="Skeleton Settings">
+                    <StackPanel Orientation="Vertical">
+                        <CheckBox Name="UseSkeletonCheckBox" Content="Merge Skeletons" Margin="0,2,0,2" IsChecked="True" Checked="UseSkeletonCheckBox_CheckChanged" Unchecked="UseSkeletonCheckBox_CheckChanged"/>
+                        <CheckBox Name="UseRawSkeletonCheckBox" Content="Send Raw Skeletons" Margin="0,2,0,2" IsChecked="False" Checked="UseRawSkeletonCheckBox_Checked" Unchecked="UseRawSkeletonCheckBox_Unchecked"/>
+                        <CheckBox Name="XFormRawSkeletonCheckBox" Content="Transform Raw Pos." Margin="20,2,0,2" IsChecked="False" IsEnabled="False" Checked="XFormRawSkeletonCheckBox_Checked" Unchecked="XFormRawSkeletonCheckBox_Checked" ToolTip="Indicates if the raw skeletons should be transformed into the global coordinate system using the Kinect position settings."/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="1" Grid.RowSpan="2">
+                <GroupBox Header="Audio Settings">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Beam Mode:" Margin="2"/>                       
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Name="audioBeamModeComboBox" SelectedIndex="0" SelectionChanged="audioBeamModeComboBox_SelectionChanged">
+                                <ComboBoxItem Content="Loudest Source"/>
+                                <ComboBoxItem Content="Feedback Position"/>
+                                <ComboBoxItem Content="Merged Skeleton #"/>
+                                <ComboBoxItem Content="Local Skeleton #"/>
+                            </ComboBox>
+                            <TextBox Name="audioBeamSkeletonNumberTextBox" Grid.Column="1" Margin="2" IsEnabled="False" Text="0" TextAlignment="Right" TextChanged="audioBeamSkeletonNumberTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
+                        </Grid>            
+                        <CheckBox Name="SendSoundAngleCheckBox" Content="Send Source Angle" Margin="2" Checked="SendSoundAngleCheckBox_Checked" Unchecked="SendSoundAngleCheckBox_Unchecked"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Server:" VerticalAlignment="Center"/>
+                            <TextBox Name="audioServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="audioServerTextBox_TextChanged"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Channel:" VerticalAlignment="Center"/>
+                            <TextBox Name="audioChannelTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="audioChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+            <GroupBox Header="Physical Settings" Grid.Column="2" Grid.RowSpan="2">
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="Position (m):"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="X:" VerticalAlignment="Center"/>
+                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
+                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
+                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
+                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Pitch (degrees):" VerticalAlignment="Center"/>
+                        <TextBox Name="pitchPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="pitchPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Roll (degrees):" VerticalAlignment="Center"/>
+                        <TextBox Name="rollPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="rollPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

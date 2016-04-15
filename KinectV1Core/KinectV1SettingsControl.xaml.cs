@@ -74,7 +74,8 @@ namespace KinectV1Core
             if (kinectID.HasValue)
             {
                 masterSettings = newSettings;
-                kinectSettings = (KinectV1Settings)masterSettings.kinectOptionsList[kinectID.Value];
+                dynamic tempSettings = masterSettings.kinectOptionsList[kinectID.Value];
+                kinectSettings = (KinectV1Settings)tempSettings;
 
                 //Update the color options
                 switch (kinectSettings.colorImageMode)
@@ -137,6 +138,7 @@ namespace KinectV1Core
                 audioBeamSkeletonNumberTextBox.Text = kinectSettings.audioBeamTrackSkeletonNumber.ToString();
                 switch (kinectSettings.audioTrackMode)
                 {
+                    //Note: the enabled/disabled controls don't need to be set manually here because the selected index changed event will still be hit
                     case KinectBase.AudioTrackingMode.Feedback:
                     {
                         audioBeamModeComboBox.SelectedIndex = 1;

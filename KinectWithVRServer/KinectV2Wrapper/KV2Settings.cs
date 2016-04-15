@@ -45,7 +45,32 @@ namespace KinectWithVRServer.KinectV2Wrapper
         }
 
         //Public properties specific to the Kinect v2
-        //TODO: Add all the Kinect v2 properties
+        #region Color Settings
+        public bool useColorPreview
+        {
+            get { return realSettings.useColorPreview; }
+            set { realSettings.useColorPreview = value; }
+        }
+        public bool useIRPreview
+        {
+            get { return realSettings.useIRPreview; }
+            set { realSettings.useIRPreview = value; }
+        }
+        #endregion
+
+        #region Depth Settings
+        public bool scaleDepthToReliableRange
+        {
+            get { return realSettings.scaleDepthToReliableRange; }
+            set { realSettings.scaleDepthToReliableRange = value; }
+        }
+        public bool colorizeDepth
+        {
+            get { return realSettings.colorizeDepth; }
+            set { realSettings.colorizeDepth = value; }
+        }
+        #endregion
+
         #region Skeleton and Physical Settings
         //Note, mergeSkeleton is up above because it is required by the interface (it doesn't have to be up there, that's just how I sorted things)
         public bool sendRawSkeletons
@@ -68,10 +93,53 @@ namespace KinectWithVRServer.KinectV2Wrapper
             get { return realSettings.kinectPosition; }
             set { realSettings.kinectPosition = value; }
         }
-        public System.Windows.Media.Media3D.Quaternion kinectOrientation
+        public double kinectYaw
         {
-            get { return realSettings.kinectOrientation; }
-            set { realSettings.kinectOrientation = value; }
+            get { return realSettings.kinectYaw; }
+            set { realSettings.kinectYaw = value; }
+        }
+        public double kinectPitch
+        {
+            get { return realSettings.kinectPitch; }
+            set { realSettings.kinectPitch = value; }
+        }
+        public double kinectRoll
+        {
+            get { return realSettings.kinectRoll; }
+            set { realSettings.kinectRoll = value; }
+        }
+        //public System.Windows.Media.Media3D.Quaternion kinectOrientation
+        //{
+        //    get { return realSettings.kinectOrientation; }
+        //    set { realSettings.kinectOrientation = value; }
+        //}
+        #endregion
+
+        #region Audio Settings
+        public bool sendAudioAngle
+        {
+            get { return realSettings.sendAudioAngle; }
+            set { realSettings.sendAudioAngle = value; }
+        }
+        public AudioTrackingMode audioTrackMode
+        {
+            get { return realSettings.audioTrackMode; }
+            set { realSettings.audioTrackMode = value; }
+        }
+        public int audioBeamTrackSkeletonNumber
+        {
+            get { return realSettings.audioBeamTrackSkeletonNumber; }
+            set { realSettings.audioBeamTrackSkeletonNumber = value; }
+        }
+        public string audioAngleServerName
+        {
+            get { return realSettings.audioAngleServerName; }
+            set { realSettings.audioAngleServerName = value; }
+        }
+        public int audioAngleChannel
+        {
+            get { return realSettings.audioAngleChannel; }
+            set { realSettings.audioAngleChannel = value; }
         }
         #endregion
 
