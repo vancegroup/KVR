@@ -136,6 +136,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <ListBox Name="kinectTabListBox" SelectionChanged="kinectTabListBox_SelectionChanged"/>
+                    <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns"/>
                     <DataGrid Name="kinectsAvailableDataGrid" Grid.Column="2" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="Use Kinect">
