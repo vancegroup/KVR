@@ -424,7 +424,30 @@ namespace KinectV2Core
         }
         private KinectBase.JointType convertJointType(JointType jointType)
         {
-            return (KinectBase.JointType)jointType;
+            switch (jointType)
+            {
+                case JointType.SpineBase:
+                {
+                    return KinectBase.JointType.SpineBase;
+                }
+                case JointType.SpineMid:
+                {
+                    return KinectBase.JointType.SpineMid;
+                }
+                case JointType.Neck:
+                {
+                    return KinectBase.JointType.Neck;
+                }
+                case JointType.SpineShoulder:
+                {
+                    return KinectBase.JointType.SpineShoulder;
+                }
+                default:
+                {
+                    //Other than the first 3, everything is numbered the same so we can just cast it
+                    return (KinectBase.JointType)jointType;
+                }
+            }
         }
         private Point3D convertJointPosition(CameraSpacePoint position)
         {

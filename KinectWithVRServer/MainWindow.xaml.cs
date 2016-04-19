@@ -1464,7 +1464,17 @@ namespace KinectWithVRServer
                 }
 
                 //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
-                DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
+                //If there is a neck, we need to draw it different
+                if (skeleton.skeleton[JointType.Neck].TrackingState != TrackingState.NotTracked)
+                {
+                    DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.Neck], renderColor, 2.0, offset, kinectID);
+                    DrawBoneOnColor(skeleton.skeleton[JointType.Neck], skeleton.skeleton[JointType.SpineShoulder], renderColor, 2.0, offset, kinectID);
+                }
+                else if (skeleton.skeleton[JointType.Head].TrackingState != TrackingState.NotTracked && skeleton.skeleton[JointType.ShoulderCenter].TrackingState != TrackingState.NotTracked)
+                {
+                    DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
+                }
+
                 DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderLeft], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderLeft], skeleton.skeleton[JointType.ElbowLeft], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnColor(skeleton.skeleton[JointType.ElbowLeft], skeleton.skeleton[JointType.WristLeft], renderColor, 2.0, offset, kinectID);
@@ -1483,6 +1493,11 @@ namespace KinectWithVRServer
                 DrawBoneOnColor(skeleton.skeleton[JointType.HipRight], skeleton.skeleton[JointType.KneeRight], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnColor(skeleton.skeleton[JointType.KneeRight], skeleton.skeleton[JointType.AnkleRight], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnColor(skeleton.skeleton[JointType.AnkleRight], skeleton.skeleton[JointType.FootRight], renderColor, 2.0, offset, kinectID);
+                //The thumb and hand tip only get draw if the skeleton is a Kinect v2, but that's okay, the logic in the method will figure it out
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.ThumbLeft], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.HandTipLeft], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.ThumbRight], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.HandTipRight], renderColor, 2.0, offset, kinectID);
 
                 for (int i = 0; i < skeleton.skeleton.Count; i++)
                 {
