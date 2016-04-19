@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using Microsoft.Kinect;
+using System.Runtime.InteropServices;
 
 namespace KinectV2Core
 {
@@ -259,15 +260,34 @@ namespace KinectV2Core
 
                     KinectBase.DepthFrameEventArgs depthE = new KinectBase.DepthFrameEventArgs();
                     depthE.bytesPerPixel = 2;  //This is fixed to 2 because we are using a ushort to hold the depth image
-                    depthE.pixelFormat = PixelFormats.Gray16;
+                    depthE.perPixelExtra = 2;  //We always have an extra two bytes per pixel because we are storing a Gray16 in a bgr32 format
                     depthE.height = desc.Height;
                     depthE.width = desc.Width;
                     depthE.kinectID = kinectID;
                     depthE.timeStamp = depthFrame.RelativeTime;
                     depthE.reliableMin = (float)depthFrame.DepthMinReliableDistance / (float)ushort.MaxValue;
                     depthE.reliableMax = (float)depthFrame.DepthMaxReliableDistance / (float)ushort.MaxValue;
-                    depthE.image = new ushort[desc.LengthInPixels];
-                    depthFrame.CopyFrameDataToArray(depthE.image);
+
+                    //Get all the data for the depth, and store the bytes for the Gray16 in the blue and green channels of a bgr32
+                    IntPtr depthImagePtr = Marshal.AllocHGlobal((int)(depthE.bytesPerPixel * desc.LengthInPixels));
+                    depthFrame.CopyFrameDataToIntPtr(depthImagePtr, (uint)depthE.bytesPerPixel * desc.LengthInPixels);
+                    depthE.image = new byte[desc.LengthInPixels * (depthE.perPixelExtra + depthE.bytesPerPixel)];
+                    unsafe
+                    {
+                        fixed (byte* pDst = depthE.image)
+                        {
+                            ushort* pD = (ushort*)pDst;
+                            ushort* pS = (ushort*)depthImagePtr.ToPointer();
+
+                            for (int n = 0; n < desc.LengthInPixels; n++)
+                            {
+                                *pD = *pS;
+                                pD += 2;
+                                pS++;
+                            }
+                        }
+                    }
+                    Marshal.FreeHGlobal(depthImagePtr);
 
                     OnDepthFrameReceived(depthE);
                 }

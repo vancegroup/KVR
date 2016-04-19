@@ -558,7 +558,7 @@ namespace KinectV1Core
                     //TODO: Handle this differently to get the raw depth as a UInt 16
                     KinectBase.DepthFrameEventArgs depthE = new KinectBase.DepthFrameEventArgs();
                     depthE.kinectID = this.kinectID;
-                    depthE.pixelFormat = PixelFormats.Gray16;
+                    depthE.perPixelExtra = 2;
                     depthE.width = frame.Width;
                     depthE.height = frame.Height;
                     depthE.bytesPerPixel = frame.BytesPerPixel;
@@ -566,30 +566,16 @@ namespace KinectV1Core
                     depthE.reliableMax = (float)frame.MaxDepth / (float)ushort.MaxValue;
                     depthE.timeStamp = new TimeSpan(frame.Timestamp * 10000);  //Convert from milliseconds to ticks and set the time span
 
-                    //This fun bit of unsafe code gets the raw pixel depth from the depth image (the CopyPixelDepthTo function packs a player index number in the image, so we don't want to use that)
-                    depthE.image = new ushort[frame.PixelDataLength];
+                    //The second 2 bytes of the DepthImagePixel structure hold the actual depth as a uint16, so lets get those, and put the data in the blue and green channel of the image
+                    depthE.image = new byte[frame.PixelDataLength * (depthE.perPixelExtra + depthE.bytesPerPixel)];
                     unsafe
                     {
-                        IntPtr dataPtr = Marshal.AllocHGlobal(sizeof(DepthImagePixel) * frame.PixelDataLength);
-                        frame.CopyDepthImagePixelDataTo(dataPtr, frame.PixelDataLength);
-
-                        fixed (ushort* pDst = depthE.image)
-                        {
-                            ushort* pD = pDst;
-                            ushort* pS = (ushort*)dataPtr.ToPointer();
-                            pS++; //Offset the source pointer by 1 ushort (2 bytes) to get the data from the right place in the DepthImagePixel structure
-
-                            for (int n = 0; n < frame.PixelDataLength; n++)
-                            {
-                                *pD = *pS;
-                                pD++;
-                                pS += 2;
-                            }
-                        }
-
-                        Marshal.FreeHGlobal(dataPtr);
+                        //The sizeof() operation is unsafe in this instance, otherwise this would all be safe code
+                        IntPtr depthImagePtr = Marshal.AllocHGlobal(sizeof(DepthImagePixel) * frame.PixelDataLength);
+                        frame.CopyDepthImagePixelDataTo(depthImagePtr, frame.PixelDataLength);
+                        Marshal.Copy(depthImagePtr, depthE.image, 2, depthE.image.Length - 2);
+                        Marshal.FreeHGlobal(depthImagePtr);
                     }
-
 
                     OnDepthFrameReceived(depthE);
 

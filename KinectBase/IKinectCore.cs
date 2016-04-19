@@ -55,8 +55,9 @@ namespace KinectBase
     }
     public class DepthFrameEventArgs : EventArgs
     {
-        public ushort[] image;
-        public System.Windows.Media.PixelFormat pixelFormat;
+        public byte[] image;
+        public int perPixelExtra;
+        //public System.Windows.Media.PixelFormat pixelFormat;
         public int width;
         public int height;
         public int bytesPerPixel;

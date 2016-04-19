@@ -281,6 +281,10 @@ namespace KinectWithVRServer
             //Set the items source for the servers display grid
             ServersDataGrid.ItemsSource = configuredServers;
 
+            //Set the initial shader for the depth image
+            depthEffect = new Shaders.NoScalingEffect();
+            DepthImage.Effect = depthEffect;
+
             if (startOnLaunch)
             {
                 startServerButton_Click(this, new RoutedEventArgs());
@@ -1054,19 +1058,22 @@ namespace KinectWithVRServer
         }
         void MainWindow_DepthFrameReceived(object sender, DepthFrameEventArgs e)
         {
+            //NOTE: Even though the depth is a 16-bit grayscale format natively, the event packs it as a bgr32.  The shaders will correct this issue.
+            //This trick is necessary because the image is rasterized to an 8-bit per channel format by WPF before it is passed to the shader
+            //Thus, if we used a Gray16 and then shaded it, we would lose a bunch of image depth and the scaled images would look terrible.
             if (depthSource == null)
             {
-                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, PixelFormats.Bgr32, null);
                 DepthImage.Source = depthSource;
             }
-            else if (depthSource.PixelWidth != e.width || depthSource.PixelHeight != e.height || depthSource.Format != e.pixelFormat)
+            else if (depthSource.PixelWidth != e.width || depthSource.PixelHeight != e.height)
             {
                 depthSource = null;
-                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, PixelFormats.Bgr32, null);
                 DepthImage.Source = depthSource;
             }
 
-            depthSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+            depthSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * (e.bytesPerPixel + e.perPixelExtra), 0);
 
             //Update the depth shader, if necessary (checks for necessity are done in the methods)
             CheckAndChangeDepthShader(e.kinectID);
@@ -1114,7 +1121,7 @@ namespace KinectWithVRServer
                 colorize = ((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).colorizeDepth;
                 scale = ((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).scaleDepthToReliableRange;
             }
-            else if (server.serverMasterOptions.kinectOptionsList[kinectIndex].version == KinectVersion.KinectV1)
+            else if (server.serverMasterOptions.kinectOptionsList[kinectIndex].version == KinectVersion.KinectV2)
             {
                 colorize = ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).colorizeDepth;
                 scale = ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).scaleDepthToReliableRange;
@@ -1136,15 +1143,13 @@ namespace KinectWithVRServer
                     Shaders.DepthScalingEffect effect = new Shaders.DepthScalingEffect();
                     effect.Minimum = depthMin;
                     effect.Maximum = depthMax;
-                    //effect.Minimum = 0.0076295109483482f;
-                    //effect.Maximum = 0.0686655985351339f;
                     depthEffect = effect;
                 }
                 else if (!scale && colorize)
                 {
                     //TODO: Setup the colorizer shader here
                 }
-                else //Don't do any shading
+                else //Convert from the bgr32 back to a gray16, but don't do any shading otherwise
                 {
                     depthEffect = new Shaders.NoScalingEffect();
                 }
