@@ -8,7 +8,7 @@
         xmlns:kBase="clr-namespace:KinectBase;assembly=KinectBase"
         xmlns:core="clr-namespace:System;assembly=mscorlib"
         Initialized="Window_Initialized" Closing="Window_Closing"
-        Title="Kinect with VR (KVR) Server" Height="504" Width="700">
+        Title="Kinect with VR (KVR) Server" Height="520" Width="700">
     <Window.Resources>
         <ObjectDataProvider x:Key="ButtonTypeEnum" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
             <ObjectDataProvider.MethodParameters>

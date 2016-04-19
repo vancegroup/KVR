@@ -26,6 +26,8 @@ namespace KinectV1Core
             depthImageMode = DepthImageFormat.Resolution320x240Fps30;
             isNearMode = false;
             irON = true;
+            scaleDepthToReliableRange = false;
+            colorizeDepth = false;
             mergeSkeletons = false;
             kinectPosition = new Point3D(0, 0, 0);
             kinectYaw = 0.0;
@@ -255,6 +257,8 @@ namespace KinectV1Core
         public DepthImageFormat depthImageMode { get; set; }
         public bool isNearMode { get; set; }
         public bool irON { get; set; }
+        public bool scaleDepthToReliableRange { get; set; }
+        public bool colorizeDepth { get; set; }
         #endregion
         #region Skeleton and Physical Settings
         public bool mergeSkeletons { get; set; }

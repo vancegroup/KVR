@@ -55,13 +55,15 @@ namespace KinectBase
     }
     public class DepthFrameEventArgs : EventArgs
     {
-        public short[] image;
+        public ushort[] image;
         public System.Windows.Media.PixelFormat pixelFormat;
         public int width;
         public int height;
         public int bytesPerPixel;
         public TimeSpan timeStamp;
         public int kinectID;
+        public float reliableMin; //This should be from 0 to 1
+        public float reliableMax; //This hsould be from 0 to 1
     }
     public class ColorFrameEventArgs : EventArgs
     {

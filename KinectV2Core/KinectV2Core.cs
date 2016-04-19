@@ -264,15 +264,10 @@ namespace KinectV2Core
                     depthE.width = desc.Width;
                     depthE.kinectID = kinectID;
                     depthE.timeStamp = depthFrame.RelativeTime;
-
-                    //All this junk is to copy the image data to a short array by going through unmanaged memory
-                    int byteLength = (int)(desc.LengthInPixels * depthE.bytesPerPixel);
-                    depthE.image = new short[desc.LengthInPixels];
-                    IntPtr tempPtr = new IntPtr();
-                    tempPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(byteLength);
-                    depthFrame.CopyFrameDataToIntPtr(tempPtr, (uint)(byteLength));
-                    System.Runtime.InteropServices.Marshal.Copy(tempPtr, depthE.image, 0, (int)desc.LengthInPixels);
-                    System.Runtime.InteropServices.Marshal.FreeHGlobal(tempPtr);
+                    depthE.reliableMin = (float)depthFrame.DepthMinReliableDistance / (float)ushort.MaxValue;
+                    depthE.reliableMax = (float)depthFrame.DepthMaxReliableDistance / (float)ushort.MaxValue;
+                    depthE.image = new ushort[desc.LengthInPixels];
+                    depthFrame.CopyFrameDataToArray(depthE.image);
 
                     OnDepthFrameReceived(depthE);
                 }

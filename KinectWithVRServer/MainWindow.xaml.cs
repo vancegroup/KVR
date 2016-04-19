@@ -48,6 +48,11 @@ namespace KinectWithVRServer
         private volatile bool drawingColorSkeleton = false;
         private volatile bool drawingDepthSkeleton = false;
         private int lastSettingsTabIndex = 0;
+        private System.Windows.Media.Effects.ShaderEffect depthEffect;
+        private bool scaleDepth = false;
+        private bool colorDepth = false;
+        private float depthMin = 0;
+        private float depthMax = 1;
 
         public MainWindow(bool isVerbose, bool isAutoStart, AvaliableDLLs dlls, string startSettings = "")
         {
@@ -1022,18 +1027,7 @@ namespace KinectWithVRServer
                         server.kinects[kinectIndex].DepthFrameReceived += MainWindow_DepthFrameReceived;
                         server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedDepth;
 
-                        //TODO: Make this optional (right now it is just testing)
-                        if (server.kinects[kinectIndex].version == KinectVersion.KinectV1)
-                        {
-                            DepthImage.Effect = new Shaders.NoScalingEffect();
-                        }
-                        else if (server.kinects[kinectIndex].version == KinectVersion.KinectV2)
-                        {
-                            Shaders.DepthScalingEffect effect = new Shaders.DepthScalingEffect();
-                            effect.Minimum = 0.0076295109483482f;
-                            effect.Maximum = 0.0686655985351339f;
-                            DepthImage.Effect = effect;
-                        }
+                        CheckAndChangeDepthShader(kinectIndex);
                     }
                 }
             }
@@ -1074,6 +1068,10 @@ namespace KinectWithVRServer
 
             depthSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
 
+            //Update the depth shader, if necessary (checks for necessity are done in the methods)
+            CheckAndChangeDepthShader(e.kinectID);
+            UpdateShaderMinMax(e.reliableMin, e.reliableMax);
+
             //Calculate the depth frame rate and display it
             double tempFPS = CalculateFrameRate(e.timeStamp, ref lastDepthTime, ref depthTimeIntervals);
             DepthFPSTextBlock.Text = tempFPS.ToString("F1");
@@ -1103,6 +1101,76 @@ namespace KinectWithVRServer
                 {
                     //TODO: Map the rendering color to the merged skeleton colors?
                     RenderSkeletonOnDepth(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID);
+                }
+            }
+        }
+        void CheckAndChangeDepthShader(int kinectIndex)
+        {
+            bool colorize = false;
+            bool scale = false;
+
+            if (server.serverMasterOptions.kinectOptionsList[kinectIndex].version == KinectVersion.KinectV1)
+            {
+                colorize = ((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).colorizeDepth;
+                scale = ((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).scaleDepthToReliableRange;
+            }
+            else if (server.serverMasterOptions.kinectOptionsList[kinectIndex].version == KinectVersion.KinectV1)
+            {
+                colorize = ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).colorizeDepth;
+                scale = ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[kinectIndex]).scaleDepthToReliableRange;
+            }
+
+            //If the options have changed for the shader, we need to setup the new shader
+            if (scale != scaleDepth || colorize != colorDepth)
+            {
+                //Set the variables so we can check if the shader is set right later
+                scaleDepth = scale;
+                colorDepth = colorize;
+
+                if (scale && colorize)
+                {
+                    //TODO: Setup the scale and colorize shader here
+                }
+                else if (scale && !colorize)
+                {
+                    Shaders.DepthScalingEffect effect = new Shaders.DepthScalingEffect();
+                    effect.Minimum = depthMin;
+                    effect.Maximum = depthMax;
+                    //effect.Minimum = 0.0076295109483482f;
+                    //effect.Maximum = 0.0686655985351339f;
+                    depthEffect = effect;
+                }
+                else if (!scale && colorize)
+                {
+                    //TODO: Setup the colorizer shader here
+                }
+                else //Don't do any shading
+                {
+                    depthEffect = new Shaders.NoScalingEffect();
+                }
+
+                DepthImage.Effect = depthEffect;
+            }
+        }
+        void UpdateShaderMinMax(float min, float max)
+        {
+            //Check if the min or max has changed, and update it accordingly if needed
+            if (scaleDepth)
+            {
+                if (depthMin != min || depthMax != max)
+                {
+                    depthMin = min;
+                    depthMax = max;
+
+                    if (colorDepth)
+                    {
+                        //TODO: Update the scaleAndColorShader
+                    }
+                    else
+                    {
+                        ((Shaders.DepthScalingEffect)depthEffect).Minimum = min;
+                        ((Shaders.DepthScalingEffect)depthEffect).Maximum = max;
+                    }
                 }
             }
         }

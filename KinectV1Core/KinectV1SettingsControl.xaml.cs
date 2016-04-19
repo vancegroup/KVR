@@ -453,6 +453,14 @@ namespace KinectV1Core
                 }
             }
         }
+        private void ScaleDepthCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            kinectSettings.scaleDepthToReliableRange = (bool)ScaleDepthCheckBox.IsChecked;
+        }
+        private void ColorDepthCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            kinectSettings.colorizeDepth = (bool)ColorDepthCheckBox.IsChecked;
+        }
         #endregion
 
         #region Color Option Methods
@@ -633,7 +641,6 @@ namespace KinectV1Core
             advancedColorButton.IsEnabled = false;
         }
         #endregion
-
 
         //Update the options in the audio mode combobox
         private void UserControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

@@ -8,6 +8,7 @@ using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Toolkit.Interaction;
+using System.Runtime.InteropServices;
 //using KinectBase;
 
 namespace KinectV1Core
@@ -554,15 +555,42 @@ namespace KinectV1Core
                         interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
                     }
 
+                    //TODO: Handle this differently to get the raw depth as a UInt 16
                     KinectBase.DepthFrameEventArgs depthE = new KinectBase.DepthFrameEventArgs();
                     depthE.kinectID = this.kinectID;
                     depthE.pixelFormat = PixelFormats.Gray16;
                     depthE.width = frame.Width;
                     depthE.height = frame.Height;
                     depthE.bytesPerPixel = frame.BytesPerPixel;
+                    depthE.reliableMin = (float)frame.MinDepth / (float)ushort.MaxValue;
+                    depthE.reliableMax = (float)frame.MaxDepth / (float)ushort.MaxValue;
                     depthE.timeStamp = new TimeSpan(frame.Timestamp * 10000);  //Convert from milliseconds to ticks and set the time span
-                    depthE.image = new short[frame.PixelDataLength];
-                    frame.CopyPixelDataTo(depthE.image);
+
+                    //This fun bit of unsafe code gets the raw pixel depth from the depth image (the CopyPixelDepthTo function packs a player index number in the image, so we don't want to use that)
+                    depthE.image = new ushort[frame.PixelDataLength];
+                    unsafe
+                    {
+                        IntPtr dataPtr = Marshal.AllocHGlobal(sizeof(DepthImagePixel) * frame.PixelDataLength);
+                        frame.CopyDepthImagePixelDataTo(dataPtr, frame.PixelDataLength);
+
+                        fixed (ushort* pDst = depthE.image)
+                        {
+                            ushort* pD = pDst;
+                            ushort* pS = (ushort*)dataPtr.ToPointer();
+                            pS++; //Offset the source pointer by 1 ushort (2 bytes) to get the data from the right place in the DepthImagePixel structure
+
+                            for (int n = 0; n < frame.PixelDataLength; n++)
+                            {
+                                *pD = *pS;
+                                pD++;
+                                pS += 2;
+                            }
+                        }
+
+                        Marshal.FreeHGlobal(dataPtr);
+                    }
+
+
                     OnDepthFrameReceived(depthE);
 
                     //TODO: Subscribe the server to this event to transmit the depth data using the imager

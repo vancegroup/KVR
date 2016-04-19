@@ -139,6 +139,16 @@ namespace KinectWithVRServer.KinectV1Wrapper
             get { return realSettings.irON; }
             set { realSettings.irON = value; }
         }
+        public bool scaleDepthToReliableRange
+        {
+            get { return realSettings.scaleDepthToReliableRange; }
+            set { realSettings.scaleDepthToReliableRange = value; }
+        }
+        public bool colorizeDepth
+        {
+            get { return realSettings.colorizeDepth; }
+            set { realSettings.colorizeDepth = value; }
+        }
         #endregion
         #region Skeleton and Physical Settings
         //Note, mergeSkeletons is up above because it is required by the interface (it doesn't have to be up there, it's just how I sorted things)
