@@ -65,12 +65,12 @@ namespace KinectV2Core
                 if (tempKinect.IsAvailable)
                 {
                     temp.Status = KinectBase.KinectStatus.Connected;
-                    System.Diagnostics.Debug.WriteLine("Kinect 2 connected.");
+                    System.Diagnostics.Debug.WriteLine("Kinect 2 connected (static method).");
                 }
                 else
                 {
                     temp.Status = KinectBase.KinectStatus.Disconnected;
-                    System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected.");
+                    System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected (static method).");
                 }
                 statusArray[i] = temp;
             }
@@ -86,7 +86,7 @@ namespace KinectV2Core
                 if (e.IsAvailable)
                 {
                     args.Status = KinectBase.KinectStatus.Connected;
-                    System.Diagnostics.Debug.WriteLine("Kinect 2 connected.");
+                    System.Diagnostics.Debug.WriteLine("Kinect 2 connected (event).");
                 }
                 else
                 {
@@ -95,7 +95,7 @@ namespace KinectV2Core
                 }
                 args.KinectNumber = 0; //This is always 0 because the Kinect v2 only supports 1 Kinect
                 args.UniqueKinectID = KinectSensor.GetDefault().UniqueKinectId;
-                System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected.");
+                System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected (event).");
 
                 OnKinectV2StatusChanged(args);
             }

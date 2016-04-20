@@ -20,13 +20,29 @@ namespace KinectV2Core
         {
             get
             {
-                if (kinect != null)
+                if (foundID)
                 {
-                    return kinect.UniqueKinectId;
+                    return uniqueID;
                 }
                 else
                 {
-                    return null;
+                    if (kinect != null)
+                    {
+                        uniqueID = string.Copy(kinect.UniqueKinectId);
+                        if (uniqueID.Length > 0)
+                        {
+                            foundID = true;
+                            return uniqueID;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
             }
         }
@@ -57,6 +73,8 @@ namespace KinectV2Core
         private DepthFrameReader depthReader;
         private ColorFrameReader colorReader;
         private InfraredFrameReader irReader;
+        private string uniqueID = "";
+        private bool foundID = false;
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
