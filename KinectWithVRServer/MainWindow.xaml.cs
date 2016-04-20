@@ -1527,6 +1527,16 @@ namespace KinectWithVRServer
                 }
 
                 //Render all the bones (this can't be looped because the enum isn't ordered in order of bone connections)
+                //If there is a neck, we need to draw it different
+                if (skeleton.skeleton[JointType.Neck].TrackingState != TrackingState.NotTracked)
+                {
+                    DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.Neck], renderColor, 2.0, offset, kinectID);
+                    DrawBoneOnDepth(skeleton.skeleton[JointType.Neck], skeleton.skeleton[JointType.SpineShoulder], renderColor, 2.0, offset, kinectID);
+                }
+                else if (skeleton.skeleton[JointType.Head].TrackingState != TrackingState.NotTracked && skeleton.skeleton[JointType.ShoulderCenter].TrackingState != TrackingState.NotTracked)
+                {
+                    DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
+                }
                 DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderLeft], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderLeft], skeleton.skeleton[JointType.ElbowLeft], renderColor, 2.0, offset, kinectID);
@@ -1546,6 +1556,11 @@ namespace KinectWithVRServer
                 DrawBoneOnDepth(skeleton.skeleton[JointType.HipRight], skeleton.skeleton[JointType.KneeRight], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnDepth(skeleton.skeleton[JointType.KneeRight], skeleton.skeleton[JointType.AnkleRight], renderColor, 2.0, offset, kinectID);
                 DrawBoneOnDepth(skeleton.skeleton[JointType.AnkleRight], skeleton.skeleton[JointType.FootRight], renderColor, 2.0, offset, kinectID);
+                //The thumb and hand tip only get draw if the skeleton is a Kinect v2, but that's okay, the logic in the method will figure it out
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.ThumbLeft], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.HandTipLeft], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.ThumbRight], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.HandTipRight], renderColor, 2.0, offset, kinectID);
 
                 for (int i = 0; i < skeleton.skeleton.Count; i++)
                 {
