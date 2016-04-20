@@ -130,6 +130,14 @@ namespace KinectWithVRServer.KinectV2Wrapper
         {
             realCore.StartKinectAudio();
         }
+        public void UpdateAudioAngle(System.Windows.Media.Media3D.Point3D position)
+        {
+            realCore.UpdateAudioAngle(position);
+        }
+        public System.IO.Stream GetKinectAudioStream()
+        {
+            return realCore.GetKinectAudioStream();
+        }
 
         //Custom conversion operator so this class can be cast as a KinectV2Core class
         public static explicit operator KinectCoreV2(Core kinectCore)

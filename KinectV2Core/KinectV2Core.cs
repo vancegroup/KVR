@@ -73,8 +73,11 @@ namespace KinectV2Core
         private DepthFrameReader depthReader;
         private ColorFrameReader colorReader;
         private InfraredFrameReader irReader;
+        private AudioBeamFrameReader audioReader;
         private string uniqueID = "";
         private bool foundID = false;
+        private bool isGUI = false;
+        private System.IO.Stream audioStream = null;
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
@@ -94,6 +97,7 @@ namespace KinectV2Core
 
             if (isGUILaunched)
             {
+                isGUI = true;
                 LaunchKinect();
             }
             else
@@ -129,12 +133,77 @@ namespace KinectV2Core
                 irReader.Dispose();
                 irReader = null;
             }
+            if (audioStream != null)
+            {
+                audioStream.Close();
+                audioStream.Dispose();
+                audioStream = null;
+            }
+            if (audioReader != null)
+            {
+                audioReader.FrameArrived -= audioReader_FrameArrived;
+                audioReader.Dispose();
+                audioReader = null;
+            }
 
             //Note: we don't close the Kinect here because it would remove it from the list of avaliable Kinects
         }
         public void StartKinectAudio()
         {
-            
+            if (isGUI)
+            {
+                ActuallyStartAudio();
+            }
+            else
+            {
+                //Launch the audio on a seperate thread if it is in console mode
+                startAudioDelegate audioDelegate = ActuallyStartAudio;
+                IAsyncResult result = audioDelegate.BeginInvoke(null, null);
+                audioDelegate.EndInvoke(result);
+            }
+        }
+        private void ActuallyStartAudio()
+        {
+            if (kinect.IsAvailable)
+            {
+                //Start the audio stream if necessary
+                if (masterKinectSettings.sendAudioAngle || masterSettings.audioOptions.sourceID == kinectID)
+                {
+                    audioReader = kinect.AudioSource.OpenReader();
+                    audioReader.FrameArrived += audioReader_FrameArrived;
+
+                    if (masterKinectSettings.audioTrackMode != KinectBase.AudioTrackingMode.Loudest)
+                    {
+                        for (int i = 0; i < kinect.AudioSource.AudioBeams.Count; i++)
+                        {
+                            kinect.AudioSource.AudioBeams[i].AudioBeamMode = AudioBeamMode.Manual;
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < kinect.AudioSource.AudioBeams.Count; i++)
+                        {
+                            kinect.AudioSource.AudioBeams[i].AudioBeamMode = AudioBeamMode.Manual;
+                        }
+                    }
+
+                    if (kinect.AudioSource.AudioBeams.Count > 0)
+                    {
+                        audioStream = kinect.AudioSource.AudioBeams[0].OpenInputStream();
+                    }
+                }
+            }
+        }
+        public System.IO.Stream GetKinectAudioStream()
+        {
+            if (kinect.AudioSource != null)
+            {
+                return audioStream;
+            }
+            else
+            {
+                return null;
+            }
         }
         public KinectBase.KinectSkeleton TransformSkeleton(KinectBase.KinectSkeleton skeleton)
         {
@@ -221,6 +290,20 @@ namespace KinectV2Core
             mappedPoint.Y = points[0].Y;
 
             return mappedPoint;
+        }
+        public void UpdateAudioAngle(Point3D position)
+        {
+            if (kinect.AudioSource != null)
+            {
+                for (int i = 0; i < kinect.AudioSource.AudioBeams.Count; i++)
+                {
+                    if (kinect.AudioSource.AudioBeams[i].AudioBeamMode == AudioBeamMode.Manual)
+                    {
+                        //Calculate and set the audio angle, in radians, that we want to Kinect to listen to
+                        kinect.AudioSource.AudioBeams[i].BeamAngle = (float)Math.Atan2(position.X - masterKinectSettings.kinectPosition.X, position.Z - masterKinectSettings.kinectPosition.Z);
+                    }
+                }
+            }
         }
 
         private void LaunchKinect()
@@ -373,6 +456,10 @@ namespace KinectV2Core
         {
             //throw new NotImplementedException();
         }
+        void audioReader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
 
         //Methods to fire the events
         protected virtual void OnSkeletonChanged(KinectBase.SkeletonEventArgs e)
@@ -488,5 +575,6 @@ namespace KinectV2Core
         }
 
         private delegate void launchKinectDelegate();
+        private delegate void startAudioDelegate();
     }
 }

@@ -90,7 +90,7 @@ namespace KinectWithVRServer
                     }
                     else if (kinects[i].version == KinectVersion.KinectV2)
                     {
-                        //TODO: Start Kinect v2 audio
+                        ((KinectV2Wrapper.Core)kinects[i]).StartKinectAudio();
                     }
                 }
 
@@ -322,8 +322,28 @@ namespace KinectWithVRServer
                         kinects[i].AccelerationChanged += kinect_AccelerationChanged;
                     }
                 }
-                //TODO: Add handling for Kinect v2 events
-                //TODO: Add handling for Networked Kinect events
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                {
+                    KinectV2Wrapper.Settings tempSettings = (KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
+                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    {
+                        kinects[i].SkeletonChanged += kinect_SkeletonChanged;
+                    }
+                    if (tempSettings.sendAudioAngle)
+                    {
+                        kinects[i].AudioPositionChanged += kinect_AudioPositionChanged;
+                    }
+                    //Note: subscribing to the acceleration event is pointless, the Kinect v2 can't send acceleration data
+                }
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                {
+                    NetworkKinectWrapper.Settings tempSettings = (NetworkKinectWrapper.Settings)serverMasterOptions.kinectOptionsList[i];
+                    if (tempSettings.mergeSkeletons)
+                    {
+                        kinects[i].SkeletonChanged += kinect_SkeletonChanged;
+                    }
+                    //Note: Subscribing to the audio and acceleration events is pointless, networked kinects only exist to merge skeleton data from Kinects not on this computer
+                }
             }
         }
         private void unsubscribeFromKinectEvents()
@@ -346,8 +366,26 @@ namespace KinectWithVRServer
                         kinects[i].AccelerationChanged -= kinect_AccelerationChanged;
                     }
                 }
-                //TODO: Add handling for Kinect v2 events
-                //TODO: Add handling for networked Kinect events
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
+                {
+                    KinectV2Wrapper.Settings tempSettings = (KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
+                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    {
+                        kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
+                    }
+                    if (tempSettings.sendAudioAngle)
+                    {
+                        kinects[i].AudioPositionChanged -= kinect_AudioPositionChanged;
+                    }
+                }
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
+                {
+                    NetworkKinectWrapper.Settings tempSettings = (NetworkKinectWrapper.Settings)serverMasterOptions.kinectOptionsList[i];
+                    if (tempSettings.mergeSkeletons)
+                    {
+                        kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
+                    }
+                }
             }
         }
 
@@ -380,28 +418,7 @@ namespace KinectWithVRServer
                         }
                     }
                 }
-                else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
-                {
-                    //TODO: Setup transmitting for the Kinect v2
-                    //KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
-                    //if (tempSettings.sendAcceleration)
-                    //{
-                    //    for (int i = 0; i < analogServers.Count; i++)
-                    //    {
-                    //        if (serverMasterOptions.analogServers[i].serverName == tempSettings.accelerationServerName)
-                    //        {
-                    //            lock (analogServers[i])
-                    //            {
-                    //                analogServers[i].AnalogChannels[tempSettings.accelXChannel].Value = e.acceleration.X;
-                    //                analogServers[i].AnalogChannels[tempSettings.accelYChannel].Value = e.acceleration.Y;
-                    //                analogServers[i].AnalogChannels[tempSettings.accelZChannel].Value = e.acceleration.Z;
-                    //                analogServers[i].Report();
-                    //            }
-                    //            break;
-                    //        }
-                    //    }
-                    //}
-                }
+                //Note: the Kinect v2 and networked Kinect do not support transmitting acceleration
             }
         }
         private void kinect_AudioPositionChanged(object sender, AudioPositionEventArgs e)
@@ -429,7 +446,22 @@ namespace KinectWithVRServer
                 }
                 else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Transmit the audio angle from the Kinect v2
+                    KinectV2Wrapper.Settings tempSettings = ((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendAudioAngle)
+                    {
+                        for (int i = 0; i < analogServers.Count; i++)
+                        {
+                            if (serverMasterOptions.analogServers[i].serverName == tempSettings.audioAngleServerName)
+                            {
+                                lock (analogServers[i])
+                                {
+                                    analogServers[i].AnalogChannels[tempSettings.audioAngleChannel].Value = e.audioAngle;
+                                    analogServers[i].Report();
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -449,7 +481,7 @@ namespace KinectWithVRServer
                     {
                         //The skeletons need to be copied, so the e.skeletons version isn't changed when the transformation is done
                         KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
-                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
+                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length); //This is a shallow copy, HOWEVER, new skeleton objects will be made when the transformation is done
 
                         //Transform the raw skeletons, if the user requested it
                         if (tempSettings.transformRawSkeletons)
@@ -483,43 +515,89 @@ namespace KinectWithVRServer
                         }
                     }
 
-                    //Merge the skeletons into the ones collected by the other Kinects
-                    if (tempSettings.mergeSkeletons)
-                    {
-                        //Copy the skeletons to a temporary variable
-                        KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
-                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
-
-                        //Transform the skeletons
-                        for (int i = 0; i < skeletons.Length; i++)
-                        {
-                            skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
-                        }
-
-                        //Add the skeletons to the merge list
-                        for (int i = 0; i < perKinectSkeletons.Count; i++)
-                        {
-                            if (perKinectSkeletons[i].uniqueID == kinects[e.kinectID].uniqueKinectID)
-                            {
-                                perKinectSkeletons.RemoveAt(i);
-                            }
-                        }
-                        KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
-                        kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
-                        kinectSkel.kinectID = e.kinectID;
-                        kinectSkel.utcTime = time;
-                        perKinectSkeletons.Add(kinectSkel);
-                    }
-
                     //Update the audio beam angle, if requested
-                    if (((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioTrackMode == AudioTrackingMode.LocalSkeletonX)
+                    if (tempSettings.audioTrackMode == AudioTrackingMode.LocalSkeletonX)
                     {
-                        ((KinectV1Wrapper.Core)kinects[e.kinectID]).UpdateAudioAngle(e.skeletons[((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]).audioBeamTrackSkeletonNumber].Position);
+                        ((KinectV1Wrapper.Core)kinects[e.kinectID]).UpdateAudioAngle(e.skeletons[tempSettings.audioBeamTrackSkeletonNumber].Position);
                     }
                 }
                 else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Send the raw skeletons for the Kinect v2
+                    KinectV2Wrapper.Settings tempSettings = (KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID];
+
+                    //Send the raw skeletons
+                    if (tempSettings.sendRawSkeletons)
+                    {
+                        //The skeletons need to be copied, so the e.skeletons version isn't changed when the transformation is done
+                        KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
+                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length);  //This is a shallow copy, HOWEVER, new skeleton objects will be made when the transformation is done
+
+                        //Transform the raw skeletons, if the user requested it
+                        if (tempSettings.transformRawSkeletons)
+                        {
+                            for (int i = 0; i < skeletons.Length; i++)
+                            {
+                                skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
+                            }
+                        }
+
+                        //Sort the raw skeletons
+                        List<KinectSkeleton> sortedSkeletons = SortSkeletons(new List<KinectSkeleton>(skeletons), tempSettings.rawSkeletonSettings.skeletonSortMode);
+
+                        //Transmit the skeleton data
+                        for (int i = 0; i < sortedSkeletons.Count; i++)
+                        {
+                            //Transmit the joints
+                            SendSkeletonVRPN(sortedSkeletons[i].skeleton, tempSettings.rawSkeletonSettings.individualSkeletons[i].serverName);
+
+                            //Transmit the right hand
+                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useRightHandGrip)
+                            {
+                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                            }
+
+                            //Transmit the right hand
+                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useLeftHandGrip)
+                            {
+                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                            }
+                        }
+                    }
+
+                    //Update the audio beam angle, if requested
+                    if (tempSettings.audioTrackMode == AudioTrackingMode.LocalSkeletonX)
+                    {
+                        ((KinectV2Wrapper.Core)kinects[e.kinectID]).UpdateAudioAngle(e.skeletons[tempSettings.audioBeamTrackSkeletonNumber].Position);
+                    }
+                }
+
+                //Merge the skeletons into the ones collected by the other Kinects
+                //Note: this is code works for all types of Kinects
+                if (serverMasterOptions.kinectOptionsList[e.kinectID].mergeSkeletons)
+                {
+                    //Copy the skeletons to a temporary variable
+                    KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
+                    Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
+
+                    //Transform the skeletons
+                    for (int i = 0; i < skeletons.Length; i++)
+                    {
+                        skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
+                    }
+
+                    //Add the skeletons to the merge list
+                    for (int i = 0; i < perKinectSkeletons.Count; i++)
+                    {
+                        if (perKinectSkeletons[i].uniqueID == kinects[e.kinectID].uniqueKinectID)
+                        {
+                            perKinectSkeletons.RemoveAt(i);
+                        }
+                    }
+                    KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
+                    kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
+                    kinectSkel.kinectID = e.kinectID;
+                    kinectSkel.utcTime = time;
+                    perKinectSkeletons.Add(kinectSkel);
                 }
             }
         }
@@ -603,7 +681,10 @@ namespace KinectWithVRServer
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
-
+                    if (((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).audioTrackMode == AudioTrackingMode.MergedSkeletonX)
+                    {
+                        ((KinectV2Wrapper.Core)kinects[i]).UpdateAudioAngle(sortedSkeletons[((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).audioBeamTrackSkeletonNumber].Position);
+                    }
                 }
             }
         }
@@ -1290,7 +1371,10 @@ namespace KinectWithVRServer
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Add parsing for Kinect v2 raw skeleton transmission
+                    if (((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).sendRawSkeletons)
+                    {
+                        settingsValid &= parseIndividualSkeletons(((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]).rawSkeletonSettings.individualSkeletons, ref errorMessage);
+                    }
                 }
             }
             #endregion
@@ -1412,7 +1496,6 @@ namespace KinectWithVRServer
             //}
             #endregion
 
-            //TODO: Reimplement this in a way that works with the interface
             #region Parse the per Kinect (acceleration and audio angle) settings
             for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
             {
@@ -1422,12 +1505,9 @@ namespace KinectWithVRServer
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Pasrse the per kinect options for the Kinect v2
+                    settingsValid &= parseKinectV2Settings(((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i]), ref errorMessage);
                 }
-                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
-                {
-                    //TODO: Parse the per kinect options for the networked kinects
-                }
+                //The networked Kinect sensors don't need a per Kinect parser because they are only used for skeleton merging
             }
             #endregion
 
@@ -1723,6 +1803,69 @@ namespace KinectWithVRServer
                     settingsValid = false;
                     errorMessage += "Kinect " + settings.kinectID.ToString() + " acceleration server name (\"" + settings.accelerationServerName + "\") is invalid.\r\n";
                 }
+            }
+
+            //Parse audio source angle options
+            if (settings.sendAudioAngle)
+            {
+                if (isServerNameValid(settings.audioAngleServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.analogServers.Count; j++)
+                    {
+                        if (serverMasterOptions.analogServers[j].serverName == settings.audioAngleServerName)
+                        {
+                            found = true;
+
+                            if (isServerAnalogChannelValid(settings.audioAngleChannel))
+                            {
+                                if (!serverMasterOptions.analogServers[j].uniqueChannels.Contains(settings.audioAngleChannel))
+                                {
+                                    serverMasterOptions.analogServers[j].uniqueChannels.Add(settings.audioAngleChannel);
+                                }
+                            }
+                            else
+                            {
+                                settingsValid = false;
+                                errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server channel (" + settings.audioAngleChannel.ToString() + ") is invalid.\r\n";
+                            }
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        AnalogServerSettings temp = new AnalogServerSettings();
+                        temp.serverName = settings.audioAngleServerName;
+                        temp.uniqueChannels = new List<int>();
+                        if (isServerAnalogChannelValid(settings.audioAngleChannel))
+                        {
+                            temp.uniqueChannels.Add(settings.audioAngleChannel);
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server channel (" + settings.audioAngleChannel.ToString() + ") is invalid.\r\n";
+                        }
+                        serverMasterOptions.analogServers.Add(temp);
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server name (\"" + settings.audioAngleServerName + "\") is invalid.\r\n";
+                }
+            }
+
+            return settingsValid;
+        }
+        private bool parseKinectV2Settings(KinectV2Wrapper.Settings settings, ref string errorMessage)
+        {
+            bool settingsValid = true;
+            if (errorMessage == null)
+            {
+                errorMessage = "";
             }
 
             //Parse audio source angle options

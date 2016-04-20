@@ -247,6 +247,7 @@ namespace KinectV1Core
         {
             if (kinect.AudioSource != null)
             {
+                //Calculate and set the audio angle, in degrees, that we want the Kinect to listen to
                 double angle = Math.Atan2(position.X - masterKinectSettings.kinectPosition.X, position.Z - masterKinectSettings.kinectPosition.Z) * (180.0 / Math.PI);
                 kinect.AudioSource.ManualBeamAngle = angle; //This will be rounded automatically to the nearest 10 degree increment, in the range -50 to 50 degrees
             }
