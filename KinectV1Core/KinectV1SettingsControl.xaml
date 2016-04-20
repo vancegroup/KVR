@@ -36,40 +36,6 @@
                         <Button Name="advancedColorButton" Content="Advanced Color" Margin="2" Click="advancedColorButton_Click"/>
                     </StackPanel>
                 </GroupBox>
-                <GroupBox Header="Skeleton Settings">
-                    <StackPanel Orientation="Vertical">
-                        <CheckBox Name="UseSkeletonCheckBox" Content="Merge Skeletons" Margin="0,2,0,2" IsChecked="True" Checked="UseSkeletonCheckBox_CheckChanged" Unchecked="UseSkeletonCheckBox_CheckChanged"/>
-                        <CheckBox Name="UseRawSkeletonCheckBox" Content="Send Raw Skeletons" Margin="0,2,0,2" IsChecked="False" Checked="UseRawSkeletonCheckBox_Checked" Unchecked="UseRawSkeletonCheckBox_Unchecked"/>
-                        <CheckBox Name="XFormRawSkeletonCheckBox" Content="Transform Raw Pos." Margin="20,2,0,2" IsChecked="False" IsEnabled="False" Checked="XFormRawSkeletonCheckBox_Checked" Unchecked="XFormRawSkeletonCheckBox_Checked" ToolTip="Indicates if the raw skeletons should be transformed into the global coordinate system using the Kinect position settings."/>
-                        <CheckBox Name="SeatedModeCheckBox" Content="Seated Mode" Margin="0,2,0,2" IsChecked="False"/>
-                    </StackPanel>
-                </GroupBox>
-            </StackPanel>
-            <StackPanel Orientation="Vertical" Grid.Column="1" Grid.RowSpan="2">     
-                <GroupBox Header="Depth Settings" Grid.Column="1">
-                    <StackPanel Orientation="Vertical">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Orientation="Vertical">
-                                <TextBlock Text="Resolution:" Margin="2"/>
-                                <ComboBox Name="depthResComboBox" SelectedIndex="0" Margin="0, 2, 0, 2" SelectionChanged="depthResComboBox_SelectionChanged">
-                                    <ComboBoxItem Content="640 x 480"/>
-                                    <ComboBoxItem Content="320 x 240"/>
-                                    <ComboBoxItem Content="80 x 60"/>
-                                </ComboBox>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Vertical">
-                                <CheckBox Name="irOnCheckBox" Content="IR On" IsChecked="True" Margin="2" Checked="irOnCheckBox_CheckChanged" Unchecked="irOnCheckBox_CheckChanged"/>
-                                <CheckBox Name="nearModeCheckBox" Content="Near Mode" IsChecked="False" Margin="2" Checked="nearModeCheckBox_CheckChanged" Unchecked="nearModeCheckBox_CheckChanged"/>
-                            </StackPanel>
-                        </Grid>
-                        <CheckBox Name="ScaleDepthCheckBox" Content="Scale Depth Preview" Margin="2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
-                        <CheckBox Name="ColorDepthCheckBox" Content="Colorize Depth Preview" Margin="2" Checked="ColorDepthCheckBox_CheckChanged" Unchecked="ColorDepthCheckBox_CheckChanged"/>
-                    </StackPanel>
-                </GroupBox>
                 <GroupBox Header="Audio Settings">
                     <StackPanel Orientation="Vertical">
                         <CheckBox Name="SendSoundAngleCheckBox" Content="Send Source Angle" Margin="2" Checked="SendSoundAngleCheckBox_Checked" Unchecked="SendSoundAngleCheckBox_Unchecked"/>
@@ -106,79 +72,115 @@
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
-            <GroupBox Header="Physical Settings" Grid.Column="2" Grid.RowSpan="2">
-                <StackPanel Orientation="Vertical">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Acceleration: (" Margin="2,2,0,2"/>
-                        <TextBlock Name="AccelXTextBlock" Text="0.00" Margin="0,2,0,2"/>
-                        <TextBlock Text=", " Margin="0,2,0,2"/>
-                        <TextBlock Name="AccelYTextBlock" Text="0.00" Margin="0,2,0,2"/>
-                        <TextBlock Text=", " Margin="0,2,0,2"/>
-                        <TextBlock Name="AccelZTextBlock" Text="0.00" Margin="0,2,0,2"/>
-                        <TextBlock Text=")" Margin="0,2,0,2"/>
+            <StackPanel Orientation="Vertical" Grid.Column="1" Grid.RowSpan="2">     
+                <GroupBox Header="Depth Settings" Grid.Column="1">
+                    <StackPanel Orientation="Vertical">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="Resolution:" Margin="2"/>
+                                <ComboBox Name="depthResComboBox" SelectedIndex="0" Margin="0, 2, 0, 2" SelectionChanged="depthResComboBox_SelectionChanged">
+                                    <ComboBoxItem Content="640 x 480"/>
+                                    <ComboBoxItem Content="320 x 240"/>
+                                    <ComboBoxItem Content="80 x 60"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <CheckBox Name="irOnCheckBox" Content="IR On" IsChecked="True" Margin="2" Checked="irOnCheckBox_CheckChanged" Unchecked="irOnCheckBox_CheckChanged"/>
+                                <CheckBox Name="nearModeCheckBox" Content="Near Mode" IsChecked="False" Margin="2" Checked="nearModeCheckBox_CheckChanged" Unchecked="nearModeCheckBox_CheckChanged"/>
+                            </StackPanel>
+                        </Grid>
+                        <CheckBox Name="ScaleDepthCheckBox" Content="Scale Depth Preview" Margin="2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
+                        <CheckBox Name="ColorDepthCheckBox" Content="Colorize Depth Preview" Margin="2" Checked="ColorDepthCheckBox_CheckChanged" Unchecked="ColorDepthCheckBox_CheckChanged"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Angle: " Margin="2,2,0,2"/>
-                        <TextBlock Name="AngleTextBlock" Text="00" Margin="0,2,0,2"/>
-                        <TextBlock Text="°" Margin="0,2,0,2"/>
+                </GroupBox>
+                <GroupBox Header="Skeleton Settings">
+                    <StackPanel Orientation="Vertical">
+                        <CheckBox Name="UseSkeletonCheckBox" Content="Merge Skeletons" Margin="0,2,0,2" IsChecked="True" Checked="UseSkeletonCheckBox_CheckChanged" Unchecked="UseSkeletonCheckBox_CheckChanged"/>
+                        <CheckBox Name="UseRawSkeletonCheckBox" Content="Send Raw Skeletons" Margin="0,2,0,2" IsChecked="False" Checked="UseRawSkeletonCheckBox_Checked" Unchecked="UseRawSkeletonCheckBox_Unchecked"/>
+                        <CheckBox Name="XFormRawSkeletonCheckBox" Content="Transform Raw Pos." Margin="20,2,0,2" IsChecked="False" IsEnabled="False" Checked="XFormRawSkeletonCheckBox_Checked" Unchecked="XFormRawSkeletonCheckBox_Checked" ToolTip="Indicates if the raw skeletons should be transformed into the global coordinate system using the Kinect position settings."/>
+                        <CheckBox Name="SeatedModeCheckBox" Content="Seated Mode" Margin="0,2,0,2" IsChecked="False"/>
                     </StackPanel>
-                    <CheckBox Name="SendAccelCheckBox" Content="Send Acceleration" Checked="SendAccelCheckBox_Checked" Unchecked="SendAccelCheckBox_Unchecked"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Server:" VerticalAlignment="Center"/>
-                        <TextBox Name="accelServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="accelServerTextBox_TextChanged"/>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <TextBlock Text="Channels:" VerticalAlignment="Center" Grid.ColumnSpan="6"/>
-                        <TextBlock Text="X:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="0"/>
-                        <TextBox Name="accelXChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="1" IsEnabled="False" TextChanged="accelXChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
-                        <TextBlock Text="Y:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="2"/>
-                        <TextBox Name="accelYChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="3" IsEnabled="False" TextChanged="accelYChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
-                        <TextBlock Text="Z:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="4"/>
-                        <TextBox Name="accelZChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="5" IsEnabled="False" TextChanged="accelZChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                    <TextBlock Text="Position (m):"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="X:" VerticalAlignment="Center"/>
-                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                        <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
-                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                        <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
-                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                </StackPanel>
-            </GroupBox>
+                </GroupBox>
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="2" Grid.RowSpan="2">
+                <GroupBox Header="Physical Settings">
+                    <StackPanel Orientation="Vertical">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Acceleration: (" Margin="2,2,0,2"/>
+                            <TextBlock Name="AccelXTextBlock" Text="0.00" Margin="0,2,0,2"/>
+                            <TextBlock Text=", " Margin="0,2,0,2"/>
+                            <TextBlock Name="AccelYTextBlock" Text="0.00" Margin="0,2,0,2"/>
+                            <TextBlock Text=", " Margin="0,2,0,2"/>
+                            <TextBlock Name="AccelZTextBlock" Text="0.00" Margin="0,2,0,2"/>
+                            <TextBlock Text=")" Margin="0,2,0,2"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Angle: " Margin="2,2,0,2"/>
+                            <TextBlock Name="AngleTextBlock" Text="00" Margin="0,2,0,2"/>
+                            <TextBlock Text="°" Margin="0,2,0,2"/>
+                        </StackPanel>
+                        <CheckBox Name="SendAccelCheckBox" Content="Send Acceleration" Checked="SendAccelCheckBox_Checked" Unchecked="SendAccelCheckBox_Unchecked"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Server:" VerticalAlignment="Center"/>
+                            <TextBox Name="accelServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="accelServerTextBox_TextChanged"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Channels:" VerticalAlignment="Center" Grid.ColumnSpan="6"/>
+                            <TextBlock Text="X:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="0"/>
+                            <TextBox Name="accelXChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="1" IsEnabled="False" TextChanged="accelXChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
+                            <TextBlock Text="Y:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="2"/>
+                            <TextBox Name="accelYChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="3" IsEnabled="False" TextChanged="accelYChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
+                            <TextBlock Text="Z:" VerticalAlignment="Center" Margin="2" Grid.Row="1" Grid.Column="4"/>
+                            <TextBox Name="accelZChannelTextBox" Margin="2" Grid.Row="1" Grid.Column="5" IsEnabled="False" TextChanged="accelZChannelTextBox_TextChanged" PreviewKeyDown="intNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                        <TextBlock Text="Position (m):"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="X:" VerticalAlignment="Center"/>
+                            <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                            <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
+                            <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                            <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
+                            <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
+                            <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
         </Grid>
     </ScrollViewer>
 </UserControl>
