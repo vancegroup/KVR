@@ -119,6 +119,8 @@
     <Compile Include="NetworkKinectWrapper\NKSettingsControl.xaml.cs">
       <DependentUpon>NKSettingsControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Shaders\ColorDepthEffect\ColorDepthEffectWrapper.cs" />
+    <Compile Include="Shaders\ColorScaleEffect\ColorScaleEffectWrapper.cs" />
     <Compile Include="Shaders\DepthScalingEffect\DepthScalingEffectWrapper.cs" />
     <Compile Include="FeedbackCore.cs" />
     <Compile Include="HelperMethods.cs" />
@@ -236,10 +238,16 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Shaders\ColorDepthEffect\ColorDepthEffect.ps" />
+    <Resource Include="Shaders\ColorScaleEffect\ColorScaleEffect.ps" />
     <None Include="Shaders\NoScalingEffect\NoScalingEffect.fx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DepthScalingEffect\DepthScalingEffect.fx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\ColorDepthEffect\ColorDepthEffect.fx" />
+    <None Include="Shaders\ColorScaleEffect\ColorScaleEffect.fx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

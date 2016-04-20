@@ -67,7 +67,7 @@
                             </StackPanel>
                         </Grid>
                         <CheckBox Name="ScaleDepthCheckBox" Content="Scale Depth Preview" Margin="2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
-                        <CheckBox Name="ColorDepthCheckBox" Content="Colorize Depth Preview" Margin="2" IsEnabled="False" Checked="ColorDepthCheckBox_CheckChanged" Unchecked="ColorDepthCheckBox_CheckChanged"/>
+                        <CheckBox Name="ColorDepthCheckBox" Content="Colorize Depth Preview" Margin="2" Checked="ColorDepthCheckBox_CheckChanged" Unchecked="ColorDepthCheckBox_CheckChanged"/>
                     </StackPanel>
                 </GroupBox>
                 <GroupBox Header="Audio Settings">

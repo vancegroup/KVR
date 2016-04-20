@@ -710,15 +710,18 @@ namespace KinectWithVRServer
                     {
                         if (server.kinects[j].uniqueKinectID == availableKinects[i].UniqueID)
                         {
-                            availableKinects[i].ServerStatus = "Stopping";
-                            kinectsAvailableDataGrid.Items.Refresh();
-                            kinectsAvailableDataGrid.UpdateLayout();
-                            System.Threading.Thread.Sleep(10);
-                            ForceGUIUpdate();
-                            server.kinects[j].ShutdownSensor();
-                            server.kinects.RemoveAt(j);
-                            availableKinects[i].ServerStatus = "Stopped";
-                            break;
+                            lock (server.kinects)
+                            {
+                                availableKinects[i].ServerStatus = "Stopping";
+                                kinectsAvailableDataGrid.Items.Refresh();
+                                kinectsAvailableDataGrid.UpdateLayout();
+                                System.Threading.Thread.Sleep(10);
+                                ForceGUIUpdate();
+                                server.kinects[j].ShutdownSensor();
+                                server.kinects.RemoveAt(j);
+                                availableKinects[i].ServerStatus = "Stopped";
+                                break;
+                            }
                         }
                     }
                 }
@@ -1136,7 +1139,10 @@ namespace KinectWithVRServer
 
                 if (scale && colorize)
                 {
-                    //TODO: Setup the scale and colorize shader here
+                    Shaders.ColorScaleEffect effect = new Shaders.ColorScaleEffect();
+                    effect.Minimum = depthMin;
+                    effect.Maximum = depthMax;
+                    depthEffect = effect;
                 }
                 else if (scale && !colorize)
                 {
@@ -1147,7 +1153,10 @@ namespace KinectWithVRServer
                 }
                 else if (!scale && colorize)
                 {
-                    //TODO: Setup the colorizer shader here
+                    Shaders.ColorDepthEffect effect = new Shaders.ColorDepthEffect();
+                    effect.Minimum = depthMin;
+                    effect.Maximum = depthMax;
+                    depthEffect = effect;
                 }
                 else //Convert from the bgr32 back to a gray16, but don't do any shading otherwise
                 {
@@ -1160,16 +1169,22 @@ namespace KinectWithVRServer
         void UpdateShaderMinMax(float min, float max)
         {
             //Check if the min or max has changed, and update it accordingly if needed
-            if (scaleDepth)
+            if (scaleDepth || colorDepth)
             {
                 if (depthMin != min || depthMax != max)
                 {
                     depthMin = min;
                     depthMax = max;
 
-                    if (colorDepth)
+                    if (colorDepth && scaleDepth)
                     {
-                        //TODO: Update the scaleAndColorShader
+                        ((Shaders.ColorScaleEffect)depthEffect).Minimum = min;
+                        ((Shaders.ColorScaleEffect)depthEffect).Maximum = max;
+                    }
+                    else if (colorDepth)
+                    {
+                        ((Shaders.ColorDepthEffect)depthEffect).Minimum = min;
+                        ((Shaders.ColorDepthEffect)depthEffect).Maximum = max;
                     }
                     else
                     {

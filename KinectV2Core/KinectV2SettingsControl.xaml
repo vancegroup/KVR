@@ -26,7 +26,7 @@
                 <GroupBox Header="Depth Preview Settings" Grid.Column="1">
                     <StackPanel Orientation="Vertical">
                         <CheckBox Name="ScaleDepthCheckBox" Content="Scale Depth to Reliable Range" Margin="0,2,0,2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
-                        <CheckBox Name="ColorizeDepthCheckBox" Content="Colorize Depth" Margin="0,2,0,2" IsEnabled="False" Checked="ColorizeDepthCheckBox_CheckChanged" Unchecked="colorPreviewRadioButton_CheckChanged"/>
+                        <CheckBox Name="ColorizeDepthCheckBox" Content="Colorize Depth" Margin="0,2,0,2" Checked="ColorizeDepthCheckBox_CheckChanged" Unchecked="ColorizeDepthCheckBox_CheckChanged"/>
                     </StackPanel>
                 </GroupBox>
                 <GroupBox Header="Skeleton Settings">
