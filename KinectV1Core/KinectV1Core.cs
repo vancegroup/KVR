@@ -56,7 +56,7 @@ namespace KinectV1Core
         private Vector4 lastAcceleration;
         private bool isColorStreamOn = false;
         private bool isDepthStreamOn = false;
-        public bool? isXbox360Kinect = null;  //TODO: Can this be made internal?  It isn't used outside this assembly, unless the XAML parser uses it
+        internal bool? isXbox360Kinect = null;
         private bool isGUI = false;
         private System.IO.Stream audioStream = null;
 
@@ -217,7 +217,7 @@ namespace KinectV1Core
             }
         }
 
-        public void ChangeColorResolution(KinectBase.ColorImageFormat newResolution)  //TODO: Internal?
+        internal void ChangeColorResolution(KinectBase.ColorImageFormat newResolution)
         {
             kinect.ColorStream.Disable();
             if (newResolution != KinectBase.ColorImageFormat.Undefined)
@@ -230,7 +230,7 @@ namespace KinectV1Core
                 isColorStreamOn = false;
             }
         }
-        public void ChangeDepthResolution(KinectBase.DepthImageFormat newResolution)  //TODO: Internal?
+        internal void ChangeDepthResolution(KinectBase.DepthImageFormat newResolution)
         {
             kinect.DepthStream.Disable();
             if (newResolution != KinectBase.DepthImageFormat.Undefined)
@@ -556,7 +556,6 @@ namespace KinectV1Core
                         interactStream.ProcessDepth(frame.GetRawPixelData(), frame.Timestamp);
                     }
 
-                    //TODO: Handle this differently to get the raw depth as a UInt 16
                     KinectBase.DepthFrameEventArgs depthE = new KinectBase.DepthFrameEventArgs();
                     depthE.kinectID = this.kinectID;
                     depthE.perPixelExtra = 2;
@@ -579,8 +578,6 @@ namespace KinectV1Core
                     }
 
                     OnDepthFrameReceived(depthE);
-
-                    //TODO: Subscribe the server to this event to transmit the depth data using the imager
                 }
             }
         }
@@ -607,8 +604,6 @@ namespace KinectV1Core
                     colorE.image = new byte[frame.PixelDataLength];
                     frame.CopyPixelDataTo(colorE.image);
                     OnColorFrameReceived(colorE);
-
-                    //TODO: Subscribe the server to this to send the color frame over VRPN
                 }
             }
         }

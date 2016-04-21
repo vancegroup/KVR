@@ -406,7 +406,6 @@ namespace KinectV1Core
         }
         private void nearModeCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            //TODO: Reimplement near mode control somehow
             if ((bool)nearModeCheckBox.IsChecked)
             {
                 try

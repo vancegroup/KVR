@@ -48,18 +48,30 @@ namespace KinectWithVRServer
                     }
                     else
                     {
-                        Console.WriteLine("Cannot load Kinect v1 with ID: server.serverMasterOptions.kinectOptionsList[i].kinectID due to missing DLLs.");
+                        Console.WriteLine("Cannot load Kinect v1 with ID: {0} due to missing DLLs.", server.serverMasterOptions.kinectOptionsList[i].kinectID);
                     }
                 }
                 else if (server.serverMasterOptions.kinectOptionsList[i].version == KinectBase.KinectVersion.KinectV2)
                 {
-                    //TODO: Implement opening kinect V2s from the console
-                    Console.WriteLine("Kinect number {0} is a Kinect V2, which is not yet supported.", i);
+                    if (dlls.HasKinectV2)
+                    {
+                        server.kinects.Add(new KinectV2Wrapper.Core(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Cannot load Kinect v2 with ID: {0} due to missing DLLs.", server.serverMasterOptions.kinectOptionsList[i].kinectID);
+                    }
                 }
                 else if (server.serverMasterOptions.kinectOptionsList[i].version == KinectBase.KinectVersion.NetworkKinect)
                 {
-                    //TODO: Implement opening networked kinects from the console
-                    Console.WriteLine("Kinect number {0} is a networked Kinect, which is not yet supported.", i);
+                    if (dlls.HasKinectV2)
+                    {
+                        server.kinects.Add(new NetworkKinectWrapper.Core(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Cannot load network Kinect with ID: {0} due to missing DLLs.", server.serverMasterOptions.kinectOptionsList[i].kinectID);
+                    }
                 }
                 else
                 {

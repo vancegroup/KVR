@@ -52,24 +52,21 @@ namespace KinectV2Core
         }
         public bool ColorStreamEnabled
         {
-            //get { return isColorStreamOn; }
+            //There is no option to disable the color stream on the Kinect 2
             get { return true; }
         }
         public bool DepthStreamEnabled
         {
-            get { return isDepthStreamOn; }
+            //There is no option to disable the depth stream on the Kinect 2
+            get { return true; }
         }
 
         KinectBase.MasterSettings masterSettings;
         internal KinectV2Settings masterKinectSettings;
-        private bool isColorStreamOn = false;
-        private bool isDepthStreamOn = false;
-        private System.Timers.Timer updateTimer;
         public KinectBase.KinectSkeletonsData skeletonData;
         private Matrix3D skeletonTransformation = Matrix3D.Identity;
         private Quaternion skeletonRotQuaternion = Quaternion.Identity;
-        private Vector4 lastAcceleration;
-        private BodyFrameReader skeletonReader;  //TODO: The readers need to be disposed
+        private BodyFrameReader skeletonReader;
         private DepthFrameReader depthReader;
         private ColorFrameReader colorReader;
         private InfraredFrameReader irReader;
@@ -90,6 +87,8 @@ namespace KinectV2Core
         public KinectCoreV2(ref KinectBase.MasterSettings settings, bool isGUILaunched, int kinectNumber)
         {
             masterSettings = settings;
+            dynamic temp = masterSettings.kinectOptionsList[kinectNumber];
+            masterKinectSettings = (KinectV2Settings)temp;
 
             //TODO: Update this to open a specific Kinect v2, if the SDK is ever updated to support multiple on one machine
             kinect = KinectSensor.GetDefault();
@@ -105,6 +104,46 @@ namespace KinectV2Core
                 launchKinectDelegate kinectDelegate = LaunchKinect;
                 IAsyncResult result = kinectDelegate.BeginInvoke(null, null);
                 kinectDelegate.EndInvoke(result);  //Even though this is blocking, the events should be on a different thread now.
+            }
+        }
+        ~KinectCoreV2()
+        {
+            //Dispose all the objects if the shutdown sensor methdo didn't get called somehow
+            if (skeletonReader != null)
+            {
+                skeletonReader.FrameArrived -= skeletonReader_FrameArrived;
+                skeletonReader.Dispose();
+                skeletonReader = null;
+            }
+            if (depthReader != null)
+            {
+                depthReader.FrameArrived -= depthReader_FrameArrived;
+                depthReader.Dispose();
+                depthReader = null;
+            }
+            if (colorReader != null)
+            {
+                colorReader.FrameArrived -= colorReader_FrameArrived;
+                colorReader.Dispose();
+                colorReader = null;
+            }
+            if (irReader != null)
+            {
+                irReader.FrameArrived -= irReader_FrameArrived;
+                irReader.Dispose();
+                irReader = null;
+            }
+            if (audioStream != null)
+            {
+                audioStream.Close();
+                audioStream.Dispose();
+                audioStream = null;
+            }
+            if (audioReader != null)
+            {
+                audioReader.FrameArrived -= audioReader_FrameArrived;
+                audioReader.Dispose();
+                audioReader = null;
             }
         }
         public void ShutdownSensor()

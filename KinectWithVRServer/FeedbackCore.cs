@@ -92,7 +92,6 @@ namespace KinectWithVRServer
         {
             if (e.Sensor == watchedSensor)
             {
-                //TODO: Does the feedback position need to be written to the GUI?
                 server.feedbackPosition = (System.Windows.Media.Media3D.Point3D)e.Position;
 
                 System.Diagnostics.Debug.WriteLine("Position: " + server.feedbackPosition.Value.X + ", " + server.feedbackPosition.Value.Y + ", " + server.feedbackPosition.Value.Z);
@@ -112,7 +111,10 @@ namespace KinectWithVRServer
                 }
                 else if (server.kinects[i].version == KinectBase.KinectVersion.KinectV2)
                 {
-                    //TODO: Call the update method for the KinectV2 audio angle beamforming
+                    if (((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).audioTrackMode == KinectBase.AudioTrackingMode.Feedback)
+                    {
+                        ((KinectV2Wrapper.Core)server.kinects[i]).UpdateAudioAngle(feedbackPosition);
+                    }
                 }
             }
         }

@@ -34,12 +34,6 @@ namespace KinectV2Core
             SkeletonSettingsDataGrid.Items.Refresh();
         }
 
-        //TODO: Does the Kinect v2 support seated mode?
-        //Changes if the skeleton tracking is in seated mode
-        private void ChooseSeatedCheckBox_CheckChanged(object sender, RoutedEventArgs e)
-        {
-            parent.kinectSettings.rawSkeletonSettings.isSeatedMode = (bool)ChooseSeatedCheckBox.IsChecked;
-        }
         //Controls which skeleton sorting mode is used
         private void SkelSortModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

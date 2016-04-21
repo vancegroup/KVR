@@ -10,8 +10,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Height="27">
-            <CheckBox Content="Seated Mode" Margin="2" Name="ChooseSeatedCheckBox" VerticalAlignment="Center" Checked="ChooseSeatedCheckBox_CheckChanged" Unchecked="ChooseSeatedCheckBox_CheckChanged"/>
-            <TextBlock Text="Skeleton Sort Mode:" Margin="20,2,2,2" VerticalAlignment="Center"/>
+            <TextBlock Text="Skeleton Sort Mode:" Margin="2,2,2,2" VerticalAlignment="Center"/>
             <ComboBox Margin="2" Name="SkelSortModeComboBox" SelectionChanged="SkelSortModeComboBox_SelectionChanged" Width="250">
                 <ComboBoxItem Content="None"/>
                 <ComboBoxItem Content="Ascending X-Distance from Origin"/>

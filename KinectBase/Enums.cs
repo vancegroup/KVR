@@ -34,7 +34,6 @@ namespace KinectBase
     public enum BacklightCompensationMode { AverageBrightness = 0, CenterPriority = 1, LowlightsPriority = 2, CenterOnly = 4 };
     public enum DepthImageFormat { Undefined = 0, Resolution640x480Fps30 = 1, Resolution320x240Fps30 = 2, Resolution80x60Fps30 = 3 };
 
-    //TODO: Need to hide CommandType and ServerType from visible columns
     public enum CommandType { Voice, Gesture/*, Analog */}
     public enum ServerType { Button, Analog, Tracker, Text, Imager }
     public enum ButtonType { Setter, Toggle, Momentary }

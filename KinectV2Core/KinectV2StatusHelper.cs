@@ -69,8 +69,16 @@ namespace KinectV2Core
                 }
                 else
                 {
-                    temp.Status = KinectBase.KinectStatus.Disconnected;
-                    System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected (static method).");
+                    if (tempKinect.IsOpen)
+                    {
+                        temp.Status = KinectBase.KinectStatus.NotReady;
+                        System.Diagnostics.Debug.WriteLine("Kinect 2 not ready (static method).");
+                    }
+                    else
+                    {
+                        temp.Status = KinectBase.KinectStatus.Disconnected;
+                        System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected (static method).");
+                    }
                 }
                 statusArray[i] = temp;
             }
@@ -90,12 +98,19 @@ namespace KinectV2Core
                 }
                 else
                 {
-                    //TODO: Is this the correct status to give if the Kinect v2 isn't avaliable??
-                    args.Status = KinectBase.KinectStatus.Disconnected;
+                    if (KinectSensor.GetDefault().IsOpen)
+                    {
+                        args.Status = KinectBase.KinectStatus.NotReady;
+                        System.Diagnostics.Debug.WriteLine("Kinect 2 not ready (event).");
+                    }
+                    else
+                    {
+                        args.Status = KinectBase.KinectStatus.Disconnected;
+                        System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected (event).");
+                    }
                 }
                 args.KinectNumber = 0; //This is always 0 because the Kinect v2 only supports 1 Kinect
                 args.UniqueKinectID = KinectSensor.GetDefault().UniqueKinectId;
-                System.Diagnostics.Debug.WriteLine("Kinect 2 disconnected (event).");
 
                 OnKinectV2StatusChanged(args);
             }

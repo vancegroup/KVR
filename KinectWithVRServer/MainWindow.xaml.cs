@@ -1095,7 +1095,6 @@ namespace KinectWithVRServer
                 ColorImageCanvas.Children.Clear();
                 for (int i = 0; i < e.skeletons.Length; i++)
                 {
-                    //TODO: Map the rendering color to the merged skeleton colors?
                     RenderSkeletonOnColor(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID);
                 }
             }
@@ -1109,7 +1108,6 @@ namespace KinectWithVRServer
                 DepthImageCanvas.Children.Clear();
                 for (int i = 0; i < e.skeletons.Length; i++)
                 {
-                    //TODO: Map the rendering color to the merged skeleton colors?
                     RenderSkeletonOnDepth(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID);
                 }
             }

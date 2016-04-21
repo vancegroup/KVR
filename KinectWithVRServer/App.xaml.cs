@@ -102,7 +102,6 @@ namespace KinectWithVRServer
 
                     if (connected)
                     {
-                        //TODO: This call fails when one of the Kinects does not exist.  Why? Because the Kinect start call needs to be wrapped in another file to delay the dll load and prevent a failure.
                         ConsoleUI.RunServerInConsole(verbose, autoStart, startupFile, dlls);
                     }
                 }

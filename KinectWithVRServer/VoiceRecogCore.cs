@@ -101,7 +101,8 @@ namespace KinectWithVRServer
                 }
                 else if (server.kinects[server.serverMasterOptions.audioOptions.sourceID].version == KinectVersion.KinectV2)
                 {
-                    //TODO: Start Kinect v2 audio for voice recognition
+                    ((KinectV2Wrapper.Core)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).StartKinectAudio();
+                    audioStream = ((KinectV2Wrapper.Core)server.kinects[server.serverMasterOptions.audioOptions.sourceID]).GetKinectAudioStream();
                 }
                 
                 engine.SetInputToAudioStream(audioStream, new Microsoft.Speech.AudioFormat.SpeechAudioFormatInfo(Microsoft.Speech.AudioFormat.EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
