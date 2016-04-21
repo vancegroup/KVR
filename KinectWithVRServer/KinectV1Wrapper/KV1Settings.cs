@@ -122,6 +122,16 @@ namespace KinectWithVRServer.KinectV1Wrapper
             get { return realSettings.WhiteBalance; }
             set { realSettings.WhiteBalance = value; }
         }
+        public bool sendColorImage
+        {
+            get { return realSettings.sendColorImage; }
+            set { realSettings.sendColorImage = value; }
+        }
+        public string colorServerName
+        {
+            get { return realSettings.colorServerName; }
+            set { realSettings.colorServerName = value; }
+        }
         #endregion
         #region Depth Settings
         public DepthImageFormat depthImageMode
@@ -148,6 +158,16 @@ namespace KinectWithVRServer.KinectV1Wrapper
         {
             get { return realSettings.colorizeDepth; }
             set { realSettings.colorizeDepth = value; }
+        }
+        public bool sendDepthImage
+        {
+            get { return realSettings.sendDepthImage; }
+            set { realSettings.sendDepthImage = value; }
+        }
+        public string depthServerName
+        {
+            get { return realSettings.depthServerName; }
+            set { realSettings.depthServerName = value; }
         }
         #endregion
         #region Skeleton and Physical Settings

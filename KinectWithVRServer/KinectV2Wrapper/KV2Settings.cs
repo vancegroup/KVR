@@ -56,6 +56,26 @@ namespace KinectWithVRServer.KinectV2Wrapper
             get { return realSettings.useIRPreview; }
             set { realSettings.useIRPreview = value; }
         }
+        public bool sendColorImage
+        {
+            get { return realSettings.sendColorImage; }
+            set { realSettings.sendColorImage = value; }
+        }
+        public string colorServerName
+        {
+            get { return realSettings.colorServerName; }
+            set { realSettings.colorServerName = value; }
+        }
+        public bool sendIRImage
+        {
+            get { return realSettings.sendIRImage; }
+            set { realSettings.sendIRImage = value; }
+        }
+        public string irServerName
+        {
+            get { return realSettings.irServerName; }
+            set { realSettings.irServerName = value; }
+        }
         #endregion
 
         #region Depth Settings
@@ -68,6 +88,16 @@ namespace KinectWithVRServer.KinectV2Wrapper
         {
             get { return realSettings.colorizeDepth; }
             set { realSettings.colorizeDepth = value; }
+        }
+        public bool sendDepthImage
+        {
+            get { return realSettings.sendDepthImage; }
+            set { realSettings.sendDepthImage = value; }
+        }
+        public string depthServerName
+        {
+            get { return realSettings.depthServerName; }
+            set { realSettings.depthServerName = value; }
         }
         #endregion
 

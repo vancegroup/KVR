@@ -223,6 +223,9 @@ namespace KinectBase
         {
             get { return ServerType.Imager; }
         }
+        public int rows { get; set; }
+        public int columns { get; set; }
+        public bool isColor { get; set; }
     }
 
     public class Command

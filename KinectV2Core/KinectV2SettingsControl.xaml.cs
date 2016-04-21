@@ -139,6 +139,40 @@ namespace KinectV2Core
                 kinectSettings.useIRPreview = true;
             }
         }
+        private void sendColorCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if ((bool)sendColorCheckBox.IsChecked)
+            {
+                ColorServerTextBox.IsEnabled = true;
+            }
+            else
+            {
+                ColorServerTextBox.IsEnabled = false;
+            }
+
+            kinectSettings.sendColorImage = (bool)sendColorCheckBox.IsChecked;
+        }
+        private void ColorServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.colorServerName = ColorServerTextBox.Text;
+        }
+        private void sendIRCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if ((bool)sendIRCheckBox.IsChecked)
+            {
+                IRServerTextBox.IsEnabled = true;
+            }
+            else
+            {
+                IRServerTextBox.IsEnabled = false;
+            }
+
+            kinectSettings.sendIRImage = (bool)sendIRCheckBox.IsChecked;
+        }
+        private void IRServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.irServerName = IRServerTextBox.Text;
+        }
         #endregion
 
         #region Depth Preview Option Methods
@@ -149,6 +183,23 @@ namespace KinectV2Core
         private void ColorizeDepthCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
             kinectSettings.colorizeDepth = (bool)ColorizeDepthCheckBox.IsChecked;
+        }
+        private void sendDepthCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if ((bool)sendDepthCheckBox.IsChecked)
+            {
+                DepthServerTextBox.IsEnabled = true;
+            }
+            else
+            {
+                DepthServerTextBox.IsEnabled = false;
+            }
+
+            kinectSettings.sendDepthImage = (bool)sendDepthCheckBox.IsChecked;
+        }
+        private void DepthServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.depthServerName = DepthServerTextBox.Text;
         }
         #endregion
 

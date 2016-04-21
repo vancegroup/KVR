@@ -460,6 +460,23 @@ namespace KinectV1Core
         {
             kinectSettings.colorizeDepth = (bool)ColorDepthCheckBox.IsChecked;
         }
+        private void sendDepthCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if ((bool)sendDepthCheckBox.IsChecked)
+            {
+                DepthServerTextBox.IsEnabled = true;
+            }
+            else
+            {
+                DepthServerTextBox.IsEnabled = true;
+            }
+
+            kinectSettings.sendDepthImage = (bool)sendDepthCheckBox.IsChecked;
+        }
+        private void DepthServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.depthServerName = DepthServerTextBox.Text;
+        }
         #endregion
 
         #region Color Option Methods
@@ -506,6 +523,23 @@ namespace KinectV1Core
                 kinectCore.isXbox360Kinect = true;
                 DisableK4WOnlyOptions();
             }
+        }
+        private void sendColorCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if ((bool)sendColorCheckBox.IsChecked)
+            {
+                ColorServerTextBox.IsEnabled = true;
+            }
+            else
+            {
+                ColorServerTextBox.IsEnabled = true;
+            }
+
+            kinectSettings.sendDepthImage = (bool)sendColorCheckBox.IsChecked;
+        }
+        private void ColorServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.colorServerName = ColorServerTextBox.Text;
         }
         #endregion
 

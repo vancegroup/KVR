@@ -70,6 +70,7 @@ namespace KinectBase
     {
         public byte[] image;
         public System.Windows.Media.PixelFormat pixelFormat;
+        public bool isIR;
         public int width;
         public int height;
         public int bytesPerPixel;

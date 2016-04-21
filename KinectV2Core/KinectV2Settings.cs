@@ -25,7 +25,10 @@ namespace KinectV2Core
             scaleDepthToReliableRange = true;
             colorizeDepth = false;
             sendAudioAngle = false;
-            audioTrackMode = AudioTrackingMode.Loudest;            
+            audioTrackMode = AudioTrackingMode.Loudest;
+            sendColorImage = false;
+            sendDepthImage = false;
+            sendIRImage = false;
 
             //Setup the options for the raw skeleton, irrespective of use
             rawSkeletonSettings = new SkeletonSettings();
@@ -62,11 +65,17 @@ namespace KinectV2Core
                 isColorPreview = !value;
             }
         }
+        public bool sendColorImage { get; set; }
+        public string colorServerName { get; set; }
+        public bool sendIRImage { get; set; }
+        public string irServerName { get; set; }
         #endregion
 
         #region Depth Settings
         public bool scaleDepthToReliableRange { get; set; }
         public bool colorizeDepth { get; set; }
+        public bool sendDepthImage { get; set; }
+        public string depthServerName { get; set; }
         #endregion
 
         #region Skeleton and Physical Settings

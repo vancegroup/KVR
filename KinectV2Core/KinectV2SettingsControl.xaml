@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d"
-             d:DesignHeight="222" d:DesignWidth="530">
+             d:DesignHeight="240" d:DesignWidth="530">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
         <Grid>
             <Grid.RowDefinitions>
@@ -17,16 +17,28 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Vertical" Grid.RowSpan="2">
-                <GroupBox Header="Color Preview Settings" Margin="2">
+                <GroupBox Header="Color Settings" Margin="2">
                     <StackPanel Orientation="Vertical">
-                        <RadioButton Name="useColorRadioButton" Content="Use Color Image" Margin="0,2,0,2" Checked="colorPreviewRadioButton_CheckChanged" IsChecked="True"/>
-                        <RadioButton Name="useIRRadionButton" Content="Use IR Image" Margin="0,2,0,2" Checked="colorPreviewRadioButton_CheckChanged"/>
-                    </StackPanel>
-                </GroupBox>
-                <GroupBox Header="Depth Preview Settings" Grid.Column="1">
-                    <StackPanel Orientation="Vertical">
-                        <CheckBox Name="ScaleDepthCheckBox" Content="Scale Depth to Reliable Range" Margin="0,2,0,2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
-                        <CheckBox Name="ColorizeDepthCheckBox" Content="Colorize Depth" Margin="0,2,0,2" Checked="ColorizeDepthCheckBox_CheckChanged" Unchecked="ColorizeDepthCheckBox_CheckChanged"/>
+                        <RadioButton Name="useColorRadioButton" Content="Preview Color Image" Margin="0,2,0,2" Checked="colorPreviewRadioButton_CheckChanged" IsChecked="True"/>
+                        <RadioButton Name="useIRRadionButton" Content="Preview IR Image" Margin="0,2,0,2" Checked="colorPreviewRadioButton_CheckChanged"/>
+                        <CheckBox Name="sendColorCheckBox" Content="Transmit Color Image" Checked="sendColorCheckBox_CheckChanged" Unchecked="sendColorCheckBox_CheckChanged"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="Server:"/>
+                            <TextBox Name="ColorServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="ColorServerTextBox_TextChanged"/>
+                        </Grid>
+                        <CheckBox Name="sendIRCheckBox" Content="Transmit Color Image" Checked="sendIRCheckBox_CheckChanged" Unchecked="sendIRCheckBox_CheckChanged"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="Server:"/>
+                            <TextBox Name="IRServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="IRServerTextBox_TextChanged"/>
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
                 <GroupBox Header="Skeleton Settings">
@@ -38,6 +50,22 @@
                 </GroupBox>
             </StackPanel>
             <StackPanel Orientation="Vertical" Grid.Column="1" Grid.RowSpan="2">
+                <GroupBox Header="Depth Settings" Grid.Column="1">
+                    <StackPanel Orientation="Vertical">
+                        <CheckBox Name="ScaleDepthCheckBox" Content="Scale Preview to Reliable Range" Margin="0,2,0,2" IsChecked="True" Checked="ScaleDepthCheckBox_CheckChanged" Unchecked="ScaleDepthCheckBox_CheckChanged"/>
+                        <CheckBox Name="ColorizeDepthCheckBox" Content="Colorize Preview" Margin="0,2,0,2" Checked="ColorizeDepthCheckBox_CheckChanged" Unchecked="ColorizeDepthCheckBox_CheckChanged"/>
+                        <CheckBox Name="sendDepthCheckBox" Content="Transmit Depth Image" Checked="sendDepthCheckBox_CheckChanged" Unchecked="sendDepthCheckBox_CheckChanged"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="Server:"/>
+                            <TextBox Name="DepthServerTextBox" Margin="2" Grid.Column="1" IsEnabled="False" TextChanged="DepthServerTextBox_TextChanged"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="Audio Settings">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Beam Mode:" Margin="2"/>                       
@@ -74,51 +102,53 @@
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
-            <GroupBox Header="Physical Settings" Grid.Column="2" Grid.RowSpan="2">
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Text="Position (m):"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="X:" VerticalAlignment="Center"/>
-                        <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                        <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
-                        <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                        <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
-                        <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Pitch (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="pitchPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="pitchPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Roll (degrees):" VerticalAlignment="Center"/>
-                        <TextBox Name="rollPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="rollPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
-                    </Grid>
-                </StackPanel>
-            </GroupBox>
+            <StackPanel Orientation="Vertical" Grid.Column="2" Grid.RowSpan="2">
+                <GroupBox Header="Physical Settings">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Position (m):"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="X:" VerticalAlignment="Center"/>
+                            <TextBox Name="xPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="xPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                            <TextBlock Text="Y:" VerticalAlignment="Center" Grid.Column="2"/>
+                            <TextBox Name="yPosTextBox" Margin="2" Grid.Column="3" Text="0" TextChanged="yPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                            <TextBlock Text="Z:" VerticalAlignment="Center" Grid.Column="4"/>
+                            <TextBox Name="zPosTextBox" Margin="2" Grid.Column="5" Text="0" TextChanged="zPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Yaw (degrees):" VerticalAlignment="Center"/>
+                            <TextBox Name="yawPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="yawPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Pitch (degrees):" VerticalAlignment="Center"/>
+                            <TextBox Name="pitchPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="pitchPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Roll (degrees):" VerticalAlignment="Center"/>
+                            <TextBox Name="rollPosTextBox" Margin="2" Grid.Column="1" Text="0" TextChanged="rollPosTextBox_TextChanged" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
         </Grid>
     </ScrollViewer>
 </UserControl>

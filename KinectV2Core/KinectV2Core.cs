@@ -383,6 +383,7 @@ namespace KinectV2Core
                     colorE.width = desc.Width;
                     colorE.kinectID = kinectID;
                     colorE.timeStamp = frame.RelativeTime;
+                    colorE.isIR = false;
                     colorE.image = new byte[desc.LengthInPixels * colorE.bytesPerPixel];
                     frame.CopyConvertedFrameDataToArray(colorE.image, ColorImageFormat.Bgra);
 
@@ -493,7 +494,32 @@ namespace KinectV2Core
         }
         void irReader_FrameArrived(object sender, InfraredFrameArrivedEventArgs e)
         {
-            //throw new NotImplementedException();
+            using (InfraredFrame frame = e.FrameReference.AcquireFrame())
+            {
+                if (frame != null)
+                {
+                    FrameDescription desc = frame.FrameDescription;
+
+                    KinectBase.ColorFrameEventArgs irE = new KinectBase.ColorFrameEventArgs();
+                    irE.bytesPerPixel = (int)desc.BytesPerPixel;
+                    irE.pixelFormat = PixelFormats.Gray16;
+                    irE.height = desc.Height;
+                    irE.width = desc.Width;
+                    irE.kinectID = kinectID;
+                    irE.timeStamp = frame.RelativeTime;
+                    irE.isIR = true;
+                    irE.image = new byte[desc.LengthInPixels * sizeof(UInt16)];
+                    unsafe
+                    {
+                        fixed (byte* ptr = irE.image)
+                        {
+                            frame.CopyFrameDataToIntPtr((IntPtr)ptr, desc.LengthInPixels * sizeof(UInt16));
+                        }
+                    }
+
+                    OnColorFrameReceived(irE);
+                }
+            }
         }
         void audioReader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
         {

@@ -592,10 +592,12 @@ namespace KinectV1Core
                     if (frame.Format == ColorImageFormat.InfraredResolution640x480Fps30)
                     {
                         colorE.pixelFormat = PixelFormats.Gray16;
+                        colorE.isIR = true;
                     }
                     else
                     {
                         colorE.pixelFormat = PixelFormats.Bgr32;
+                        colorE.isIR = false;
                     }
                     colorE.width = frame.Width;
                     colorE.height = frame.Height;

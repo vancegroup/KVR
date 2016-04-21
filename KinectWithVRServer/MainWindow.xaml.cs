@@ -710,14 +710,14 @@ namespace KinectWithVRServer
                     {
                         if (server.kinects[j].uniqueKinectID == availableKinects[i].UniqueID)
                         {
-                            lock (server.kinects)
+                            lock (server.kinects[j])
                             {
                                 availableKinects[i].ServerStatus = "Stopping";
                                 kinectsAvailableDataGrid.Items.Refresh();
                                 kinectsAvailableDataGrid.UpdateLayout();
                                 System.Threading.Thread.Sleep(10);
                                 ForceGUIUpdate();
-                                server.kinects[j].ShutdownSensor();
+                                server.kinects[j].ShutdownSensor(); //TODO: This fails sometimes...  There seems to be a race condition and the obect is getting removed between the if statement and the shutdown call
                                 server.kinects.RemoveAt(j);
                                 availableKinects[i].ServerStatus = "Stopped";
                                 break;
@@ -1041,23 +1041,34 @@ namespace KinectWithVRServer
         }
         void MainWindow_ColorFrameReceived(object sender, ColorFrameEventArgs e)
         {
-            if (colorSource == null)
+            bool process = false;
+
+            process |= server.kinects[e.kinectID].version == KinectVersion.KinectV1;
+            if (!process && server.kinects[e.kinectID].version == KinectVersion.KinectV2)
             {
-                colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
-                ColorImage.Source = colorSource;
-            }
-            else if (colorSource.PixelWidth != e.width || colorSource.PixelHeight != e.height || colorSource.Format != e.pixelFormat)
-            {
-                colorSource = null;
-                colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
-                ColorImage.Source = colorSource;
+                process |= ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[e.kinectID]).useIRPreview == e.isIR;
             }
 
-            colorSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+            if (process)
+            {
+                if (colorSource == null)
+                {
+                    colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                    ColorImage.Source = colorSource;
+                }
+                else if (colorSource.PixelWidth != e.width || colorSource.PixelHeight != e.height || colorSource.Format != e.pixelFormat)
+                {
+                    colorSource = null;
+                    colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                    ColorImage.Source = colorSource;
+                }
 
-            //Calculate and display the frame rate
-            double tempFPS = CalculateFrameRate(e.timeStamp, ref lastColorTime, ref colorTimeIntervals);
-            ColorFPSTextBlock.Text = tempFPS.ToString("F1");
+                colorSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+
+                //Calculate and display the frame rate
+                double tempFPS = CalculateFrameRate(e.timeStamp, ref lastColorTime, ref colorTimeIntervals);
+                ColorFPSTextBlock.Text = tempFPS.ToString("F1");
+            }
         }
         void MainWindow_DepthFrameReceived(object sender, DepthFrameEventArgs e)
         {

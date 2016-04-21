@@ -32,6 +32,7 @@ namespace KinectWithVRServer
         internal List<Vrpn.AnalogServer> analogServers;
         internal List<Vrpn.TextSender> textServers;
         internal List<Vrpn.TrackerServer> trackerServers;
+        internal List<Vrpn.ImagerServer> imagerServers;
 
         private List<KinectSkeletonsData> perKinectSkeletons = new List<KinectSkeletonsData>();
         private List<MergedSkeleton> mergedSkeletons = new List<MergedSkeleton>();
@@ -256,6 +257,33 @@ namespace KinectWithVRServer
                 }
             }
 
+            //Set up all the imager servers
+            imagerServers = new List<ImagerServer>();
+            for (int i = 0; i < serverMasterOptions.imagerServers.Count; i++)
+            {
+                lock (serverMasterOptions.imagerServers[i])
+                {
+                    ImagerServer tempServer = new ImagerServer(serverMasterOptions.imagerServers[i].serverName, vrpnConnection, serverMasterOptions.imagerServers[i].columns, serverMasterOptions.imagerServers[i].rows);
+                    tempServer.MuteWarnings = !verbose;
+                    
+                    //Add the channels to the imager
+                    if (serverMasterOptions.imagerServers[i].isColor)
+                    {
+                        //Color images require three uint8 channels to transmit all the data
+                        tempServer.AddChannel("Red", ImageBitDepth.unsigned8bit);
+                        tempServer.AddChannel("Green", ImageBitDepth.unsigned8bit);
+                        tempServer.AddChannel("Blue", ImageBitDepth.unsigned8bit);
+                    }
+                    else
+                    {
+                        //Depth and IR images require one uint16 channels to transmit all the data
+                        tempServer.AddChannel("Gray", ImageBitDepth.unsigned16bit);
+                    }
+
+                    imagerServers.Add(tempServer);
+                }
+            }
+
             //Subscribe to the Kinect events
             subscribeToKinectEvents();
 
@@ -276,6 +304,7 @@ namespace KinectWithVRServer
                 updateList(ref buttonServers);
                 updateList(ref textServers);
                 updateList(ref trackerServers);
+                updateList(ref imagerServers);
                 lock (vrpnConnection)
                 {
                     vrpnConnection.Update();
@@ -294,6 +323,7 @@ namespace KinectWithVRServer
             disposeList(ref buttonServers);
             disposeList(ref textServers);
             disposeList(ref trackerServers);
+            disposeList(ref imagerServers);
             lock (vrpnConnection)
             {
                 vrpnConnection.Dispose();
@@ -321,6 +351,14 @@ namespace KinectWithVRServer
                     {
                         kinects[i].AccelerationChanged += kinect_AccelerationChanged;
                     }
+                    if (tempSettings.sendColorImage)
+                    {
+                        kinects[i].ColorFrameReceived += kinect_ColorFrameReceived;
+                    }
+                    if (tempSettings.sendDepthImage)
+                    {
+                        kinects[i].DepthFrameReceived += kinect_DepthFrameReceived;
+                    }
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
@@ -332,6 +370,14 @@ namespace KinectWithVRServer
                     if (tempSettings.sendAudioAngle)
                     {
                         kinects[i].AudioPositionChanged += kinect_AudioPositionChanged;
+                    }
+                    if (tempSettings.sendColorImage || tempSettings.sendIRImage)
+                    {
+                        kinects[i].ColorFrameReceived += kinect_ColorFrameReceived;
+                    }
+                    if (tempSettings.sendDepthImage)
+                    {
+                        kinects[i].DepthFrameReceived += kinect_DepthFrameReceived;
                     }
                     //Note: subscribing to the acceleration event is pointless, the Kinect v2 can't send acceleration data
                 }
@@ -365,6 +411,14 @@ namespace KinectWithVRServer
                     {
                         kinects[i].AccelerationChanged -= kinect_AccelerationChanged;
                     }
+                    if (tempSettings.sendColorImage)
+                    {
+                        kinects[i].ColorFrameReceived -= kinect_ColorFrameReceived;
+                    }
+                    if (tempSettings.sendDepthImage)
+                    {
+                        kinects[i].DepthFrameReceived -= kinect_DepthFrameReceived;
+                    }
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
@@ -376,6 +430,14 @@ namespace KinectWithVRServer
                     if (tempSettings.sendAudioAngle)
                     {
                         kinects[i].AudioPositionChanged -= kinect_AudioPositionChanged;
+                    }
+                    if (tempSettings.sendColorImage || tempSettings.sendIRImage)
+                    {
+                        kinects[i].ColorFrameReceived -= kinect_ColorFrameReceived;
+                    }
+                    if (tempSettings.sendDepthImage)
+                    {
+                        kinects[i].DepthFrameReceived -= kinect_DepthFrameReceived;
                     }
                 }
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
@@ -598,6 +660,116 @@ namespace KinectWithVRServer
                     kinectSkel.kinectID = e.kinectID;
                     kinectSkel.utcTime = time;
                     perKinectSkeletons.Add(kinectSkel);
+                }
+            }
+        }
+        void kinect_ColorFrameReceived(object sender, ColorFrameEventArgs e)
+        {
+            if (isRunning)
+            {
+                if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
+                {
+                    KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendColorImage)
+                    {
+                        for (int i = 0; i < imagerServers.Count; i++)
+                        {
+                            if (serverMasterOptions.imagerServers[i].serverName == tempSettings.colorServerName)
+                            {
+                                if (e.isIR)
+                                {                                    
+                                    lock (imagerServers[i])
+                                    {
+                                        //IR images are stored in a Gray16 format
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                    }
+                                }
+                                else
+                                {
+                                    lock (imagerServers[i])
+                                    {
+                                        //Color images are stored in a BGR32 format
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
+                {
+                    KinectV2Wrapper.Settings tempSettings = ((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendColorImage && !e.isIR)
+                    {
+                        for (int i = 0; i < imagerServers.Count; i++)
+                        {
+                            if (serverMasterOptions.imagerServers[i].serverName == tempSettings.colorServerName)
+                            {
+                                lock (imagerServers[i])
+                                {
+                                    //Color images are stored in a BGR32 format
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else if (tempSettings.sendIRImage && e.isIR)
+                    {
+                        for (int i = 0; i < imagerServers.Count; i++)
+                        {
+                            if (serverMasterOptions.imagerServers[i].serverName == tempSettings.colorServerName)
+                            {
+                                lock (imagerServers[i])
+                                {
+                                    //IR images are stored in a Gray16 format
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        void kinect_DepthFrameReceived(object sender, DepthFrameEventArgs e)
+        {
+            if (isRunning)
+            {
+                if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV1)
+                {
+                    KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendDepthImage)
+                    {
+                        for (int i = 0; i < imagerServers.Count; i++)
+                        {
+                            if (serverMasterOptions.imagerServers[i].serverName == tempSettings.depthServerName)
+                            {
+                                ushort totalBytes = (ushort)(e.bytesPerPixel + e.perPixelExtra);
+                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, totalBytes, (uint)(totalBytes * e.width), e.image);
+                            }
+                        }
+                    }
+                }
+                else if (serverMasterOptions.kinectOptionsList[e.kinectID].version == KinectVersion.KinectV2)
+                {
+                    KinectV2Wrapper.Settings tempSettings = ((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
+                    if (tempSettings.sendDepthImage)
+                    {
+                        for (int i = 0; i < imagerServers.Count; i++)
+                        {
+                            if (serverMasterOptions.imagerServers[i].serverName == tempSettings.depthServerName)
+                            {
+                                ushort totalBytes = (ushort)(e.bytesPerPixel + e.perPixelExtra);
+                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, totalBytes, (uint)(totalBytes * e.width), e.image);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1496,7 +1668,7 @@ namespace KinectWithVRServer
             //}
             #endregion
 
-            #region Parse the per Kinect (acceleration and audio angle) settings
+            #region Parse the per Kinect (acceleration, audio angle, and imager) settings
             for (int i = 0; i < serverMasterOptions.kinectOptionsList.Count; i++)
             {
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
@@ -1688,7 +1860,7 @@ namespace KinectWithVRServer
                 errorMessage = "";
             }
 
-            //Parse the acceleration options
+            #region Parse the acceleration options
             if (settings.sendAcceleration)
             {
                 if (isServerNameValid(settings.accelerationServerName))
@@ -1804,8 +1976,9 @@ namespace KinectWithVRServer
                     errorMessage += "Kinect " + settings.kinectID.ToString() + " acceleration server name (\"" + settings.accelerationServerName + "\") is invalid.\r\n";
                 }
             }
+            #endregion
 
-            //Parse audio source angle options
+            #region Parse audio source angle options
             if (settings.sendAudioAngle)
             {
                 if (isServerNameValid(settings.audioAngleServerName))
@@ -1857,6 +2030,139 @@ namespace KinectWithVRServer
                     errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server name (\"" + settings.audioAngleServerName + "\") is invalid.\r\n";
                 }
             }
+            #endregion
+
+            #region Parse the color imager settings
+            if (settings.sendColorImage)
+            {
+                if (isServerNameValid(settings.colorServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.imagerServers.Count; j++)
+                    {
+                        if (serverMasterOptions.imagerServers[j].serverName == settings.colorServerName)
+                        {
+                            found = true;
+
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " color imager server name (" + settings.colorServerName + ") is invalid because each server can only run one imager.\r\n";
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        if (settings.colorImageMode == ColorImageFormat.RgbResolution1280x960Fps12)
+                        {
+                            ImagerServerSettings temp = new ImagerServerSettings();
+                            temp.serverName = settings.colorServerName;
+                            temp.rows = 960;
+                            temp.columns = 1280;
+                            temp.isColor = true;
+                            serverMasterOptions.imagerServers.Add(temp);
+                            settingsValid = true;
+                        }
+                        else if (settings.colorImageMode == ColorImageFormat.RgbResolution640x480Fps30)
+                        {
+                            ImagerServerSettings temp = new ImagerServerSettings();
+                            temp.serverName = settings.colorServerName;
+                            temp.rows = 480;
+                            temp.columns = 640;
+                            temp.isColor = true;
+                            serverMasterOptions.imagerServers.Add(temp);
+                            settingsValid = true;
+                        }
+                        else if (settings.colorImageMode == ColorImageFormat.InfraredResolution640x480Fps30)
+                        {
+                            ImagerServerSettings temp = new ImagerServerSettings();
+                            temp.serverName = settings.colorServerName;
+                            temp.rows = 480;
+                            temp.columns = 640;
+                            temp.isColor = false;
+                            serverMasterOptions.imagerServers.Add(temp);
+                            settingsValid = true;
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " color image format is invalid.\r\n";
+                        }
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " color imager server name (\"" + settings.colorServerName + "\") is invalid.\r\n";
+                }
+            }
+            #endregion
+
+            #region Parse the depth imager settings
+            if (settings.sendDepthImage)
+            {
+                if (isServerNameValid(settings.depthServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.imagerServers.Count; j++)
+                    {
+                        if (serverMasterOptions.imagerServers[j].serverName == settings.depthServerName)
+                        {
+                            found = true;
+
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " depth imager server name (" + settings.depthServerName + ") is invalid because each server can only run one imager.\r\n";
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        if (settings.depthImageMode == DepthImageFormat.Resolution640x480Fps30)
+                        {
+                            ImagerServerSettings temp = new ImagerServerSettings();
+                            temp.serverName = settings.depthServerName;
+                            temp.rows = 480;
+                            temp.columns = 640;
+                            temp.isColor = false;
+                            serverMasterOptions.imagerServers.Add(temp);
+                            settingsValid = true;
+                        }
+                        else if (settings.depthImageMode == DepthImageFormat.Resolution320x240Fps30)
+                        {
+                            ImagerServerSettings temp = new ImagerServerSettings();
+                            temp.serverName = settings.depthServerName;
+                            temp.rows = 240;
+                            temp.columns = 320;
+                            temp.isColor = false;
+                            serverMasterOptions.imagerServers.Add(temp);
+                            settingsValid = true;
+                        }
+                        else if (settings.depthImageMode == DepthImageFormat.Resolution80x60Fps30)
+                        {
+                            ImagerServerSettings temp = new ImagerServerSettings();
+                            temp.serverName = settings.depthServerName;
+                            temp.rows = 60;
+                            temp.columns = 80;
+                            temp.isColor = false;
+                            serverMasterOptions.imagerServers.Add(temp);
+                            settingsValid = true;
+                        }
+                        else
+                        {
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " depth image format is invalid.\r\n";
+                        }
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " depth imager server name (\"" + settings.depthServerName + "\") is invalid.\r\n";
+                }
+            }
+            #endregion
 
             return settingsValid;
         }
@@ -1868,7 +2174,7 @@ namespace KinectWithVRServer
                 errorMessage = "";
             }
 
-            //Parse audio source angle options
+            #region Parse audio source angle options
             if (settings.sendAudioAngle)
             {
                 if (isServerNameValid(settings.audioAngleServerName))
@@ -1920,6 +2226,121 @@ namespace KinectWithVRServer
                     errorMessage += "Kinect " + settings.kinectID.ToString() + " audio angle server name (\"" + settings.audioAngleServerName + "\") is invalid.\r\n";
                 }
             }
+            #endregion
+
+            #region Parse the color imager settings
+            if (settings.sendColorImage)
+            {
+                if (isServerNameValid(settings.colorServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.imagerServers.Count; j++)
+                    {
+                        if (serverMasterOptions.imagerServers[j].serverName == settings.colorServerName)
+                        {
+                            found = true;
+
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " color imager server name (" + settings.colorServerName + ") is invalid because each server can only run one imager.\r\n";
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        ImagerServerSettings temp = new ImagerServerSettings();
+                        temp.serverName = settings.colorServerName;
+                        temp.rows = 1080;
+                        temp.columns = 1920;
+                        temp.isColor = true;
+                        serverMasterOptions.imagerServers.Add(temp);
+                        settingsValid = true;
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " color imager server name (\"" + settings.colorServerName + "\") is invalid.\r\n";
+                }
+            }
+            #endregion
+
+            #region Parse the depth imager settings
+            if (settings.sendDepthImage)
+            {
+                if (isServerNameValid(settings.depthServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.imagerServers.Count; j++)
+                    {
+                        if (serverMasterOptions.imagerServers[j].serverName == settings.depthServerName)
+                        {
+                            found = true;
+
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " depth imager server name (" + settings.depthServerName + ") is invalid because each server can only run one imager.\r\n";
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        ImagerServerSettings temp = new ImagerServerSettings();
+                        temp.serverName = settings.depthServerName;
+                        temp.rows = 424;
+                        temp.columns = 512;
+                        temp.isColor = false;
+                        serverMasterOptions.imagerServers.Add(temp);
+                        settingsValid = true;
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " depth imager server name (\"" + settings.depthServerName + "\") is invalid.\r\n";
+                }
+            }
+            #endregion
+
+            #region Parse the IR imager settings
+            if (settings.sendIRImage)
+            {
+                if (isServerNameValid(settings.irServerName))
+                {
+                    bool found = false;
+
+                    for (int j = 0; j < serverMasterOptions.imagerServers.Count; j++)
+                    {
+                        if (serverMasterOptions.imagerServers[j].serverName == settings.irServerName)
+                        {
+                            found = true;
+
+                            settingsValid = false;
+                            errorMessage += "Kinect " + settings.kinectID.ToString() + " depth imager server name (" + settings.irServerName + ") is invalid because each server can only run one imager.\r\n";
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        ImagerServerSettings temp = new ImagerServerSettings();
+                        temp.serverName = settings.irServerName;
+                        temp.rows = 424;
+                        temp.columns = 512;
+                        temp.isColor = false;
+                        serverMasterOptions.imagerServers.Add(temp);
+                        settingsValid = true;
+                    }
+                }
+                else
+                {
+                    settingsValid = false;
+                    errorMessage += "Kinect " + settings.kinectID.ToString() + " depth imager server name (\"" + settings.irServerName + "\") is invalid.\r\n";
+                }
+            }
+            #endregion
 
             return settingsValid;
         }
