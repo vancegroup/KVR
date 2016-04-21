@@ -458,7 +458,17 @@ namespace KinectV2Core
         }
         void audioReader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
         {
-            throw new NotImplementedException();
+            using (AudioBeamFrameList frames = e.FrameReference.AcquireBeamFrames())
+            {
+                for (int i = 0; i < frames.Count; i++)
+                {
+                    KinectBase.AudioPositionEventArgs args = new KinectBase.AudioPositionEventArgs();
+                    args.audioAngle = frames[i].AudioBeam.BeamAngle * (180.0 / Math.PI);  //Convert from radians to degress
+                    args.confidence = frames[i].AudioBeam.BeamAngleConfidence;
+                    args.kinectID = kinectID;
+                    OnAudioPositionChanged(args);
+                }
+            }
         }
 
         //Methods to fire the events
