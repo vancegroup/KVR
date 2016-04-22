@@ -129,6 +129,7 @@ namespace KinectWithVRServer
             }
             else
             {
+                //TODO: Change the GUI so the server starting can be retried if the parsing fails
                 HelperMethods.ShowErrorMessage("Error", "Settings parsing failed!  See the log for more details.", parent);
                 HelperMethods.WriteToLog(errorMessage, parent);
             }
@@ -360,7 +361,7 @@ namespace KinectWithVRServer
                         kinects[i].DepthFrameReceived += kinect_DepthFrameReceived;
                     }
                 }
-                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
                     KinectV2Wrapper.Settings tempSettings = (KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
                     if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
@@ -381,7 +382,7 @@ namespace KinectWithVRServer
                     }
                     //Note: subscribing to the acceleration event is pointless, the Kinect v2 can't send acceleration data
                 }
-                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
+                else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
                 {
                     NetworkKinectWrapper.Settings tempSettings = (NetworkKinectWrapper.Settings)serverMasterOptions.kinectOptionsList[i];
                     if (tempSettings.mergeSkeletons)
@@ -681,7 +682,7 @@ namespace KinectWithVRServer
                                     lock (imagerServers[i])
                                     {
                                         //IR images are stored in a Gray16 format
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
                                     }
                                 }
                                 else
@@ -689,9 +690,9 @@ namespace KinectWithVRServer
                                     lock (imagerServers[i])
                                     {
                                         //Color images are stored in a BGR32 format
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
+                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
                                     }
                                 }
                                 break;
@@ -711,9 +712,9 @@ namespace KinectWithVRServer
                                 lock (imagerServers[i])
                                 {
                                     //Color images are stored in a BGR32 format
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
                                 }
                                 break;
                             }
@@ -728,7 +729,7 @@ namespace KinectWithVRServer
                                 lock (imagerServers[i])
                                 {
                                     //IR images are stored in a Gray16 format
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
+                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
                                 }
                                 break;
                             }
@@ -751,7 +752,7 @@ namespace KinectWithVRServer
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.depthServerName)
                             {
                                 ushort totalBytes = (ushort)(e.bytesPerPixel + e.perPixelExtra);
-                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, totalBytes, (uint)(totalBytes * e.width), e.image);
+                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), totalBytes, (uint)(totalBytes * e.width), e.image);
                             }
                         }
                     }
@@ -766,7 +767,7 @@ namespace KinectWithVRServer
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.depthServerName)
                             {
                                 ushort totalBytes = (ushort)(e.bytesPerPixel + e.perPixelExtra);
-                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)e.width, 0, (ushort)e.height, totalBytes, (uint)(totalBytes * e.width), e.image);
+                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), totalBytes, (uint)(totalBytes * e.width), e.image);
                             }
                         }
                     }

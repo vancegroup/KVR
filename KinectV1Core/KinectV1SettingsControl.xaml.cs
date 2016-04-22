@@ -535,7 +535,7 @@ namespace KinectV1Core
                 ColorServerTextBox.IsEnabled = true;
             }
 
-            kinectSettings.sendDepthImage = (bool)sendColorCheckBox.IsChecked;
+            kinectSettings.sendColorImage = (bool)sendColorCheckBox.IsChecked;
         }
         private void ColorServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {

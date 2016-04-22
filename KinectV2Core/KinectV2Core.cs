@@ -385,7 +385,14 @@ namespace KinectV2Core
                     colorE.timeStamp = frame.RelativeTime;
                     colorE.isIR = false;
                     colorE.image = new byte[desc.LengthInPixels * colorE.bytesPerPixel];
-                    frame.CopyConvertedFrameDataToArray(colorE.image, ColorImageFormat.Bgra);
+                    //frame.CopyConvertedFrameDataToArray(colorE.image, ColorImageFormat.Bgra);
+                    unsafe
+                    {
+                        fixed (byte* ptr = colorE.image)
+                        {
+                            frame.CopyConvertedFrameDataToIntPtr((IntPtr)ptr, desc.LengthInPixels * sizeof(byte) * 4, ColorImageFormat.Rgba);
+                        }
+                    }
 
                     OnColorFrameReceived(colorE);
                 }
