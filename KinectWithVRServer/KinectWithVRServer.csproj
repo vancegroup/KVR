@@ -114,6 +114,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ConsoleUI.cs" />
+    <Compile Include="NetworkKinectWrapper\NKAddDialog.xaml.cs">
+      <DependentUpon>NKAddDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="NetworkKinectWrapper\NKCore.cs" />
     <Compile Include="NetworkKinectWrapper\NKSettings.cs" />
     <Compile Include="NetworkKinectWrapper\NKSettingsControl.xaml.cs">
@@ -163,6 +166,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="NetworkKinectWrapper\NKAddDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="NetworkKinectWrapper\NKSettingsControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

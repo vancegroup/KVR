@@ -67,9 +67,9 @@ namespace KinectWithVRServer.NetworkKinectWrapper
         public event LogMessageEventHandler LogMessageGenerated;
 
         //Constructor to setup the real KinectV1Core object
-        public Core(ref MasterSettings settings, bool isGUILaunched, int kinectNumber)
+        public Core(ref MasterSettings settings, bool isGUILaunched, int kinectNumber, string name)
         {
-            realCore = new NetworkKinectCore.NetworkKinectCore(ref settings, isGUILaunched, kinectNumber);
+            realCore = new NetworkKinectCore.NetworkKinectCore(ref settings, isGUILaunched, kinectNumber, name);
 
             //Subscribe to the events so they can be forwarded
             realCore.SkeletonChanged += realCore_SkeletonChanged;
@@ -125,6 +125,10 @@ namespace KinectWithVRServer.NetworkKinectWrapper
         }
 
         //Network Kinect specific methods
+        public void StartNetworkKinect()
+        {
+            realCore.StartNetworkKinect();
+        }
 
         //Custom conversion operator so this class can be cast as a NetworkKinectCore class
         public static explicit operator NetworkKinectCore.NetworkKinectCore(Core kinectCore)

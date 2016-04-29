@@ -164,6 +164,9 @@ namespace KinectWithVRServer
             if (!avaliableDLLs.HasNetworkedKinect)
             {
                 HelperMethods.WriteToLog("Warning: Networked Kinect support is unvaliable due to missing DLLs!", this);
+                //Remove the option to add a networked kinect if the dll isn't avaliable
+                nkStackPanel.Visibility = System.Windows.Visibility.Collapsed;
+                AddNKButton.IsEnabled = false;
             }
 
             //Setup the timer to update the GUI with the server runtime
@@ -544,6 +547,9 @@ namespace KinectWithVRServer
                         else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
                         {
                             //TODO: Add code to add the networked Kinect settings control to the main window here?  (Or maybe not, since it will always be added manually...)
+                            IKinectSettingsControl tempControl = new NetworkKinectWrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
+                            kinectOptionGUIPages.Add(tempControl);
+                            KinectTabMasterGrid.Children.Add((UserControl)tempControl);
                         }
                     }
                     kinectsPageList.Add("Kinect " + availableKinects[i].KinectID.ToString());
@@ -579,11 +585,13 @@ namespace KinectWithVRServer
                     {
                         ((UserControl)kinectOptionGUIPages[i]).Visibility = System.Windows.Visibility.Collapsed;
                     }
-                    kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Visible;
+                    //kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Visible;
+                    avaliableKinectsLayoutGrid.Visibility = System.Windows.Visibility.Visible;
                 }
                 else
                 {
-                    kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Collapsed;
+                    //kinectsAvailableDataGrid.Visibility = System.Windows.Visibility.Collapsed;
+                    avaliableKinectsLayoutGrid.Visibility = System.Windows.Visibility.Collapsed;
                     for (int i = 0; i < kinectOptionGUIPages.Count; i++)
                     {
                         if (kinectTabListBox.SelectedIndex - 1 == i)
@@ -699,6 +707,7 @@ namespace KinectWithVRServer
                         else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
                         {
                             //TODO: Launch the networked kinect server here (unless I have a VRPN limitation I need to work around)
+                            server.kinects.Add(new NetworkKinectWrapper.Core(ref server.serverMasterOptions, true, (int)availableKinects[i].KinectID, availableKinects[i].UniqueID));
                         }
                         availableKinects[i].ServerStatus = "Running";
                     }
@@ -823,6 +832,66 @@ namespace KinectWithVRServer
                     MessageBox.Show("An unknown error has occured with the Kinect.  Try restarting the computer?", "Connection Help", MessageBoxButton.OK, MessageBoxImage.Warning);
                     break;
                 }
+            }
+        }
+        //Manually add a network kinect to the list of avaliable kinects
+        private void AddNKButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (avaliableDLLs.HasNetworkedKinect)
+            {
+                NetworkKinectWrapper.NKAddDialog dialog = new NetworkKinectWrapper.NKAddDialog(this);
+                if ((bool)dialog.ShowDialog())
+                {
+                    AvailableKinectData nkData = new AvailableKinectData();
+                    nkData.KinectID = null;
+                    nkData.UseKinect = false;
+                    nkData.KinectTypeString = "Network Kinect";
+                    nkData.kinectType = KinectVersion.NetworkKinect;
+                    nkData.PropertyChanged += useKinect_PropertyChanged;
+                    nkData.Status = KinectStatus.Connected;  //TODO: The network kinects don't really check to see if they are connected or not...
+                    nkData.UniqueID = dialog.UniqueID;
+                    availableKinects.Add(nkData);
+                    kinectsAvailableDataGrid.Items.Refresh();
+
+                    nkData.UseKinect = true;  //This has to be changed to true after everything else is setup to trigger the GUI updating
+                }
+            }
+        }
+        //Manually remove a network kinect from the list of avaliable kinects
+        private void RemoveNKButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (avaliableDLLs.HasNetworkedKinect)
+            {
+                int row = kinectsAvailableDataGrid.SelectedIndex;
+
+                if (row >= 0 && row < availableKinects.Count)
+                {
+                    availableKinects[row].UseKinect = false;
+                    availableKinects[row].PropertyChanged -= useKinect_PropertyChanged;
+                    availableKinects.RemoveAt(row);
+                    renumberKinectIDs();
+
+                    kinectsAvailableDataGrid.Items.Refresh();
+                }
+            }
+        }
+        //Make sure the remove network kinect button is only enabled when a network kinect is selected
+        private void kinectsAvailableDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (avaliableDLLs.HasNetworkedKinect)
+            {
+                int row = kinectsAvailableDataGrid.SelectedIndex;
+
+                if (row >= 0 && row < availableKinects.Count)
+                {
+                    if (availableKinects[row].kinectType == KinectVersion.NetworkKinect)
+                    {
+                        RemoveNKButton.IsEnabled = true;
+                        return;
+                    }
+                }
+
+                RemoveNKButton.IsEnabled = false;
             }
         }
         #endregion

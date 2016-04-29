@@ -4,8 +4,126 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="240" d:DesignWidth="503">
     <Grid>
-            
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>   
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Server Name:" Margin="2"/>
+            <TextBox Name="serverNameTextBox" Margin="2" Grid.Column="1" TextChanged="serverNameTextBox_TextChanged"/>
+        </Grid>
+        <Grid Grid.Row="1" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <DataGrid Name="jointMappingDataGrid" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="Use" IsReadOnly="False" Binding="{Binding Path=useJoint}"/>
+                    <DataGridTextColumn Header="Joint Name" IsReadOnly="True" Binding="{Binding Path=jointName}"/>
+                    <DataGridTextColumn Header="Channel #" IsReadOnly="False" Binding="{Binding Path=channel}"/>
+                    <DataGridTextColumn Header="Accuracy (m)" IsReadOnly="False" Binding="{Binding Path=accuracy}"/>
+                    <DataGridTextColumn Header="Last Position" IsReadOnly="True" Binding="{Binding Path=lastPositionString}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="Left Hand Grab"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Server:" Margin="2" VerticalAlignment="Center"/>
+                        <TextBox Name="lhServerTextBox" Grid.Column="1" Margin="2" TextChanged="lhServerTextBox_TextChanged"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Channel:" Margin="2" VerticalAlignment="Center"/>
+                        <TextBox Name="lhChannelTextBox" Text="1" Grid.Column="1" Margin="2" PreviewKeyDown="intNumberTextBox_PreviewKeyDown" TextChanged="lhChannelTextBox_TextChanged"/>
+                    </Grid>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" Grid.Column="1">
+                    <TextBlock Text="Right Hand Grab"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Server:" Margin="2" VerticalAlignment="Center"/>
+                        <TextBox Name="rhServerTextBox" Grid.Column="1" Margin="2" TextChanged="rhServerTextBox_TextChanged"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Channel:" Margin="2" VerticalAlignment="Center"/>
+                        <TextBox Name="rhChannelTextBox" Text="0" Grid.Column="1" Margin="2" PreviewKeyDown="intNumberTextBox_PreviewKeyDown" TextChanged="rhChannelTextBox_TextChanged"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Grid>
+        <StackPanel Orientation="Vertical" Grid.Column="1" Grid.Row="1">
+            <TextBlock Text="Kinect Position" Margin="2"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="x:" Margin="2" VerticalAlignment="Center"/>
+                <TextBox Name="xPosTextBox" Text="0" Grid.Column="1" Margin="2" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" TextChanged="xPosTextBox_TextChanged"/>
+                <TextBlock Text="y:" Margin="2" Grid.Column="2" VerticalAlignment="Center"/>
+                <TextBox Name="yPosTextBox" Text="0" Grid.Column="3" Margin="2" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" TextChanged="yPosTextBox_TextChanged"/>
+                <TextBlock Text="z:" Margin="2" Grid.Column="4" VerticalAlignment="Center"/>
+                <TextBox Name="zPosTextBox" Text="0" Grid.Column="5" Margin="2" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" TextChanged="zPosTextBox_TextChanged"/>
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Yaw (y):" Margin="2" VerticalAlignment="Center"/>
+                <TextBox Name="yawTextBox" Text="0" Margin="2" Grid.Column="1" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" TextChanged="yawTextBox_TextChanged"/>
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Pitch (x):" Margin="2" VerticalAlignment="Center"/>
+                <TextBox Name="pitchTextBox" Text="0" Margin="2" Grid.Column="1" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" TextChanged="pitchTextBox_TextChanged"/>
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Roll (z):" Margin="2" VerticalAlignment="Center"/>
+                <TextBox Name="rollTextBox" Text="0" Margin="2" Grid.Column="1" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" TextChanged="rollTextBox_TextChanged"/>
+            </Grid>
+        </StackPanel>
+        <Button Name="connectButton" Content="Connect" Width="72" Height="27" Grid.Row="1" Grid.Column="1" Margin="2" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="connectButton_Click"/>
     </Grid>
 </UserControl>

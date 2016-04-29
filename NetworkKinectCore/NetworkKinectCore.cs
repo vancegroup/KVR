@@ -18,6 +18,7 @@ namespace NetworkKinectCore
         private Matrix3D skeletonTransformation = Matrix3D.Identity;
         private Quaternion skeletonRotQuaternion = Quaternion.Identity;
         private bool isGUI = false;
+        private bool isRunning = false;
 
         //Public properties required by the IKinectCore interface
         public int kinectID { get; set; } //This is the index of the Kinect options in the Kinect settings list
@@ -41,6 +42,12 @@ namespace NetworkKinectCore
             get { return false; }
         }
 
+        //Public properties specific to the network Kinect
+        public bool isKinectRunning
+        {
+            get { return isRunning; }
+        }
+
         //Event declarations (required by the IKinectCore)
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
         public event KinectBase.DepthFrameEventHandler DepthFrameReceived; //This event will never be triggered
@@ -49,21 +56,15 @@ namespace NetworkKinectCore
         public event KinectBase.AccelerationEventHandler AccelerationChanged; //This event will never be triggered
         public event KinectBase.LogMessageEventHandler LogMessageGenerated;
 
-        public NetworkKinectCore(ref MasterSettings settings, bool isGUILaunched, int kinectNumber)
+        public NetworkKinectCore(ref MasterSettings settings, bool isGUILaunched, int kinectNumber, string name)
         {
+            nkName = name;
             masterSettings = settings;
             dynamic tempSettings = masterSettings.kinectOptionsList[(int)kinectNumber];  //Because of the wrapper, we have to go through a dynamic variable
             masterKinectSettings = (NetworkKinectSettings)tempSettings;
 
-            if (isGUILaunched)
-            {
-                isGUI = true;
-                //TODO: Launch whatever we need to launch for the network Kinect here
-            }
-            else
-            {
-                //Launch whatever we need to launch here - ON ANOTHER THREAD! (we don't want to bloack the command line)
-            }
+            isGUI = isGUILaunched;
+            //NOTE: unlike the physical Kinect sensors, network Kinect sensors are not launched on the creation of the core
         }
 
         //Methods required by the IKinectCore interface
@@ -108,6 +109,16 @@ namespace NetworkKinectCore
         public System.Windows.Point MapJointToDepth(Joint joint, bool undoTransform)
         {
             return new System.Windows.Point(0, 0);
+        }
+
+        //Methods specific to the network kinect
+        public bool StartNetworkKinect()
+        {
+            bool success = false;
+
+
+
+            return success;
         }
     }
 }

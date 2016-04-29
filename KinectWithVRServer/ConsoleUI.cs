@@ -64,9 +64,9 @@ namespace KinectWithVRServer
                 }
                 else if (server.serverMasterOptions.kinectOptionsList[i].version == KinectBase.KinectVersion.NetworkKinect)
                 {
-                    if (dlls.HasKinectV2)
+                    if (dlls.HasNetworkedKinect)
                     {
-                        server.kinects.Add(new NetworkKinectWrapper.Core(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID));
+                        server.kinects.Add(new NetworkKinectWrapper.Core(ref server.serverMasterOptions, false, server.serverMasterOptions.kinectOptionsList[i].kinectID, server.serverMasterOptions.kinectOptionsList[i].uniqueKinectID));
                     }
                     else
                     {

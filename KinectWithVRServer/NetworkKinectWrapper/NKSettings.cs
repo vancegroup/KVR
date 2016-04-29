@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,6 +46,11 @@ namespace KinectWithVRServer.NetworkKinectWrapper
         }
 
         //Public properties specific to the network Kinect
+        public string serverName
+        {
+            get { return realSettings.serverName; }
+            set { realSettings.serverName = value; }
+        }
         #region Skeleton and Physical Settings
         public System.Windows.Media.Media3D.Point3D kinectPosition
         {
@@ -65,6 +71,33 @@ namespace KinectWithVRServer.NetworkKinectWrapper
         {
             get { return realSettings.kinectRoll; }
             set { realSettings.kinectRoll = value; }
+        }
+        #endregion
+        #region Joint Mapping
+        public ObservableCollection<JointMapping> jointMappings
+        {
+            get { return realSettings.jointMappings; }
+            set { realSettings.jointMappings = value; }
+        }
+        public string lhServerName
+        {
+            get { return realSettings.lhServerName; }
+            set { realSettings.lhServerName = value; }
+        }
+        public int lhChannel
+        {
+            get { return realSettings.lhChannel; }
+            set { realSettings.lhChannel = value; }
+        }
+        public string rhServerName
+        {
+            get { return realSettings.rhServerName; }
+            set { realSettings.rhServerName = value; }
+        }
+        public int rhChannel
+        {
+            get { return realSettings.rhChannel; }
+            set { realSettings.rhChannel = value; }
         }
         #endregion
 

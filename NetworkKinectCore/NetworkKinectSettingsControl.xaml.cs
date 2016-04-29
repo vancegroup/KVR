@@ -50,6 +50,10 @@ namespace NetworkKinectCore
 
                     this.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
                     this.VerticalAlignment = System.Windows.VerticalAlignment.Stretch;
+
+                    //Set the binding on the joint mapping data grid
+                    jointMappingDataGrid.ItemsSource = kinectSettings.jointMappings;
+                    jointMappingDataGrid.Items.Refresh();
                 }
                 else
                 {
@@ -64,7 +68,180 @@ namespace NetworkKinectCore
 
         public void UpdateGUI(KinectBase.MasterSettings settings)
         {
+            if (kinectID.HasValue)
+            {
+                masterSettings = settings;
+                dynamic tempSettings = masterSettings.kinectOptionsList[kinectID.Value];
+                kinectSettings = (NetworkKinectSettings)tempSettings;
 
+
+                //Shutdown the server, if it is running
+                bool wasRunning = false;
+                if (kinectCore.isKinectRunning)
+                {
+                    kinectCore.ShutdownSensor();
+                    wasRunning = true;
+                }
+
+                //Update the skeleton server and joint mappings
+                serverNameTextBox.Text = kinectSettings.serverName;
+                jointMappingDataGrid.ItemsSource = kinectSettings.jointMappings;
+                jointMappingDataGrid.Items.Refresh();
+
+                //Update the physical position
+                xPosTextBox.Text = kinectSettings.kinectPosition.X.ToString();
+                yPosTextBox.Text = kinectSettings.kinectPosition.Y.ToString();
+                zPosTextBox.Text = kinectSettings.kinectPosition.Z.ToString();
+                yawTextBox.Text = kinectSettings.kinectYaw.ToString();
+                pitchTextBox.Text = kinectSettings.kinectPitch.ToString();
+                rollTextBox.Text = kinectSettings.kinectRoll.ToString();
+
+                //Update the hand grab data
+                lhServerTextBox.Text = kinectSettings.lhServerName;
+                lhChannelTextBox.Text = kinectSettings.lhChannel.ToString();
+                rhServerTextBox.Text = kinectSettings.rhServerName;
+                rhChannelTextBox.Text = kinectSettings.rhChannel.ToString();
+
+                //Restart the server if it was running to begin with
+                if (wasRunning)
+                {
+                    kinectCore.StartNetworkKinect();
+                }
+            }
+        }
+
+        private void serverNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.serverName = serverNameTextBox.Text;
+        }
+
+        #region Kinect Position Methods
+        private void xPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(xPosTextBox.Text, out temp))
+            {
+                if (kinectSettings.kinectPosition == null)
+                {
+                    kinectSettings.kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                }
+                System.Windows.Media.Media3D.Point3D tempPoint = kinectSettings.kinectPosition;
+                tempPoint.X = temp;
+                kinectSettings.kinectPosition = tempPoint;
+            }
+        }
+        private void yPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(yPosTextBox.Text, out temp))
+            {
+                if (kinectSettings.kinectPosition == null)
+                {
+                    kinectSettings.kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                }
+                System.Windows.Media.Media3D.Point3D tempPoint = kinectSettings.kinectPosition;
+                tempPoint.Y = temp;
+                kinectSettings.kinectPosition = tempPoint;
+            }
+        }
+        private void zPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(zPosTextBox.Text, out temp))
+            {
+                if (kinectSettings.kinectPosition == null)
+                {
+                    kinectSettings.kinectPosition = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
+                }
+                System.Windows.Media.Media3D.Point3D tempPoint = kinectSettings.kinectPosition;
+                tempPoint.Z = temp;
+                kinectSettings.kinectPosition = tempPoint;
+            }
+        }
+        private void yawTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(yawTextBox.Text, out temp))
+            {
+                kinectSettings.kinectYaw = temp;
+            }
+        }
+        private void pitchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(pitchTextBox.Text, out temp))
+            {
+                kinectSettings.kinectPitch = temp;
+            }
+        }
+        private void rollTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            double temp = 0.0;
+            if (double.TryParse(rollTextBox.Text, out temp))
+            {
+                kinectSettings.kinectRoll = temp;
+            }
+        }
+        #endregion
+
+        #region Hand Mapping Methods
+        private void lhServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.lhServerName = lhServerTextBox.Text;
+        }
+        private void lhChannelTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            int temp = 0;
+            if (int.TryParse(lhChannelTextBox.Text, out temp))
+            {
+                kinectSettings.lhChannel = temp;
+            }
+        }
+        private void rhServerTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            kinectSettings.rhServerName = rhServerTextBox.Text;
+        }
+        private void rhChannelTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            int temp = 0;
+            if (int.TryParse(rhChannelTextBox.Text, out temp))
+            {
+                kinectSettings.rhChannel = temp;
+            }
+        }
+        #endregion
+
+        #region Misc. Methods
+        //Rejects any points that are not numbers or control characters or a period
+        private void floatNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!KinectBase.HelperMethods.NumberKeys.Contains(e.Key) && e.Key != Key.OemPeriod && e.Key != Key.Decimal)
+            {
+                e.Handled = true;
+            }
+        }
+        //Rejects any points that are not numbers or control charactes
+        private void intNumberTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!KinectBase.HelperMethods.NumberKeys.Contains(e.Key))
+            {
+                e.Handled = true;
+            }
+        }
+        #endregion
+
+        private void connectButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (kinectCore.isKinectRunning)
+            {
+                kinectCore.ShutdownSensor();
+                connectButton.Content = "Connect";
+            }
+            else
+            {
+                kinectCore.StartNetworkKinect();
+                connectButton.Content = "Disconnect";
+            }
         }
     }
 }
