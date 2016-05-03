@@ -659,7 +659,7 @@ namespace KinectWithVRServer
                     KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
                     kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
                     kinectSkel.kinectID = e.kinectID;
-                    kinectSkel.utcTime = time;
+                    //kinectSkel.utcTime = time;
                     perKinectSkeletons.Add(kinectSkel);
                 }
             }

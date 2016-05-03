@@ -53,7 +53,8 @@ namespace KinectWithVRServer
         {
             forceStop = true;
             int count = 0;
-            while (count < 50) //Wait for the core to stop
+            int maxCount = 50;
+            while (count < maxCount) //Wait for the core to stop
             {
                 if (clientState == ServerRunState.Stopped)
                 {
@@ -61,7 +62,7 @@ namespace KinectWithVRServer
                 }
                 Thread.Sleep(10);
             }
-            if (count >= 30 && clientState != ServerRunState.Stopped)
+            if (count >= maxCount && clientState != ServerRunState.Stopped)
             {
                 throw new Exception("Could not stop feedback core!");
             }
@@ -69,22 +70,24 @@ namespace KinectWithVRServer
 
         private void RunFeedbackCore()
         {
-            Connection clientConnection = Connection.GetConnectionByName(serverName);
-            TrackerRemote client = new TrackerRemote(serverName, clientConnection);
-            client.PositionChanged += client_PositionChanged;
-            clientState = ServerRunState.Running;
-
-            while (!forceStop)
+            //Connection clientConnection = Connection.GetConnectionByName(serverName);
+            using (TrackerRemote client = new TrackerRemote(serverName))
             {
-                clientConnection.Update();
-                client.Update();
-                Thread.Yield();
-            }
+                client.PositionChanged += client_PositionChanged;
+                clientState = ServerRunState.Running;
 
-            clientState = ServerRunState.Stopping;
-            client.PositionChanged -= client_PositionChanged;
-            client.Dispose();
-            clientConnection.Dispose();
+                while (!forceStop)
+                {
+                    //clientConnection.Update();
+                    client.Update();
+                    Thread.Yield();
+                }
+
+                clientState = ServerRunState.Stopping;
+                client.PositionChanged -= client_PositionChanged;
+                //client.Dispose();
+                //clientConnection.Dispose();
+            }
             clientState = ServerRunState.Stopped;
         }
 

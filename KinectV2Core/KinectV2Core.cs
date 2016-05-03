@@ -251,7 +251,7 @@ namespace KinectV2Core
             transformedSkeleton.rightHandClosed = skeleton.rightHandClosed;
             transformedSkeleton.TrackingId = skeleton.TrackingId;
             transformedSkeleton.SkeletonTrackingState = skeleton.SkeletonTrackingState;
-            transformedSkeleton.utcSampleTime = skeleton.utcSampleTime;
+            //transformedSkeleton.utcSampleTime = skeleton.utcSampleTime;
             transformedSkeleton.sourceKinectID = skeleton.sourceKinectID;
             transformedSkeleton.Position = skeletonTransformation.Transform(skeleton.Position);
 
@@ -271,6 +271,7 @@ namespace KinectV2Core
             transformedJoint.TrackingState = joint.TrackingState;
             transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
             transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
+            transformedJoint.utcTime = joint.utcTime;
 
             return transformedJoint;
         }
@@ -449,6 +450,7 @@ namespace KinectV2Core
                 {
                     Body[] skeletons = new Body[skelFrame.BodyCount];
                     skelFrame.GetAndRefreshBodyData(skeletons);
+                    DateTime now = DateTime.UtcNow;
 
                     //Convert from Kinect v2 skeletons to KVR skeletons
                     KinectBase.KinectSkeleton[] kvrSkeletons = new KinectBase.KinectSkeleton[skelFrame.BodyCount];
@@ -458,7 +460,7 @@ namespace KinectV2Core
                         kvrSkeletons[i].Position = new Point3D(skeletons[i].Joints[JointType.SpineBase].Position.X, skeletons[i].Joints[JointType.SpineBase].Position.Y, skeletons[i].Joints[JointType.SpineBase].Position.Z);
                         kvrSkeletons[i].SkeletonTrackingState = convertTrackingState(skeletons[i].IsTracked);
                         kvrSkeletons[i].TrackingId = (int)skeletons[i].TrackingId;
-                        kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
+                        //kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
                         kvrSkeletons[i].sourceKinectID = kinectID;
 
                         for (int j = 0; j < Body.JointCount; j++)
@@ -468,6 +470,7 @@ namespace KinectV2Core
                             newJoint.Position = convertJointPosition(skeletons[i].Joints[(JointType)j].Position);
                             newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
                             newJoint.Orientation = convertJointOrientation(skeletons[i].JointOrientations[(JointType)j].Orientation);
+                            newJoint.utcTime = now;
 
                             //Tracking confidence only exists for the hand states, so set those and leave the rest as unknown
                             if (newJoint.JointType == KinectBase.JointType.HandLeft)

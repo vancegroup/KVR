@@ -23,6 +23,7 @@ namespace KinectBase
         public System.Windows.Media.Media3D.Quaternion Orientation;
         public TrackingState TrackingState;
         public TrackingConfidence Confidence;
+        public DateTime utcTime;  //This is here instead of in the skeleton because networked kinects could have joints updated at different times
         //TODO: Should the positional error for each Kinect be here?
         //TODO: What about temporal error?
     }
@@ -31,7 +32,7 @@ namespace KinectBase
     {
         public KinectSkeletonsData(string UniqueID, int skeletonCount)
         {
-            utcTime = DateTime.UtcNow;
+            //utcTime = DateTime.UtcNow;
             uID = UniqueID;
             actualSkeletons = new List<KinectSkeleton>(skeletonCount);
             for (int i = 0; i < skeletonCount; i++)
@@ -48,7 +49,7 @@ namespace KinectBase
         {
             get { return uID; }
         }
-        public DateTime utcTime {get; set;}
+        //public DateTime utcTime {get; set;}
 
         public List<KinectSkeleton> actualSkeletons { get; set; }
     }
@@ -66,20 +67,17 @@ namespace KinectBase
     {
         public KinectSkeleton()
         {
-            //skeleton = new List<Joint>();
             skeleton = new SkeletonData();
         }
 
-        //public List<Joint> skeleton { get; set; }
         public SkeletonData skeleton;
         public System.Windows.Media.Media3D.Point3D Position;
         public TrackingState SkeletonTrackingState;
         public bool rightHandClosed;
         public bool leftHandClosed;
         public int sourceKinectID;
-        public DateTime utcSampleTime;
+        //public DateTime utcSampleTime;
         public int TrackingId;
-        //Include time of last update?
     }
 
     public class SkeletonData
@@ -99,6 +97,7 @@ namespace KinectBase
                 temp.Orientation = System.Windows.Media.Media3D.Quaternion.Identity;
                 temp.Position = new System.Windows.Media.Media3D.Point3D(0, 0, 0);
                 temp.TrackingState = TrackingState.NotTracked;
+                temp.utcTime = DateTime.MinValue;  //Flag this as never having been updated
                 jointBacker[i] = temp;
             }
         }

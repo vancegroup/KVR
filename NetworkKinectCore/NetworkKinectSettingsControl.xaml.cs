@@ -33,6 +33,7 @@ namespace NetworkKinectCore
         private NetworkKinectSettings kinectSettings;
         private NetworkKinectCore kinectCore;
 
+        //TODO: Subscribe this to the skeletonChanged event and update the GUI with a preview of the skeleton positions
         public NetworkKinectSettingsControl(int kinectNumber, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
         {
             if (settings != null)

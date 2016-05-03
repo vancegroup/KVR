@@ -260,7 +260,7 @@ namespace KinectV1Core
             transformedSkeleton.rightHandClosed = skeleton.rightHandClosed;
             transformedSkeleton.TrackingId = skeleton.TrackingId;
             transformedSkeleton.SkeletonTrackingState = skeleton.SkeletonTrackingState;
-            transformedSkeleton.utcSampleTime = skeleton.utcSampleTime;
+            //transformedSkeleton.utcSampleTime = skeleton.utcSampleTime;
             transformedSkeleton.sourceKinectID = skeleton.sourceKinectID;
             transformedSkeleton.Position = skeletonTransformation.Transform(skeleton.Position);
 
@@ -280,6 +280,7 @@ namespace KinectV1Core
             transformedJoint.TrackingState = joint.TrackingState;
             transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
             transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
+            transformedJoint.utcTime = joint.utcTime;
 
             return transformedJoint;
         }
@@ -473,6 +474,7 @@ namespace KinectV1Core
             {
                 if (skelFrame != null && masterSettings.kinectOptionsList.Count > kinectID && (masterKinectSettings.mergeSkeletons || masterKinectSettings.sendRawSkeletons))
                 {
+                    DateTime now = DateTime.UtcNow;
                     Skeleton[] skeletons = new Skeleton[skelFrame.SkeletonArrayLength];
                     skelFrame.CopySkeletonDataTo(skeletons);
 
@@ -515,7 +517,7 @@ namespace KinectV1Core
                         kvrSkeletons[i].Position = new Point3D(skeletons[i].Position.X, skeletons[i].Position.Y, skeletons[i].Position.Z);
                         kvrSkeletons[i].SkeletonTrackingState = convertTrackingState(skeletons[i].TrackingState);
                         kvrSkeletons[i].TrackingId = skeletons[i].TrackingId;
-                        kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
+                        //kvrSkeletons[i].utcSampleTime = DateTime.UtcNow;
                         kvrSkeletons[i].sourceKinectID = kinectID;
 
                         for (int j = 0; j < skeletons[i].Joints.Count; j++)
@@ -528,6 +530,7 @@ namespace KinectV1Core
                             SkeletonPoint tempPos = skeletons[i].Joints[(JointType)j].Position;
                             newJoint.Position = new Point3D(tempPos.X, tempPos.Y, tempPos.Z);
                             newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
+                            newJoint.utcTime = now;
                             kvrSkeletons[i].skeleton[newJoint.JointType] = newJoint; //Skeleton doesn't need to be initialized because it is done in the KinectSkeleton constructor
                         }
 
