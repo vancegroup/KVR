@@ -53,6 +53,7 @@ namespace KinectWithVRServer
         private bool colorDepth = false;
         private float depthMin = 0;
         private float depthMax = 1;
+        private bool updating = false;
 
         public MainWindow(bool isVerbose, bool isAutoStart, AvaliableDLLs dlls, string startSettings = "")
         {
@@ -611,17 +612,23 @@ namespace KinectWithVRServer
         {
             if (e.PropertyName == "UseKinect")
             {
-                //TODO: Handle if a Kinect is unplugged from the system (which doesn't call this method but can break things badly)
-                //Note, there is some logic to the order these are called in, do not rearrange without understanding that logic!
-                renumberKinectIDs();
-                reorderKinectSettings();
-                launchAndKillKinects();
-                UpdatePageListing();
-                GenerateImageSourcePickerLists();
-                GenerateAudioSourceList();
-                GenerateSkeletonDataGridData();
-                //FOR DEBUGGING ONLY!!!!
-                //WriteOutKinectOrders();
+                //The ForceGUIUpdate method can cause this to get hit again, so we block it from updating again if it is already in the process of updating
+                if (!updating)
+                {
+                    updating = true;
+                    //TODO: Handle if a Kinect is unplugged from the system (which doesn't call this method but can break things badly)
+                    //Note, there is some logic to the order these are called in, do not rearrange without understanding that logic!
+                    renumberKinectIDs();
+                    reorderKinectSettings();
+                    launchAndKillKinects();
+                    UpdatePageListing();
+                    GenerateImageSourcePickerLists();
+                    GenerateAudioSourceList();
+                    GenerateSkeletonDataGridData();
+                    //FOR DEBUGGING ONLY!!!!
+                    //WriteOutKinectOrders();
+                    updating = false;
+                }
             }
         }
         //Reorder the Kinect Settings

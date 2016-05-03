@@ -62,6 +62,7 @@ namespace NetworkKinectCore
             masterSettings = settings;
             dynamic tempSettings = masterSettings.kinectOptionsList[(int)kinectNumber];  //Because of the wrapper, we have to go through a dynamic variable
             masterKinectSettings = (NetworkKinectSettings)tempSettings;
+            kinectID = kinectNumber;
 
             isGUI = isGUILaunched;
             //NOTE: unlike the physical Kinect sensors, network Kinect sensors are not launched on the creation of the core

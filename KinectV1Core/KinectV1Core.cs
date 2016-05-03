@@ -76,18 +76,19 @@ namespace KinectV1Core
                 dynamic tempSettings = masterSettings.kinectOptionsList[(int)kinectNumber];  //We have to use dynamic because the type of the Kinect settings in the master list isn't defined until runtime
                 masterKinectSettings = (KinectV1Settings)tempSettings;
 
-                if (KinectSensor.KinectSensors.Count > kinectNumber)
+                //Note: the kinectNumber could be greater than the number of Kinect v1s if there are other types of sensors in use
+                //Therefore, we have to find the correct Kinect, if it exists using this loop
+                int globalIndex = -1;
+                for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
                 {
-                    //Get the sensor index in the global list
-                    int globalIndex = -1;
-                    for (int i = 0; i < KinectSensor.KinectSensors.Count; i++)
+                    if (KinectSensor.KinectSensors[i].DeviceConnectionId == masterSettings.kinectOptionsList[(int)kinectNumber].uniqueKinectID)
                     {
-                        if (KinectSensor.KinectSensors[i].DeviceConnectionId == masterSettings.kinectOptionsList[(int)kinectNumber].uniqueKinectID)
-                        {
-                            globalIndex = i;
-                            break;
-                        }
+                        globalIndex = i;
+                        break;
                     }
+                }
+                if (globalIndex >= 0)
+                {
                     kinect = KinectSensor.KinectSensors[globalIndex];
                     kinectID = (int)kinectNumber;
                 }
