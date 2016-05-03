@@ -390,7 +390,7 @@ namespace KinectV2Core
                     {
                         fixed (byte* ptr = colorE.image)
                         {
-                            frame.CopyConvertedFrameDataToIntPtr((IntPtr)ptr, desc.LengthInPixels * sizeof(byte) * 4, ColorImageFormat.Rgba);
+                            frame.CopyConvertedFrameDataToIntPtr((IntPtr)ptr, desc.LengthInPixels * sizeof(byte) * 4, ColorImageFormat.Bgra);
                         }
                     }
 
