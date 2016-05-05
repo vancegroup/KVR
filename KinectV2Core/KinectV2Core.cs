@@ -385,6 +385,8 @@ namespace KinectV2Core
                     colorE.kinectID = kinectID;
                     colorE.timeStamp = frame.RelativeTime;
                     colorE.isIR = false;
+                    //TODO: This allocation takes a long time, and has to be done often.  Try reimplementing it as an object pool
+                    //See https://msdn.microsoft.com/en-us/library/ff458671(v=vs.110).aspx for an example
                     colorE.image = new byte[desc.LengthInPixels * colorE.bytesPerPixel];
                     //frame.CopyConvertedFrameDataToArray(colorE.image, ColorImageFormat.Bgra);
                     unsafe

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Diagnostics;
 //using Microsoft.Kinect;
@@ -34,7 +35,10 @@ namespace KinectWithVRServer
         internal List<Vrpn.TrackerServer> trackerServers;
         internal List<Vrpn.ImagerServer> imagerServers;
 
-        private List<KinectSkeletonsData> perKinectSkeletons = new List<KinectSkeletonsData>();
+        //For debugging only
+        private volatile int hitCount = 0;
+
+        private ConcurrentQueue<KinectSkeletonsData> perKinectSkeletons = new ConcurrentQueue<KinectSkeletonsData>();
         private List<MergedSkeleton> mergedSkeletons = new List<MergedSkeleton>();
         private System.Timers.Timer skeletonUpdateTimer;  //Use a timer to update the skeletons at a constant rate since we might have so much data coming in that updating them as we get data would just clog the network
         bool verbose = false;
@@ -649,18 +653,37 @@ namespace KinectWithVRServer
                     }
 
                     //Add the skeletons to the merge list
+                    Debug.WriteLine("Per Kinect Skeletons size: {0}", perKinectSkeletons.Count);
+                    int tempCount = hitCount;
+                    hitCount++;
+                    Debug.WriteLine("Starting hit {0}", tempCount);
                     for (int i = 0; i < perKinectSkeletons.Count; i++)
                     {
-                        if (perKinectSkeletons[i].uniqueID == kinects[e.kinectID].uniqueKinectID)
+                        bool found = false;
+
+                        while (!found)
                         {
-                            perKinectSkeletons.RemoveAt(i);
+                            //Since we are using a bag type collection, we have to take out the object, check if it is the one we want, and put it back if it isn't the one we want
+                            //It seems like a pain, but hopefully this fixes the threading issue
+                            KinectSkeletonsData skel;
+                            found = perKinectSkeletons.TryDequeue(out skel);
+                            if (found && skel.uniqueID != kinects[e.kinectID].uniqueKinectID)
+                            {
+                                perKinectSkeletons.Enqueue(skel);
+                            }
+                            //if (perKinectSkeletons[i].uniqueID == kinects[e.kinectID].uniqueKinectID)
+                            //{
+                            //    perKinectSkeletons.RemoveAt(i);
+                            //}
                         }
                     }
                     KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
                     kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
                     kinectSkel.kinectID = e.kinectID;
                     //kinectSkel.utcTime = time;
-                    perKinectSkeletons.Add(kinectSkel);
+                    perKinectSkeletons.Enqueue(kinectSkel);
+
+                    Debug.WriteLine("Ending hit {0}", tempCount);
                 }
             }
         }
@@ -777,48 +800,41 @@ namespace KinectWithVRServer
 
         //This function goes through the skeletons from all the Kinects and figures out which ones are the same
         //When multiple skeletons from different Kinects are the same, they will need to be merged together
-        private void findSameSkeletons(List<KinectSkeletonsData> kinectSkeletons)
-        {            
-            KinectSkeletonsData[] skeletonsCopy;
-            lock (kinectSkeletons)
-            {
-                //TODO: Fix threading issues
-                //Even with the lock, the kinectSkeletons variable sometimes gets updated while we are inside this function
-                skeletonsCopy = new KinectSkeletonsData[kinectSkeletons.Count];
-                kinectSkeletons.CopyTo(0, skeletonsCopy, 0, skeletonsCopy.Length);
-            }
-
+        private void findSameSkeletons(KinectSkeletonsData[] kinectSkeletons)
+        {
             List<Point3D> averageCenters = new List<Point3D>();
             mergedSkeletons.Clear();
 
-            for (int i = 0; i < skeletonsCopy.Length; i++) //For each Kinect
+            for (int i = 0; i < kinectSkeletons.Length; i++) //For each Kinect
             {
-                for (int j = 0; j < skeletonsCopy[i].actualSkeletons.Count; j++) //For each skeleton from the Kinect
+                for (int j = 0; j < kinectSkeletons[i].actualSkeletons.Count; j++) //For each skeleton from the Kinect
                 {
                     bool matchFound = false;
                     for (int k = 0; k < averageCenters.Count; k++)
                     {
-                        Vector3D distance = averageCenters[k] - skeletonsCopy[i].actualSkeletons[j].Position;
+                        Vector3D distance = averageCenters[k] - kinectSkeletons[i].actualSkeletons[j].Position;
                         if (Math.Abs(distance.Length) < 0.3)
                         {
                             matchFound = true;
-                            averageCenters[k] = HelperMethods.IncAverage(averageCenters[k], skeletonsCopy[i].actualSkeletons[j].Position, mergedSkeletons[k].Count);
-                            mergedSkeletons[k].AddSkeletonToMerge(skeletonsCopy[i].actualSkeletons[j]);
+                            averageCenters[k] = HelperMethods.IncAverage(averageCenters[k], kinectSkeletons[i].actualSkeletons[j].Position, mergedSkeletons[k].Count);
+                            mergedSkeletons[k].AddSkeletonToMerge(kinectSkeletons[i].actualSkeletons[j]);
                         }
                     }
 
                     if (!matchFound)
                     {
                         mergedSkeletons.Add(new MergedSkeleton());
-                        mergedSkeletons[mergedSkeletons.Count - 1].AddSkeletonToMerge(skeletonsCopy[i].actualSkeletons[j]);
-                        averageCenters.Add(skeletonsCopy[i].actualSkeletons[j].Position);
+                        mergedSkeletons[mergedSkeletons.Count - 1].AddSkeletonToMerge(kinectSkeletons[i].actualSkeletons[j]);
+                        averageCenters.Add(kinectSkeletons[i].actualSkeletons[j].Position);
                     }
                 }
             }
         }
         private void skeletonUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            findSameSkeletons(perKinectSkeletons);
+            KinectSkeletonsData[] mergeData = perKinectSkeletons.ToArray();
+
+            findSameSkeletons(mergeData);
 
             List<MergedSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
 
