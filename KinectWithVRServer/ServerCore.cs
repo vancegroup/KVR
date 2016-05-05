@@ -1750,7 +1750,7 @@ namespace KinectWithVRServer
 
                         if (!serverFound)
                         {
-                            serverMasterOptions.trackerServers.Add(new TrackerServerSettings() { sensorCount = 24, serverName = individualSkeletons[i].serverName });
+                            serverMasterOptions.trackerServers.Add(new TrackerServerSettings() { sensorCount = 27, serverName = individualSkeletons[i].serverName });
                         }
                     }
                     else
