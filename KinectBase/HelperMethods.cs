@@ -156,4 +156,45 @@ namespace KinectBase
             }
         }
     }
+
+    public class ObjectPool<T>
+    {
+        //Based on https://msdn.microsoft.com/en-us/library/ff458671(v=vs.110).aspx
+        private System.Collections.Concurrent.ConcurrentStack<T> objects;
+        private Func<T> objectGenerator;
+
+        public ObjectPool(Func<T> objectGen)
+        {
+            if (objectGen == null)
+            {
+                throw new ArgumentNullException("objectGen");
+            }
+            objects = new System.Collections.Concurrent.ConcurrentStack<T>();
+            objectGenerator = objectGen;
+        }
+
+        public T GetObject()
+        {
+            T obj;
+            if (objects.TryPop(out obj))
+            {
+                return obj;
+            }
+            else
+            {
+                return objectGenerator();
+            }
+        }
+
+        public void PutObject(T obj)
+        {
+            objects.Push(obj);
+        }
+
+        public void ResetPool(Func<T> newObjectGen)
+        {
+            objectGenerator = newObjectGen;
+            objects.Clear();
+        }
+    }
 }

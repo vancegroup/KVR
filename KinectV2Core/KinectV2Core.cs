@@ -75,6 +75,9 @@ namespace KinectV2Core
         private bool foundID = false;
         private bool isGUI = false;
         private System.IO.Stream audioStream = null;
+        public KinectBase.ObjectPool<byte[]> colorImagePool;
+        public KinectBase.ObjectPool<byte[]> depthImagePool;
+        public KinectBase.ObjectPool<byte[]> irImagePool;
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
@@ -93,6 +96,13 @@ namespace KinectV2Core
             //TODO: Update this to open a specific Kinect v2, if the SDK is ever updated to support multiple on one machine
             kinect = KinectSensor.GetDefault();
             kinectID = kinectNumber;
+
+            uint tempC = kinect.ColorFrameSource.FrameDescription.LengthInPixels;
+            uint tempD = kinect.DepthFrameSource.FrameDescription.LengthInPixels;
+            uint tempI = kinect.InfraredFrameSource.FrameDescription.LengthInPixels;
+            colorImagePool = new KinectBase.ObjectPool<byte[]>(() => new byte[tempC * 4]);
+            depthImagePool = new KinectBase.ObjectPool<byte[]>(() => new byte[tempD * 4]);
+            irImagePool = new KinectBase.ObjectPool<byte[]>(() => new byte[tempI * sizeof(UInt16)]);
 
             if (isGUILaunched)
             {
@@ -385,9 +395,8 @@ namespace KinectV2Core
                     colorE.kinectID = kinectID;
                     colorE.timeStamp = frame.RelativeTime;
                     colorE.isIR = false;
-                    //TODO: This allocation takes a long time, and has to be done often.  Try reimplementing it as an object pool
-                    //See https://msdn.microsoft.com/en-us/library/ff458671(v=vs.110).aspx for an example
-                    colorE.image = new byte[desc.LengthInPixels * colorE.bytesPerPixel];
+                    colorE.image = colorImagePool.GetObject();
+                    //colorE.image = new byte[desc.LengthInPixels * colorE.bytesPerPixel];
                     //frame.CopyConvertedFrameDataToArray(colorE.image, ColorImageFormat.Bgra);
                     unsafe
                     {
@@ -422,7 +431,8 @@ namespace KinectV2Core
                     //Get all the data for the depth, and store the bytes for the Gray16 in the blue and green channels of a bgr32
                     IntPtr depthImagePtr = Marshal.AllocHGlobal((int)(depthE.bytesPerPixel * desc.LengthInPixels));
                     depthFrame.CopyFrameDataToIntPtr(depthImagePtr, (uint)depthE.bytesPerPixel * desc.LengthInPixels);
-                    depthE.image = new byte[desc.LengthInPixels * (depthE.perPixelExtra + depthE.bytesPerPixel)];
+                    //depthE.image = new byte[desc.LengthInPixels * (depthE.perPixelExtra + depthE.bytesPerPixel)];
+                    depthE.image = depthImagePool.GetObject();
                     unsafe
                     {
                         fixed (byte* pDst = depthE.image)
@@ -520,7 +530,8 @@ namespace KinectV2Core
                     irE.kinectID = kinectID;
                     irE.timeStamp = frame.RelativeTime;
                     irE.isIR = true;
-                    irE.image = new byte[desc.LengthInPixels * sizeof(UInt16)];
+                    //irE.image = new byte[desc.LengthInPixels * sizeof(UInt16)];
+                    irE.image = irImagePool.GetObject();
                     unsafe
                     {
                         fixed (byte* ptr = irE.image)
@@ -562,12 +573,25 @@ namespace KinectV2Core
             {
                 DepthFrameReceived(this, e);
             }
+
+            //Put the image array back in the image pool
+            depthImagePool.PutObject(e.image);
         }
         protected virtual void OnColorFrameReceived(KinectBase.ColorFrameEventArgs e)
         {
             if (ColorFrameReceived != null)
             {
                 ColorFrameReceived(this, e);
+            }
+
+            //Put the object back in the image pool
+            if (e.isIR)
+            {
+                irImagePool.PutObject(e.image);
+            }
+            else
+            {
+                colorImagePool.PutObject(e.image);
             }
         }
         protected virtual void OnAudioPositionChanged(KinectBase.AudioPositionEventArgs e)
