@@ -75,9 +75,9 @@ namespace KinectV2Core
         private bool foundID = false;
         private bool isGUI = false;
         private System.IO.Stream audioStream = null;
-        public KinectBase.ObjectPool<byte[]> colorImagePool;
-        public KinectBase.ObjectPool<byte[]> depthImagePool;
-        public KinectBase.ObjectPool<byte[]> irImagePool;
+        private KinectBase.ObjectPool<byte[]> colorImagePool;
+        private KinectBase.ObjectPool<byte[]> depthImagePool;
+        private KinectBase.ObjectPool<byte[]> irImagePool;
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;

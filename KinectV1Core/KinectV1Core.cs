@@ -59,6 +59,8 @@ namespace KinectV1Core
         internal bool? isXbox360Kinect = null;
         private bool isGUI = false;
         private System.IO.Stream audioStream = null;
+        private KinectBase.ObjectPool<byte[]> colorImagePool;
+        private KinectBase.ObjectPool<byte[]> depthImagePool;
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
@@ -75,6 +77,10 @@ namespace KinectV1Core
                 masterSettings = settings;
                 dynamic tempSettings = masterSettings.kinectOptionsList[(int)kinectNumber];  //We have to use dynamic because the type of the Kinect settings in the master list isn't defined until runtime
                 masterKinectSettings = (KinectV1Settings)tempSettings;
+
+                //Initialize the object pools
+                colorImagePool = new KinectBase.ObjectPool<byte[]>(() => new byte[640 * 480 * 4]);
+                depthImagePool = new KinectBase.ObjectPool<byte[]>(() => new byte[640 * 480 * 4]);
 
                 //Note: the kinectNumber could be greater than the number of Kinect v1s if there are other types of sensors in use
                 //Therefore, we have to find the correct Kinect, if it exists using this loop
@@ -224,6 +230,23 @@ namespace KinectV1Core
             if (newResolution != KinectBase.ColorImageFormat.Undefined)
             {
                 kinect.ColorStream.Enable(convertColorImageFormat(newResolution));
+
+                //Get the size, in bytes, of the new image array and reset the image pool
+                int size = 0;
+                if (newResolution == KinectBase.ColorImageFormat.InfraredResolution640x480Fps30)
+                {
+                    size = 640 * 480 * 2;
+                }
+                else if (newResolution == KinectBase.ColorImageFormat.RawBayerResolution1280x960Fps12 || newResolution == KinectBase.ColorImageFormat.RgbResolution1280x960Fps12)
+                {
+                    size = 1280 * 960 * 4;
+                }
+                else
+                {
+                    size = 640 * 480 * 4;
+                }
+                colorImagePool.ResetPool(() => new byte[size]);
+                
                 isColorStreamOn = true;
             }
             else
@@ -237,6 +260,23 @@ namespace KinectV1Core
             if (newResolution != KinectBase.DepthImageFormat.Undefined)
             {
                 kinect.DepthStream.Enable(convertDepthImageFormat(newResolution));
+
+                //Get the size, in bytes, of the new image array and reset the image pool
+                int size = 0;
+                if (newResolution == KinectBase.DepthImageFormat.Resolution640x480Fps30)
+                {
+                    size = 640 * 480 * 4;
+                }
+                else if (newResolution == KinectBase.DepthImageFormat.Resolution320x240Fps30)
+                {
+                    size = 320 * 240 * 4;
+                }
+                else
+                {
+                    size = 80 * 60 * 4;
+                }
+                depthImagePool.ResetPool(() => new byte[size]);
+
                 isDepthStreamOn = true;
             }
             else
@@ -571,7 +611,12 @@ namespace KinectV1Core
                     depthE.timeStamp = new TimeSpan(frame.Timestamp * 10000);  //Convert from milliseconds to ticks and set the time span
 
                     //The second 2 bytes of the DepthImagePixel structure hold the actual depth as a uint16, so lets get those, and put the data in the blue and green channel of the image
-                    depthE.image = new byte[frame.PixelDataLength * (depthE.perPixelExtra + depthE.bytesPerPixel)];
+                    //depthE.image = new byte[frame.PixelDataLength * (depthE.perPixelExtra + depthE.bytesPerPixel)];
+                    depthE.image = depthImagePool.GetObject();  //Get an image array from the object pool
+                    if (depthE.image.Length != frame.PixelDataLength * (depthE.perPixelExtra + depthE.bytesPerPixel))  //If the object is the wrong size, replace it with one that is the right size
+                    {
+                        depthE.image = new byte[frame.PixelDataLength * (depthE.perPixelExtra + depthE.bytesPerPixel)];
+                    }
                     unsafe
                     {
                         //The sizeof() operation is unsafe in this instance, otherwise this would all be safe code
@@ -607,7 +652,12 @@ namespace KinectV1Core
                     colorE.height = frame.Height;
                     colorE.bytesPerPixel = frame.BytesPerPixel;
                     colorE.timeStamp = new TimeSpan(frame.Timestamp * 10000);  //Convert from milliseconds to ticks and set the time span
-                    colorE.image = new byte[frame.PixelDataLength];
+                    //colorE.image = new byte[frame.PixelDataLength];
+                    colorE.image = colorImagePool.GetObject();  //Get an array from the image pool
+                    if (colorE.image.Length != frame.PixelDataLength)  //If the image array is the wrong size, create a new one (it will get cycled into the pool on its own later)
+                    {
+                        colorE.image = new byte[frame.PixelDataLength];
+                    }
                     frame.CopyPixelDataTo(colorE.image);
                     OnColorFrameReceived(colorE);
                 }
