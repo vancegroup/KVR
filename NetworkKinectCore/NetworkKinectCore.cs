@@ -214,7 +214,7 @@ namespace NetworkKinectCore
             {
                 if (lastSkeleton.skeleton[i].TrackingState == TrackingState.Tracked)
                 {
-                    if (lastSkeleton.skeleton[i].utcTime - currentTime > oneSecond)
+                    if (currentTime - lastSkeleton.skeleton[i].utcTime < oneSecond)
                     {
                         hasData = true;
 
