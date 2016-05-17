@@ -547,7 +547,6 @@ namespace KinectWithVRServer
                         }
                         else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
                         {
-                            //TODO: Add code to add the networked Kinect settings control to the main window here?  (Or maybe not, since it will always be added manually...)
                             IKinectSettingsControl tempControl = new NetworkKinectWrapper.SettingsControl(availableKinects[i].KinectID.Value, ref server.serverMasterOptions, server.kinects[availableKinects[i].KinectID.Value]);
                             kinectOptionGUIPages.Add(tempControl);
                             KinectTabMasterGrid.Children.Add((UserControl)tempControl);
@@ -910,12 +909,14 @@ namespace KinectWithVRServer
             for (int i = SkeletonsTabControl.Items.Count - 1; i > 0; i--)
             {
                 bool kinectFound = false;
+                string tabHeader = ((TabItem)SkeletonsTabControl.Items[i]).Header.ToString();
+                string tabUniqueID = ((IKinectSkeletonControl)((TabItem)SkeletonsTabControl.Items[i]).Content).uniqueKinectID;
 
                 for (int j = 0; j < server.kinects.Count; j++)
                 {
-                    if (((TabItem)SkeletonsTabControl.Items[i]).Header.ToString() == "Kinect " + server.kinects[j].kinectID.ToString())
+                    if (tabHeader == "Kinect " + server.kinects[j].kinectID.ToString())
                     {
-                        if (server.kinects[j].version == KinectVersion.KinectV1)
+                        if (server.kinects[j].version == KinectVersion.KinectV1 && server.kinects[j].uniqueKinectID == tabUniqueID)
                         {
                             if (((KinectV1Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
                             {
@@ -923,7 +924,7 @@ namespace KinectWithVRServer
                                 break;
                             }
                         }
-                        else if (server.kinects[j].version == KinectVersion.KinectV2)
+                        else if (server.kinects[j].version == KinectVersion.KinectV2 && server.kinects[j].uniqueKinectID == tabUniqueID)
                         {
                             if (((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[j]).sendRawSkeletons)
                             {
@@ -963,7 +964,7 @@ namespace KinectWithVRServer
                             TabItem newTabItem = new TabItem();
                             newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
                             newTabItem.Content = ((KinectV1Wrapper.SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
-                            SkeletonsTabControl.Items.Add(newTabItem);
+                            AddSkeletonTabItem(newTabItem, server.kinects[i].kinectID);
                         }
                     }
                 }
@@ -986,14 +987,44 @@ namespace KinectWithVRServer
                             TabItem newTabItem = new TabItem();
                             newTabItem.Header = "Kinect " + server.kinects[i].kinectID.ToString();
                             newTabItem.Content = ((KinectV2Wrapper.SettingsControl)kinectOptionGUIPages[i]).skeletonUserControl;
-                            SkeletonsTabControl.Items.Add(newTabItem);
+                            AddSkeletonTabItem(newTabItem, server.kinects[i].kinectID);
                         }
                     }
                 }
                 //NOTE: The networked kinects shouldn't need a control for raw skeletons, since the user will connect to the original VRPN server to get those instead of retransmitting the data again
             }
-
-            //TODO: Add sorting method for the skeleton controls so it always lists 0 to X
+        }
+        private void AddSkeletonTabItem(TabItem item, int kinectID)
+        {
+            bool added = false;
+            for (int j = 1; j < SkeletonsTabControl.Items.Count; j++)
+            {
+                if (GetSkeletonTabNumer((TabItem)SkeletonsTabControl.Items[j]) > kinectID)
+                {
+                    SkeletonsTabControl.Items.Insert(j, item);
+                    added = true;
+                    break;
+                }
+            }
+            if (!added)
+            {
+                SkeletonsTabControl.Items.Add(item);
+            }
+        }
+        private int GetSkeletonTabNumer(TabItem tab)
+        {
+            int number = -1;
+            string header = (string)tab.Header;
+            if (header != "Merged Skeletons") //the merged skeletons tab will always be first
+            {
+                string numStr = header.Substring(7, header.Length - 7);
+                int temp;
+                if (int.TryParse(numStr, out temp))
+                {
+                    number = temp;
+                }
+            }
+            return number;
         }
         #endregion
 

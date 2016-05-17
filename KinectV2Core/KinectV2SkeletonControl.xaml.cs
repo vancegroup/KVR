@@ -19,9 +19,21 @@ namespace KinectV2Core
     /// <summary>
     /// Interaction logic for KinectV2SkeletonControl.xaml
     /// </summary>
-    public partial class KinectV2SkeletonControl : UserControl
+    public partial class KinectV2SkeletonControl : UserControl, IKinectSkeletonControl
     {
         private KinectV2SettingsControl parent;
+        public int? kinectID
+        {
+            get { return parent.kinectID; }
+        }
+        public KinectVersion version
+        {
+            get { return KinectVersion.KinectV2; }
+        }
+        public string uniqueKinectID
+        {
+            get { return parent.uniqueKinectID; }
+        }
 
         public KinectV2SkeletonControl(KinectV2SettingsControl thisParent)
         {

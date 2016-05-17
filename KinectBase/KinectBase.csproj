@@ -67,6 +67,7 @@
     <Compile Include="IKinectCore.cs" />
     <Compile Include="IKinectSettings.cs" />
     <Compile Include="IKinectSettingsControl.cs" />
+    <Compile Include="IKinectSkeletonControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings.cs" />
   </ItemGroup>
