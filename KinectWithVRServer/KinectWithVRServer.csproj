@@ -114,6 +114,8 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ConsoleUI.cs" />
+    <Compile Include="GestureCore.cs" />
+    <Compile Include="KalmanFilter.cs" />
     <Compile Include="NetworkKinectWrapper\NKAddDialog.xaml.cs">
       <DependentUpon>NKAddDialog.xaml</DependentUpon>
     </Compile>
@@ -144,6 +146,7 @@
     <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
     <Compile Include="Shaders\NoScalingEffect\NoScalingEffectWrapper.cs" />
+    <Compile Include="SkeletonMerger.cs" />
     <Compile Include="VerifyDLLs.cs" />
     <Compile Include="VoiceRecogCore.cs" />
     <Page Include="KinectV1Wrapper\KV1SettingsControl.xaml">

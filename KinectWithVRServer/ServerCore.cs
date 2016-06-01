@@ -657,13 +657,14 @@ namespace KinectWithVRServer
                     int tempCount = hitCount;
                     hitCount++;
                     Debug.WriteLine("Starting hit {0}", tempCount);
+                    //This loop removes any skeletons from the perKinectSkeletons queue that are from the same Kinect as the one we have new data from
                     for (int i = 0; i < perKinectSkeletons.Count; i++)
                     {
                         bool found = false;
 
                         while (!found)
                         {
-                            //Since we are using a bag type collection, we have to take out the object, check if it is the one we want, and put it back if it isn't the one we want
+                            //Since we are using a concurrent collection, we have to take out the object, check if it is the one we want, and put it back if it isn't the one we want
                             //It seems like a pain, but hopefully this fixes the threading issue
                             KinectSkeletonsData skel;
                             found = perKinectSkeletons.TryDequeue(out skel);
@@ -677,10 +678,10 @@ namespace KinectWithVRServer
                             //}
                         }
                     }
+                    //Add the new skeleton data to the queue to merge
                     KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
                     kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
                     kinectSkel.kinectID = e.kinectID;
-                    //kinectSkel.utcTime = time;
                     perKinectSkeletons.Enqueue(kinectSkel);
 
                     Debug.WriteLine("Ending hit {0}", tempCount);
