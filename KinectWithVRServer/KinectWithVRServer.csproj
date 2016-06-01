@@ -49,7 +49,7 @@
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <VRPNPath>..\3rd Party\VrpnNet\Win32\Debug\VrpnNet.dll</VRPNPath>
+    <VRPNPath>..\3rd Party\VrpnNet\x86\Debug\VrpnNet.dll</VRPNPath>
     <EigenPath>..\3rd Party\EigenWrapper\x86\Debug\EigenWrapper.dll</EigenPath>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
@@ -61,7 +61,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <VRPNPath>..\3rd Party\VrpnNet\Win32\Release\VrpnNet.dll</VRPNPath>
+    <VRPNPath>..\3rd Party\VrpnNet\x86\Release\VrpnNet.dll</VRPNPath>
     <EigenPath>..\3rd Party\EigenWrapper\x86\Release\EigenWrapper.dll</EigenPath>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
