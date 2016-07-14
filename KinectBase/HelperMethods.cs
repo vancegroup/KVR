@@ -13,7 +13,7 @@ namespace KinectBase
         public static Key[] NumberKeys = {Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9,
                                     Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, 
                                     Key.Return, Key.Enter, Key.Delete, Key.Back, Key.Left, Key.Right, Key.Tab, Key.OemMinus, Key.Subtract};
-        
+        public const int TotalJointCount = 28; //This should always be the same as the number of items in the JointType enum
     }
 
     public struct Joint
@@ -83,13 +83,12 @@ namespace KinectBase
     public class SkeletonData
     {
         private Joint[] jointBacker;
-        private const int totalJoints = 28; //This should always be the same as the number of items in the JointType enum
         
         public SkeletonData()
         {
-            jointBacker = new Joint[totalJoints];
+            jointBacker = new Joint[HelperMethods.TotalJointCount];
 
-            for (int i = 0; i < totalJoints; i++)
+            for (int i = 0; i < HelperMethods.TotalJointCount; i++)
             {
                 Joint temp = new Joint();
                 temp.Confidence = TrackingConfidence.Unknown;
@@ -127,7 +126,7 @@ namespace KinectBase
         {
             get
             {
-                if (i >= 0 && i < totalJoints)
+                if (i >= 0 && i < HelperMethods.TotalJointCount)
                 {
                     return jointBacker[i];
                 }
@@ -138,7 +137,7 @@ namespace KinectBase
             }
             set
             {
-                if (i >= 0 && i < totalJoints)
+                if (i >= 0 && i < HelperMethods.TotalJointCount)
                 {
                     if (value.JointType == (JointType)i)
                     {
