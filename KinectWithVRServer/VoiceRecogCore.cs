@@ -158,10 +158,7 @@ namespace KinectWithVRServer
                                     VoiceButtonCommand shortCommand =  (VoiceButtonCommand)server.serverMasterOptions.voiceCommands[i];
                                     if (shortCommand.buttonType == ButtonType.Momentary)
                                     {
-                                        lock (server.buttonServers[j])
-                                        {
-                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
-                                        }
+                                        server.UpdateButtonData(j, shortCommand.buttonNumber, shortCommand.setState);
 
                                         //Run a delegate to change the state back, that way, even though it uses a blocking call, it will be blocking a thread we don't care about
                                         ToggleBackMomentaryButtonDelegate buttonDelegate = ToggleBackMomentaryButton;
@@ -169,17 +166,11 @@ namespace KinectWithVRServer
                                     }
                                     else if (shortCommand.buttonType == ButtonType.Setter)
                                     {
-                                        lock (server.buttonServers[j])
-                                        {
-                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = shortCommand.setState;
-                                        }
+                                        server.UpdateButtonData(j, shortCommand.buttonNumber, shortCommand.setState);
                                     }
                                     else //Toggle button
                                     {
-                                        lock (server.buttonServers[j])
-                                        {
-                                            server.buttonServers[j].Buttons[shortCommand.buttonNumber] = !server.buttonServers[j].Buttons[shortCommand.buttonNumber];
-                                        }
+                                        server.InvertButton(j, shortCommand.buttonNumber);
                                     }
                                 }
                             }
@@ -190,10 +181,7 @@ namespace KinectWithVRServer
                             {
                                 if (server.serverMasterOptions.textServers[j].serverName == server.serverMasterOptions.voiceCommands[i].serverName)
                                 {
-                                    lock (server.textServers[j])
-                                    {
-                                        server.textServers[j].SendMessage(((VoiceTextCommand)server.serverMasterOptions.voiceCommands[i]).actionText);
-                                    }
+                                    server.UpdateTextData(j, ((VoiceTextCommand)server.serverMasterOptions.voiceCommands[i]).actionText);
                                 }
                             }
                         }
@@ -215,10 +203,7 @@ namespace KinectWithVRServer
         private void ToggleBackMomentaryButton(int buttonServerIndex, int buttonNumber, bool state)
         {
             Thread.Sleep(500);
-            lock (server.buttonServers[buttonServerIndex])
-            {
-                server.buttonServers[buttonServerIndex].Buttons[buttonNumber] = state;
-            }
+            server.UpdateButtonData(buttonServerIndex, buttonNumber, state);
         }
 
         private delegate void ToggleBackMomentaryButtonDelegate(int buttonServerIndex, int buttonNumber, bool state);

@@ -27,13 +27,15 @@ namespace KinectWithVRServer
         {
             get { return (serverState == ServerRunState.Running); }
         }
+        private AutoResetEvent updateServersEvent = new AutoResetEvent(true);
+        private System.Timers.Timer keepAliveTimer;
         Vrpn.Connection vrpnConnection;
         internal KinectBase.MasterSettings serverMasterOptions;
-        internal List<Vrpn.ButtonServer> buttonServers;
-        internal List<Vrpn.AnalogServer> analogServers;
-        internal List<Vrpn.TextSender> textServers;
-        internal List<Vrpn.TrackerServer> trackerServers;
-        internal List<Vrpn.ImagerServer> imagerServers;
+        private List<Vrpn.ButtonServer> buttonServers;
+        private List<Vrpn.AnalogServer> analogServers;
+        private List<Vrpn.TextSender> textServers;
+        private List<Vrpn.TrackerServer> trackerServers;
+        private List<Vrpn.ImagerServer> imagerServers;
 
         //For debugging only
         private volatile int hitCount = 0;
@@ -79,7 +81,7 @@ namespace KinectWithVRServer
 
         public void launchServer()
         {
-            //These don't need a lock to be thread safe since they are volatile
+            //These don't need a lock to be thread safe since they are volatile, I think
             forceStop = false;
             serverState = ServerRunState.Starting;
 
@@ -106,6 +108,14 @@ namespace KinectWithVRServer
                     feedbackCore.StartFeedbackCore(serverMasterOptions.feedbackOptions.feedbackServerName, serverMasterOptions.feedbackOptions.feedbackSensorNumber);
                 }
 
+                //Start the keep alive timer for the server
+                keepAliveTimer = new System.Timers.Timer(200);  //This forces the VRPN server to report no less than 5 times per second so the client still sees it as connected
+                keepAliveTimer.AutoReset = true;
+                keepAliveTimer.Elapsed += keepAliveTimer_Elapsed;
+                keepAliveTimer.Enabled = true;
+                keepAliveTimer.Start();
+
+                //Start the actual core of the server
                 runServerCoreDelegate serverDelegate = runServerCore;
                 serverDelegate.BeginInvoke(null, null);
 
@@ -173,9 +183,15 @@ namespace KinectWithVRServer
                 feedbackCore.StopFeedbackCore();
             }
 
+            keepAliveTimer.Stop();
+            keepAliveTimer.Dispose();
+
             int count = 0;
             while (count < 30)
             {
+                //Force an update of the server core so it can check to see that it needs to stop
+                updateServersEvent.Set();
+
                 if (serverState == ServerRunState.Stopped)
                 {
                     break;
@@ -304,6 +320,9 @@ namespace KinectWithVRServer
             //Run the server
             while (!forceStop)
             {
+                //This should be waaaay faster than the old yield way of doing this loop
+                updateServersEvent.WaitOne();
+
                 //Update the analog servers
                 updateList(ref analogServers);
                 updateList(ref buttonServers);
@@ -314,7 +333,6 @@ namespace KinectWithVRServer
                 {
                     vrpnConnection.Update();
                 }
-                Thread.Yield(); // Be polite, but don't add unnecessary latency.
             }
 
             //Cleanup everything
@@ -335,6 +353,10 @@ namespace KinectWithVRServer
             }
 
             serverState = ServerRunState.Stopped;
+        }
+        private void keepAliveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            updateServersEvent.Set();
         }
 
         private void subscribeToKinectEvents()
@@ -466,19 +488,16 @@ namespace KinectWithVRServer
                     KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendAcceleration)
                     {
-                        for (int i = 0; i < analogServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
                         {
                             if (serverMasterOptions.analogServers[i].serverName == tempSettings.accelerationServerName)
                             {
                                 if (e.acceleration.HasValue)
                                 {
-                                    lock (analogServers[i])
-                                    {
-                                        analogServers[i].AnalogChannels[tempSettings.accelXChannel].Value = e.acceleration.Value.X;
-                                        analogServers[i].AnalogChannels[tempSettings.accelYChannel].Value = e.acceleration.Value.Y;
-                                        analogServers[i].AnalogChannels[tempSettings.accelZChannel].Value = e.acceleration.Value.Z;
-                                        analogServers[i].Report();
-                                    }
+                                    int[] channels = { tempSettings.accelXChannel, tempSettings.accelYChannel, tempSettings.accelZChannel };
+                                    double[] values = { e.acceleration.Value.X, e.acceleration.Value.Y, e.acceleration.Value.Z };
+
+                                    UpdateAnalogData(i, channels, values);
                                 }
                                 break;
                             }
@@ -497,15 +516,11 @@ namespace KinectWithVRServer
                     KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendAudioAngle)
                     {
-                        for (int i = 0; i < analogServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
                         {
                             if (serverMasterOptions.analogServers[i].serverName == tempSettings.audioAngleServerName)
                             {
-                                lock (analogServers[i])
-                                {
-                                    analogServers[i].AnalogChannels[tempSettings.audioAngleChannel].Value = e.audioAngle;
-                                    analogServers[i].Report();
-                                }
+                                UpdateAnalogData(i, tempSettings.audioAngleChannel, e.audioAngle);
                                 break;
                             }
                         }
@@ -516,16 +531,11 @@ namespace KinectWithVRServer
                     KinectV2Wrapper.Settings tempSettings = ((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendAudioAngle)
                     {
-                        for (int i = 0; i < analogServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.analogServers.Count; i++)
                         {
                             if (serverMasterOptions.analogServers[i].serverName == tempSettings.audioAngleServerName)
                             {
-                                lock (analogServers[i])
-                                {
-                                    analogServers[i].AnalogChannels[tempSettings.audioAngleChannel].Value = e.audioAngle;
-                                    analogServers[i].Report();
-                                }
-                                break;
+                                UpdateAnalogData(i, tempSettings.audioAngleChannel, e.audioAngle);
                             }
                         }
                     }
@@ -697,27 +707,19 @@ namespace KinectWithVRServer
                     KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendColorImage)
                     {
-                        for (int i = 0; i < imagerServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.imagerServers.Count; i++)
                         {
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.colorServerName)
                             {
                                 if (e.isIR)
-                                {                                    
-                                    lock (imagerServers[i])
-                                    {
-                                        //IR images are stored in a Gray16 format
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
-                                    }
+                                {
+                                    //IR images are stored in a Gray16 format
+                                    UpdateImagerChannelData(i, "Gray", 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
                                 }
                                 else
                                 {
-                                    lock (imagerServers[i])
-                                    {
-                                        //Color images are stored in a BGR32 format
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
-                                        imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
-                                    }
+                                    //Color images are stored in a BGR32 format
+                                    UpdateImagerRGBData(i, "Red", "Green", "Blue", 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2, 1, 0);
                                 }
                                 break;
                             }
@@ -729,32 +731,24 @@ namespace KinectWithVRServer
                     KinectV2Wrapper.Settings tempSettings = ((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendColorImage && !e.isIR)
                     {
-                        for (int i = 0; i < imagerServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.imagerServers.Count; i++)
                         {
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.colorServerName)
                             {
-                                lock (imagerServers[i])
-                                {
-                                    //Color images are stored in a BGR32 format
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Red"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2);
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Green"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 1);
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Blue"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
-                                }
+                                //Color images are stored in a BGR32 format
+                                UpdateImagerRGBData(i, "Red", "Green", "Blue", 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image, 2, 1, 0);
                                 break;
                             }
                         }
                     }
                     else if (tempSettings.sendIRImage && e.isIR)
                     {
-                        for (int i = 0; i < imagerServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.imagerServers.Count; i++)
                         {
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.colorServerName)
                             {
-                                lock (imagerServers[i])
-                                {
-                                    //IR images are stored in a Gray16 format
-                                    imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
-                                }
+                                //IR images are stored in a Gray16 format
+                                UpdateImagerChannelData(i, "Gray", 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), (uint)e.bytesPerPixel, (uint)(e.bytesPerPixel * e.width), e.image);
                                 break;
                             }
                         }
@@ -771,12 +765,12 @@ namespace KinectWithVRServer
                     KinectV1Wrapper.Settings tempSettings = ((KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendDepthImage)
                     {
-                        for (int i = 0; i < imagerServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.imagerServers.Count; i++)
                         {
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.depthServerName)
                             {
                                 ushort totalBytes = (ushort)(e.bytesPerPixel + e.perPixelExtra);
-                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), totalBytes, (uint)(totalBytes * e.width), e.image);
+                                UpdateImagerChannelData(i, "Gray", 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), totalBytes, (uint)(totalBytes * e.width), e.image);
                             }
                         }
                     }
@@ -786,12 +780,12 @@ namespace KinectWithVRServer
                     KinectV2Wrapper.Settings tempSettings = ((KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[e.kinectID]);
                     if (tempSettings.sendDepthImage)
                     {
-                        for (int i = 0; i < imagerServers.Count; i++)
+                        for (int i = 0; i < serverMasterOptions.imagerServers.Count; i++)
                         {
                             if (serverMasterOptions.imagerServers[i].serverName == tempSettings.depthServerName)
                             {
                                 ushort totalBytes = (ushort)(e.bytesPerPixel + e.perPixelExtra);
-                                imagerServers[i].SendImage((ushort)imagerServers[i].IndexOfChannel("Gray"), 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), totalBytes, (uint)(totalBytes * e.width), e.image);
+                                UpdateImagerChannelData(i, "Gray", 0, (ushort)(e.width - 1), 0, (ushort)(e.height - 1), totalBytes, (uint)(totalBytes * e.width), e.image);
                             }
                         }
                     }
@@ -1032,10 +1026,7 @@ namespace KinectWithVRServer
                     //TODO: I am including inferred joints as well, should I? 
                     if (joint.TrackingState != TrackingState.NotTracked)
                     {
-                        lock (trackerServers[jointServerID.Value])
-                        {
-                            trackerServers[jointServerID.Value].ReportPose(GetSkeletonSensorNumber(joint.JointType), DateTime.Now, joint.Position, joint.Orientation);
-                        }
+                        UpdateTrackerPoseData(jointServerID.Value, GetSkeletonSensorNumber(joint.JointType), joint.Position, joint.Orientation);
                     }
                 }
             }
@@ -1050,11 +1041,7 @@ namespace KinectWithVRServer
 
             if (handServerID.HasValue)
             {
-                lock (buttonServers[handServerID.Value])
-                {
-                    //TODO: Fix crash here when the server closes (null reference on the button server)
-                    buttonServers[handServerID.Value].Buttons[buttonNumber] = state;
-                }
+                UpdateButtonData(handServerID.Value, buttonNumber, state);
             }
             else
             {
@@ -2361,6 +2348,97 @@ namespace KinectWithVRServer
             #endregion
 
             return settingsValid;
+        }
+        #endregion
+
+        #region Functios to update server data
+        //This is used to update buttons states.  No updates should ever be made outside this function (or the InvertButton function)
+        internal void UpdateButtonData(int buttonServerIndex, int buttonNumber, bool state)
+        {
+            lock (buttonServers[buttonServerIndex])
+            {
+                //TODO: There is a possible crash here when the server closes (null reference on the button server)
+                buttonServers[buttonServerIndex].Buttons[buttonNumber] = state;
+            }
+            updateServersEvent.Set();
+        }
+        //This is a special case of the update button data required for toggle buttons
+        internal void InvertButton(int buttonServerIndex, int buttonNumber)
+        {
+            lock (buttonServers[buttonServerIndex])
+            {
+                //TODO: There is a possible crash here when the server closes (null reference on the button server)
+                buttonServers[buttonServerIndex].Buttons[buttonNumber] = !buttonServers[buttonServerIndex].Buttons[buttonNumber];
+            }
+            updateServersEvent.Set();
+        }
+        //This is used to update analog states.  No updates should ever be made outside this function (or the UpdateMultipleAnalogData function)
+        internal void UpdateAnalogData(int analogServerIndex, int analogChannel, double value)
+        {
+            lock (analogServers[analogServerIndex])
+            {
+                analogServers[analogServerIndex].AnalogChannels[analogChannel].Value = value;
+                analogServers[analogServerIndex].Report();
+            }
+            updateServersEvent.Set();
+        }
+        //This is used to update multiple analog states on a single server simultaniously
+        internal void UpdateAnalogData(int analogServerIndex, int[] analogChannels, double[] values)
+        {
+            if (analogChannels.Length == values.Length)
+            {
+                lock (analogServers[analogServerIndex])
+                {
+                    for (int i = 0; i < analogChannels.Length; i++)
+                    {
+                        analogServers[analogServerIndex].AnalogChannels[analogChannels[i]].Value = values[i];
+                    }
+                    analogServers[analogServerIndex].Report();
+                }
+                updateServersEvent.Set();
+            }
+            else
+            {
+                throw new IndexOutOfRangeException("The lengths of analogChannels and values must be the same.");
+            }
+        }
+        //This is used to update the text server.  No updates should ever be made outside this function.
+        internal void UpdateTextData(int textServerIndex, string text)
+        {
+            lock (textServers[textServerIndex])
+            {
+                textServers[textServerIndex].SendMessage(text);
+            }
+            updateServersEvent.Set();
+        }
+        //This is used to update the tracker servers.  No updates should ever be made outside this function.
+        internal void UpdateTrackerPoseData(int trackerServerIndex, int channel, Point3D position, Quaternion orientation)
+        {
+            lock (trackerServers[trackerServerIndex])
+            {
+                trackerServers[trackerServerIndex].ReportPose(channel, DateTime.Now, position, orientation);
+            }
+            updateServersEvent.Set();
+        }
+        //This is used to update a single channel of imager data.  Not updates should ever be made outside this function or the UpdateImageRGBData function.
+        internal void UpdateImagerChannelData(int imagerServerIndex, string channelName, ushort columnStart, ushort columnStop, ushort rowStart, ushort rowStop, uint columnStride, uint rowStride, byte[] data)
+        {
+            lock (imagerServers[imagerServerIndex])
+            {
+                imagerServers[imagerServerIndex].SendImage((ushort)imagerServers[imagerServerIndex].IndexOfChannel(channelName), columnStart, columnStop, rowStart, rowStop, columnStride, rowStride, data);
+            }
+            updateServersEvent.Set();
+        }
+        //This is used to update a color image in an imager server.  This function only works when all the RGB data is stored in a single array.  
+        internal void UpdateImagerRGBData(int imagerServerIndex, string rChannelName, string gChannelName, string bChannelName, ushort columnStart, ushort columnStop, ushort rowStart, ushort rowStop, uint columnStride, uint rowStride, byte[] data, uint rOffset, uint gOffset, uint bOffset)
+        {
+            lock (imagerServers[imagerServerIndex])
+            {
+                imagerServers[imagerServerIndex].SendImage((ushort)imagerServers[imagerServerIndex].IndexOfChannel(rChannelName), columnStart, columnStop, rowStart, rowStop, columnStride, rowStride, data, rOffset); //Send the red channel
+                imagerServers[imagerServerIndex].SendImage((ushort)imagerServers[imagerServerIndex].IndexOfChannel(gChannelName), columnStart, columnStop, rowStart, rowStop, columnStride, rowStride, data, gOffset); //Send the green channel
+                imagerServers[imagerServerIndex].SendImage((ushort)imagerServers[imagerServerIndex].IndexOfChannel(bChannelName), columnStart, columnStop, rowStart, rowStop, columnStride, rowStride, data, bOffset); //Send the blue channel
+            }
+            updateServersEvent.Set();
         }
         #endregion
 
