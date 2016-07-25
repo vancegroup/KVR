@@ -1148,65 +1148,71 @@ namespace KinectWithVRServer
         }
         void MainWindow_ColorFrameReceived(object sender, ColorFrameEventArgs e)
         {
-            bool process = false;
-
-            process |= server.kinects[e.kinectID].version == KinectVersion.KinectV1;
-            if (!process && server.kinects[e.kinectID].version == KinectVersion.KinectV2)
+            if (!updating)
             {
-                process |= ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[e.kinectID]).useIRPreview == e.isIR;
-            }
+                bool process = false;
 
-            if (process)
-            {
-                if (colorSource == null)
+                process |= server.kinects[e.kinectID].version == KinectVersion.KinectV1;
+                if (!process && server.kinects[e.kinectID].version == KinectVersion.KinectV2)
                 {
-                    colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
-                    ColorImage.Source = colorSource;
-                }
-                else if (colorSource.PixelWidth != e.width || colorSource.PixelHeight != e.height || colorSource.Format != e.pixelFormat)
-                {
-                    colorSource = null;
-                    colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
-                    ColorImage.Source = colorSource;
+                    process |= ((KinectV2Wrapper.Settings)server.serverMasterOptions.kinectOptionsList[e.kinectID]).useIRPreview == e.isIR;
                 }
 
-                colorSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+                if (process)
+                {
+                    if (colorSource == null)
+                    {
+                        colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                        ColorImage.Source = colorSource;
+                    }
+                    else if (colorSource.PixelWidth != e.width || colorSource.PixelHeight != e.height || colorSource.Format != e.pixelFormat)
+                    {
+                        colorSource = null;
+                        colorSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, e.pixelFormat, null);
+                        ColorImage.Source = colorSource;
+                    }
 
-                //Calculate and display the frame rate
-                double tempFPS = CalculateFrameRate(e.timeStamp, ref lastColorTime, ref colorTimeIntervals);
-                ColorFPSTextBlock.Text = tempFPS.ToString("F1");
+                    colorSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * e.bytesPerPixel, 0);
+
+                    //Calculate and display the frame rate
+                    double tempFPS = CalculateFrameRate(e.timeStamp, ref lastColorTime, ref colorTimeIntervals);
+                    ColorFPSTextBlock.Text = tempFPS.ToString("F1");
+                }
             }
         }
         void MainWindow_DepthFrameReceived(object sender, DepthFrameEventArgs e)
         {
-            //NOTE: Even though the depth is a 16-bit grayscale format natively, the event packs it as a bgr32.  The shaders will correct this issue.
-            //This trick is necessary because the image is rasterized to an 8-bit per channel format by WPF before it is passed to the shader
-            //Thus, if we used a Gray16 and then shaded it, we would lose a bunch of image depth and the scaled images would look terrible.
-            if (depthSource == null)
+            if (!updating)
             {
-                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, PixelFormats.Bgr32, null);
-                DepthImage.Source = depthSource;
+                //NOTE: Even though the depth is a 16-bit grayscale format natively, the event packs it as a bgr32.  The shaders will correct this issue.
+                //This trick is necessary because the image is rasterized to an 8-bit per channel format by WPF before it is passed to the shader
+                //Thus, if we used a Gray16 and then shaded it, we would lose a bunch of image depth and the scaled images would look terrible.
+                if (depthSource == null)
+                {
+                    depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, PixelFormats.Bgr32, null);
+                    DepthImage.Source = depthSource;
+                }
+                else if (depthSource.PixelWidth != e.width || depthSource.PixelHeight != e.height)
+                {
+                    depthSource = null;
+                    depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, PixelFormats.Bgr32, null);
+                    DepthImage.Source = depthSource;
+                }
+
+                depthSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * (e.bytesPerPixel + e.perPixelExtra), 0);
+
+                //Update the depth shader, if necessary (checks for necessity are done in the methods)
+                CheckAndChangeDepthShader(e.kinectID);
+                UpdateShaderMinMax(e.reliableMin, e.reliableMax);
+
+                //Calculate the depth frame rate and display it
+                double tempFPS = CalculateFrameRate(e.timeStamp, ref lastDepthTime, ref depthTimeIntervals);
+                DepthFPSTextBlock.Text = tempFPS.ToString("F1");
             }
-            else if (depthSource.PixelWidth != e.width || depthSource.PixelHeight != e.height)
-            {
-                depthSource = null;
-                depthSource = new WriteableBitmap(e.width, e.height, 96.0, 96.0, PixelFormats.Bgr32, null);
-                DepthImage.Source = depthSource;
-            }
-
-            depthSource.WritePixels(new Int32Rect(0, 0, e.width, e.height), e.image, e.width * (e.bytesPerPixel + e.perPixelExtra), 0);
-
-            //Update the depth shader, if necessary (checks for necessity are done in the methods)
-            CheckAndChangeDepthShader(e.kinectID);
-            UpdateShaderMinMax(e.reliableMin, e.reliableMax);
-
-            //Calculate the depth frame rate and display it
-            double tempFPS = CalculateFrameRate(e.timeStamp, ref lastDepthTime, ref depthTimeIntervals);
-            DepthFPSTextBlock.Text = tempFPS.ToString("F1");
         }
         void MainWindow_SkeletonChangedColor(object sender, SkeletonEventArgs e)
         {
-            if (!drawingColorSkeleton)
+            if (!drawingColorSkeleton && !updating)
             {                
                 drawingColorSkeleton = true;
 
@@ -1219,7 +1225,7 @@ namespace KinectWithVRServer
         }
         void MainWindow_SkeletonChangedDepth(object sender, SkeletonEventArgs e)
         {
-            if (!drawingDepthSkeleton)
+            if (!drawingDepthSkeleton && !updating)
             {
                 drawingDepthSkeleton = true;
 
