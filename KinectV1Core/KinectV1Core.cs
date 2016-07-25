@@ -125,32 +125,42 @@ namespace KinectV1Core
         {
             if (kinect != null)
             {
-                //The "new" syntax is sort of odd, but these really do remove the handlers from the specified events
-                kinect.ColorFrameReady -= kinect_ColorFrameReady;
-                kinect.DepthFrameReady -= kinect_DepthFrameReady;
-                kinect.SkeletonFrameReady -= kinect_SkeletonFrameReady;
-                interactStream.InteractionFrameReady -= interactStream_InteractionFrameReady;
-                if (updateTimer != null)
+                lock (kinect)
                 {
-                    updateTimer.Stop();
-                    updateTimer.Elapsed -= updateTimer_Elapsed;
-                    updateTimer.Dispose();
-                }
-
-                interactStream.Dispose();
-                interactStream = null;
-
-                if (kinect.AudioSource != null)
-                {
-                    if (audioStream != null)
+                    //The "new" syntax is sort of odd, but these really do remove the handlers from the specified events
+                    kinect.ColorFrameReady -= kinect_ColorFrameReady;
+                    kinect.DepthFrameReady -= kinect_DepthFrameReady;
+                    kinect.SkeletonFrameReady -= kinect_SkeletonFrameReady;
+                    interactStream.InteractionFrameReady -= interactStream_InteractionFrameReady;
+                    if (updateTimer != null)
                     {
-                        audioStream.Close();
-                        audioStream.Dispose();
+                        updateTimer.Stop();
+                        updateTimer.Elapsed -= updateTimer_Elapsed;
+                        updateTimer.Dispose();
                     }
 
-                    kinect.AudioSource.Stop();
+                    interactStream.Dispose();
+                    interactStream = null;
+
+                    if (kinect.AudioSource != null)
+                    {
+                        if (audioStream != null)
+                        {
+                            audioStream.Close();
+                            audioStream.Dispose();
+                        }
+
+                        kinect.AudioSource.Stop();
+                    }
+
+                    kinect.ColorStream.Disable();
+                    kinect.DepthStream.Disable();
+                    kinect.SkeletonStream.Disable();
+
+                    kinect.Stop();
+                    kinect.Dispose();
+                    kinect = null;
                 }
-                kinect.Stop();
             }
         }
         public void StartKinectAudio()
