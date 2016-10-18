@@ -575,19 +575,22 @@ namespace KinectWithVRServer
                         //Transmit the skeleton data
                         for (int i = 0; i < sortedSkeletons.Count; i++)
                         {
-                            //Transmit the joints
-                            SendSkeletonVRPN(sortedSkeletons[i].skeleton, tempSettings.rawSkeletonSettings.individualSkeletons[i].serverName);
-
-                            //Transmit the right hand
-                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useRightHandGrip)
+                            if (sortedSkeletons[i].SkeletonTrackingState != TrackingState.NotTracked) //Skips the skeletons we have no data about
                             {
-                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
-                            }
+                                //Transmit the joints
+                                SendSkeletonVRPN(sortedSkeletons[i].skeleton, tempSettings.rawSkeletonSettings.individualSkeletons[i].serverName);
 
-                            //Transmit the right hand
-                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useLeftHandGrip)
-                            {
-                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                                //Transmit the right hand
+                                if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useRightHandGrip)
+                                {
+                                    SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                                }
+
+                                //Transmit the right hand
+                                if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useLeftHandGrip)
+                                {
+                                    SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                                }
                             }
                         }
                     }
@@ -624,19 +627,22 @@ namespace KinectWithVRServer
                         //Transmit the skeleton data
                         for (int i = 0; i < sortedSkeletons.Count; i++)
                         {
-                            //Transmit the joints
-                            SendSkeletonVRPN(sortedSkeletons[i].skeleton, tempSettings.rawSkeletonSettings.individualSkeletons[i].serverName);
-
-                            //Transmit the right hand
-                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useRightHandGrip)
+                            if (sortedSkeletons[i].SkeletonTrackingState != TrackingState.NotTracked) //Skips the skeletons we have no data about
                             {
-                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
-                            }
+                                //Transmit the joints
+                                SendSkeletonVRPN(sortedSkeletons[i].skeleton, tempSettings.rawSkeletonSettings.individualSkeletons[i].serverName);
 
-                            //Transmit the right hand
-                            if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useLeftHandGrip)
-                            {
-                                SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                                //Transmit the right hand
+                                if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useRightHandGrip)
+                                {
+                                    SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                                }
+
+                                //Transmit the right hand
+                                if (tempSettings.rawSkeletonSettings.individualSkeletons[i].useLeftHandGrip)
+                                {
+                                    SendHandStateVRPN(e.skeletons[i].rightHandClosed, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripServerName, tempSettings.rawSkeletonSettings.individualSkeletons[i].rightGripButtonNumber);
+                                }
                             }
                         }
                     }
@@ -1026,6 +1032,16 @@ namespace KinectWithVRServer
                     //TODO: I am including inferred joints as well, should I? 
                     if (joint.TrackingState != TrackingState.NotTracked)
                     {
+                        if (joint.Orientation.W == 0 && joint.Orientation.X == 0 && joint.Orientation.Y == 0 && joint.Orientation.Z == 0)
+                        {
+                            joint.Orientation = Quaternion.Identity;
+                        }
+                        else
+                        {
+                            joint.Orientation.Normalize();
+                        }
+
+                        joint.Orientation.Normalize();
                         UpdateTrackerPoseData(jointServerID.Value, GetSkeletonSensorNumber(joint.JointType), joint.Position, joint.Orientation);
                     }
                 }

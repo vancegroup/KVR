@@ -24,7 +24,7 @@ namespace KinectBase
         public TrackingState TrackingState;
         public TrackingConfidence Confidence;
         public DateTime utcTime;  //This is here instead of in the skeleton because networked kinects could have joints updated at different times
-        //TODO: Should the positional error for each Kinect be here?
+        public double spatialErrorStdDev;
         //TODO: What about temporal error?
     }
 

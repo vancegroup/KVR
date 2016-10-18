@@ -448,7 +448,7 @@ namespace KinectV1Core
             int? elevationAngle = null;
             lock (kinect)
             {
-                if (kinect.IsRunning)
+                if (kinect != null && kinect.IsRunning)
                 {
                     //I wish these try/catch statements weren't necessary, but these two calls seemed to failed often
                     dataValid = true;
