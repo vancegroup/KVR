@@ -645,14 +645,14 @@ namespace KinectV2Core
         {
             switch (jointType)
             {
-                case JointType.SpineBase:
-                {
-                    return KinectBase.JointType.SpineBase;
-                }
-                case JointType.SpineMid:
-                {
-                    return KinectBase.JointType.SpineMid;
-                }
+                //case JointType.SpineBase:
+                //{
+                //    return KinectBase.JointType.SpineBase;
+                //}
+                //case JointType.SpineMid:
+                //{
+                //    return KinectBase.JointType.SpineMid;
+                //}
                 case JointType.Neck:
                 {
                     return KinectBase.JointType.Neck;
@@ -663,7 +663,7 @@ namespace KinectV2Core
                 }
                 default:
                 {
-                    //Other than the first 3, everything is numbered the same so we can just cast it
+                    //Other than the neck and spine shoulder, everything is numbered the same so we can just cast it
                     return (KinectBase.JointType)jointType;
                 }
             }
