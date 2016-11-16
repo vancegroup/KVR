@@ -18,6 +18,7 @@ namespace KinectWithVRServer
 
         protected Matrix XLastMeasured;
         protected Matrix PLastMeasured;
+        protected double timeSeconds;
 
         protected virtual Matrix getFMatrix(double deltaT)
         {
@@ -41,7 +42,23 @@ namespace KinectWithVRServer
 
         public Matrix PredictAndDiscard(double deltaT)
         {
-            return getFMatrix(deltaT) * XLastMeasured;
+            Matrix predictedX;
+            lock (XLastMeasured)
+            {
+                predictedX = getFMatrix(deltaT) * XLastMeasured;
+            }
+            return predictedX;
+        }
+
+        public Matrix PredictAndDiscard(double deltaT, out Matrix covariance)
+        {
+            Matrix predictedX;
+            lock (XLastMeasured)
+            {
+                predictedX = getFMatrix(deltaT) * XLastMeasured;
+                covariance = F * PLastMeasured * Matrix.Transpose(F) + getQMatrix(deltaT);  //Covariance estimate
+            }
+            return predictedX;
         }
 
         public Matrix IntegrateMeasurement(Matrix measurement, double deltaT)
@@ -56,8 +73,13 @@ namespace KinectWithVRServer
             Matrix K = Ppredicted * Matrix.Transpose(H) * S.Inverse();  //Kalman gain
             Matrix X = Xpredicted + K * Y; //Updated state
             Matrix P = (Matrix.Identity(K.Rows) - K * H) * Ppredicted;
-            XLastMeasured = X;
-            PLastMeasured = P;
+
+            lock (XLastMeasured)
+            {
+                timeSeconds += deltaT;
+                XLastMeasured = X;
+                PLastMeasured = P;
+            }
 
             return X;
         }
@@ -66,6 +88,8 @@ namespace KinectWithVRServer
     internal class JerkConst3DFilter : KalmanFilter
     {
         // This implementation of the Kalman filter is for a 3D point and assumes a constant jerk.
+        // Also note, this Kalman filter ignores any measured points that occured before the latest measurement
+        //
         // The state vector is in the following format:
         //     ┌   x   ┐
         //     |  xdot |
@@ -76,6 +100,11 @@ namespace KinectWithVRServer
         //     |   z   |
         //     |  zdot |
         //     └zdotdot┘
+        //
+        //The measurement vector is in the following format:
+        //     ┌x┐
+        // z = |y|
+        //     └z┘
 
         private double sigmaxSensor = 0.2;  //These are inital guesses that can be overridden by using the appropriate IntegrateMeasurement function
         private double sigmaySensor = 0.2;
@@ -83,6 +112,7 @@ namespace KinectWithVRServer
         private double sigmaxActual = 1;    //These are related to the physics of a human moving 
         private double sigmayActual = 1;
         private double sigmazActual = 1;
+        private DateTime? lastTime = null;
 
         internal JerkConst3DFilter()
         {
@@ -197,22 +227,80 @@ namespace KinectWithVRServer
             return R;
         }
 
-        internal Matrix IntegrateMeasurement(Matrix measurement, double deltaT, Vector sensorSigmas)
+        internal Matrix IntegrateMeasurement(Matrix measurement, DateTime time, Vector sensorSigmas)
         {
             sigmaxSensor = sensorSigmas[0];
             sigmaySensor = sensorSigmas[1];
             sigmazSensor = sensorSigmas[2];
 
-            return base.IntegrateMeasurement(measurement, deltaT);
+            double deltaT = 0;
+            if (lastTime.HasValue)
+            {
+                TimeSpan diff = time - lastTime.Value;
+                deltaT = diff.TotalSeconds;
+            }
+
+            if (deltaT >= 0)
+            {
+                lastTime = time;
+                return base.IntegrateMeasurement(measurement, deltaT);
+            }
+            else
+            {
+                return base.XLastMeasured;
+            }
         }
 
-        internal Matrix IntegrateMeasurement(Matrix measurement, double deltaT, double sensorSigma)
+        internal Matrix IntegrateMeasurement(Matrix measurement, DateTime time, double sensorSigmas)
         {
-            sigmaxSensor = sensorSigma;
-            sigmaySensor = sensorSigma;
-            sigmazSensor = sensorSigma;
+            sigmaxSensor = sensorSigmas;
+            sigmaySensor = sensorSigmas;
+            sigmazSensor = sensorSigmas;
 
-            return base.IntegrateMeasurement(measurement, deltaT);
+            double deltaT = 0;
+            if (lastTime.HasValue)
+            {
+                TimeSpan diff = time - lastTime.Value;
+                deltaT = diff.TotalSeconds;
+            }
+
+            if (deltaT >= 0)
+            {
+                lastTime = time;
+                return base.IntegrateMeasurement(measurement, deltaT);
+            }
+            else
+            {
+                return base.XLastMeasured;
+            }
+        }
+
+        internal Matrix PredictAndDiscardFromNow(double deltaTFromNow)
+        {
+            if (lastTime.HasValue)
+            {
+                TimeSpan diff = DateTime.UtcNow - lastTime.Value;
+                double deltaT = diff.TotalSeconds + deltaTFromNow;
+                return base.PredictAndDiscard(deltaT);
+            }
+            else
+            {
+                return base.PredictAndDiscard(0);
+            }
+        }
+
+        internal Matrix PredictAndDiscardFromNow(double deltaTFromNow, out Matrix covariance)
+        {
+            if (lastTime.HasValue)
+            {
+                TimeSpan diff = DateTime.UtcNow - lastTime.Value;
+                double deltaT = diff.TotalSeconds + deltaTFromNow;
+                return base.PredictAndDiscard(deltaT, out covariance);
+            }
+            else
+            {
+                return base.PredictAndDiscard(0, out covariance);
+            }
         }
     }
 }
