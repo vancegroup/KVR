@@ -12,11 +12,13 @@ namespace KinectWithVRServer
     internal class SkeletonMerger
     {
         //TODO: Figure out how to destroy unused skeletons on the fly without causing concurrency issues
-        List<FilteredSkeleton> filteredSkeletons;
+        //List<FilteredSkeleton> filteredSkeletons;
+        ConcurrentSkeletonCollection filteredSkeletons;
 
         internal SkeletonMerger()
         {
-            filteredSkeletons = new List<FilteredSkeleton>();
+            //filteredSkeletons = new List<FilteredSkeleton>();
+            filteredSkeletons = new ConcurrentSkeletonCollection();
         }
 
         internal void MergeSkeleton(KinectSkeleton skeleton)
@@ -24,8 +26,12 @@ namespace KinectWithVRServer
             //Only merge skeletons that have some sort of useful information
             if (skeleton.SkeletonTrackingState == TrackingState.Tracked || skeleton.SkeletonTrackingState == TrackingState.Inferred)
             {
+                filteredSkeletons.HoldUpdates();
+
                 int filteredSkeletonIndex = FindSkeletonNumber(skeleton);
                 IntegrateSkeleton(skeleton, filteredSkeletonIndex);
+
+                filteredSkeletons.ReleaseForUpdates();
             }
         }
 
@@ -36,15 +42,34 @@ namespace KinectWithVRServer
 
         internal KinectSkeleton[] GetAllPredictedSkeletons(double msAheadOfNow)
         {
-            KinectSkeleton[] skeletons = new KinectSkeleton[filteredSkeletons.Count];
+            System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+
+            filteredSkeletons.HoldUpdates();
+
+            List<KinectSkeleton> skeletons = new List<KinectSkeleton>();
 
             //TODO: This is crashing due to a concurrancy issue
-            for (int i = 0; i < skeletons.Length; i++)
+            //This seems to be caused by the delete happening in line 61 and the add in line 136
+            //To fix this, someone we have to mark the array to hang onto the skeleton until this function can be cleared
+            //I think it will have to be wrapped in a class
+            for (int i = 0; i < filteredSkeletons.Count; i++)
             {
-                skeletons[i] = filteredSkeletons[i].PredictSkeleton(msAheadOfNow);
+                if (filteredSkeletons[i].AgeMS > 5000)
+                {
+                    filteredSkeletons.RemoveAt(i);
+                }
+                else
+                {
+                    skeletons.Add(filteredSkeletons[i].PredictSkeleton(msAheadOfNow));
+                }
             }
 
-            return skeletons;
+            filteredSkeletons.ReleaseForUpdates();
+
+            watch.Stop();
+            System.Diagnostics.Debug.WriteLine("Predict all took {0} ms.", watch.ElapsedMilliseconds);
+
+            return skeletons.ToArray();
         }
 
         private int FindSkeletonNumber(KinectSkeleton skeleton)
@@ -55,13 +80,13 @@ namespace KinectWithVRServer
             {
                 //TODO: Should the time before desposal be changed?
                 //Check if the skeleton has been updated in the last 5 seconds, and discard it if it hasn't
-                if (filteredSkeletons[i].AgeMS > 5000)
-                {
-                    filteredSkeletons.RemoveAt(i);
-                    i--;
-                }
-                else //If the skeleton is still current, check the average distance to the merging skeletons joints
-                {
+                //if (filteredSkeletons[i].AgeMS > 5000)
+                //{
+                //    filteredSkeletons.RemoveAt(i);
+                //    i--;
+                //}
+                //else //If the skeleton is still current, check the average distance to the merging skeletons joints
+                //{
                     Point3D[] skelToCompare = filteredSkeletons[i].PredictPositionsOnly(0);
                     double average = 0;
                     int n = 0;
@@ -92,7 +117,7 @@ namespace KinectWithVRServer
                         averageDistance.Add(double.NaN);
                     }
                 }
-            }
+            //}
 
             //Go through the list of averages and find the lowest
             double absLowest = double.MaxValue;
@@ -779,7 +804,7 @@ namespace KinectWithVRServer
             TimeSpan trackingAge = DateTime.UtcNow - lastTrackedTime;
 
             //For debugging only
-            System.Diagnostics.Debug.WriteLine("Joint has age {0} ms with norm {1}", trackingAge.TotalMilliseconds, logNorm);
+            //System.Diagnostics.Debug.WriteLine("Joint has age {0} ms with norm {1}", trackingAge.TotalMilliseconds, logNorm);
 
             //TODO: Test to see if these thresholds need to be modified
             if (trackingAge.TotalMilliseconds > 1000)

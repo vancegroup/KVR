@@ -249,50 +249,23 @@
             </TabItem>
             
             <!--The gesture tab is disabled until such time as gestures are put into the server-->
-            <!--<TabItem Name="GestureTab" Header="Gesture Commands">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="41"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+            <TabItem Name="GestureTab" Header="Gesture Commands">
+                <Grid Name="GestureTabMasterGrid">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="4"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.ColumnSpan="5" Name="GestureInfoBlock" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextWrapping="Wrap" Margin="6,6,0,0" Width="Auto">
-                        <Bold>Gesture Information:</Bold> Select the gestures relevant to your project from below. The program will watch for selected gestures and return a message in the Log tab when they are seen for testing purposes. 
-                    </TextBlock>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Name="SwipeBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
-                        Swipe:<LineBreak/><CheckBox Name="UpSwipeCheckBox" Content="Up" Margin="4"/>
-                              <LineBreak/><CheckBox Name="DownSwipeCheckBox" Content="Down" Margin="4,0,4,4"/>
-                              <LineBreak/><CheckBox Name="RightSwipeCheckBox" Content="Right" Margin="4,0,4,4"/>
-                              <LineBreak/><CheckBox Name="LeftSwipeCheckBox" Content="Left" Margin="4,0"/>
-                    </TextBlock>
-                    <TextBlock Grid.Row="1" Grid.Column="1" Name="WaveBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
-                        Wave: <LineBreak/><CheckBox Name="RightWaveCheckBox" Content="Right" Margin="4"/>
-                              <LineBreak/><CheckBox Name="LeftWaveCheckBox" Content="Left" Margin="4,0,4,4"/>
-                    </TextBlock>
-                    <TextBlock Grid.Row="1" Grid.Column="2" Name="SelectionBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
-                        Selection: <LineBreak/><CheckBox Name="PushCheckBox" Content="Push" Margin="4"/>
-                              <LineBreak/><CheckBox Name="GrabCheckBox" Content="Grab" Margin="4,0,4,4"/>
-                    </TextBlock>
-                    <TextBlock Grid.Row="1" Grid.Column="3" Name="MiscBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4,0,0" Grid.ColumnSpan="2">
-                        Misc: <LineBreak/>
-                            <CheckBox Name="HandsGraspBox" Margin="4" Height="40">
-                                <TextBlock>
-                                    <Run Text="Hands"/><LineBreak/><Run Text="clasped"/>
-                                </TextBlock>
-                            </CheckBox>
-                    </TextBlock>
-                    <TextBlock Grid.Row="1" Grid.Column="4" Name="ServerBlock" HorizontalAlignment="Left" VerticalAlignment="Top" TextWrapping="Wrap" Margin="12,4">
-                        Enter server name:<LineBreak/><TextBox x:Name="GCServerInputBox" Height="22" Width="125" Margin="0,4" Text="Unconnected in code"/>
-                    </TextBlock>
+                    <ListBox Name="gestureTabListBox"/>
+                    <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns"/>
+                    <Grid Name="perGestureLayoutGrid" Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                    </Grid>
                 </Grid>
-            </TabItem>-->
+            </TabItem>
             
             <TabItem Name="SkeletonTab" Header="Skeleton Settings" RequestBringIntoView="SkeletonTab_RequestBringIntoView">
                 <TabControl Name="SkeletonsTabControl" TabStripPlacement="Bottom">
@@ -324,6 +297,8 @@
                                     <ComboBoxItem Content="Ascending Euclidean Distance from Feedback Sensor"/>
                                     <ComboBoxItem Content="Descending Euclidean Distance from Feedback Sensor"/>
                                 </ComboBox>
+                                <TextBlock Text="Predict Ahead (ms):" Margin="2" VerticalAlignment="Center"/>
+                                <TextBox Name="skeletonPredictAheadTextBox" Text="0" Width="32" Margin="2" VerticalAlignment="Center" TextAlignment="Right" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" LostFocus="skeletonPredictAheadTextBox_LostFocus"/>
                             </StackPanel>
                             <DataGrid Name="SkeletonSettingsDataGrid" Grid.Row="3" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False">
                                 <DataGrid.Columns>

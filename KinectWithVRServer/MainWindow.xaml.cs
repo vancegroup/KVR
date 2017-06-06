@@ -1905,6 +1905,19 @@ namespace KinectWithVRServer
         {
             server.serverMasterOptions.mergedSkeletonOptions.skeletonSortMode = (SkeletonSortMethod)SkelSortModeComboBox.SelectedIndex;
         }
+        //Controls how far ahead the merged skeleton should be predicting
+        private void skeletonPredictAheadTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            double temp;
+            if (double.TryParse(skeletonPredictAheadTextBox.Text, out temp))
+            {
+                server.serverMasterOptions.mergedSkeletonOptions.predictAheadMS = temp;
+            }
+            else
+            {
+                skeletonPredictAheadTextBox.Text = server.serverMasterOptions.mergedSkeletonOptions.predictAheadMS.ToString();
+            }
+        }
         #endregion
 
         #region Feedback Tab GUI Methods
@@ -2078,5 +2091,6 @@ namespace KinectWithVRServer
             }
         }
         #endregion
+
     }
 }

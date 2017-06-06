@@ -66,6 +66,7 @@ namespace KinectWithVRServer
         MainWindow parent;
         internal List<KinectBase.IKinectCore> kinects = new List<KinectBase.IKinectCore>();
         VoiceRecogCore voiceRecog;
+        GestureCore gestRecog;
         FeedbackCore feedbackCore;
         internal Point3D? feedbackPosition = null;
         private SkeletonMerger mergerCore;
@@ -145,6 +146,14 @@ namespace KinectWithVRServer
                         parent.ServerStatusTextBlock.Text = "Running";
                     }
                 }
+
+                //Start gesture recognition, if necessary
+                if (serverMasterOptions.gestureCommands.Count > 0)
+                {
+                    gestRecog = new GestureCore();
+                    gestRecog.GestureRecognizer += gestRecog_GestureRecognizer;
+                    WriteToVerboseLog("Gesture recognizer started.");
+                }
             }
             else
             {
@@ -156,7 +165,7 @@ namespace KinectWithVRServer
 
         private void voiceStartedCallback(IAsyncResult ar)
         {
-            HelperMethods.WriteToLog("Voice started!", parent);
+            HelperMethods.WriteToLog("Voice recognizer started!", parent);
 
             if (GUI)
             {
@@ -711,7 +720,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        void kinect_ColorFrameReceived(object sender, ColorFrameEventArgs e)
+        private void kinect_ColorFrameReceived(object sender, ColorFrameEventArgs e)
         {
             if (isRunning)
             {
@@ -769,7 +778,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        void kinect_DepthFrameReceived(object sender, DepthFrameEventArgs e)
+        private void kinect_DepthFrameReceived(object sender, DepthFrameEventArgs e)
         {
             if (isRunning)
             {
@@ -804,6 +813,43 @@ namespace KinectWithVRServer
                     }
                 }
             }
+        }
+        private void gestRecog_GestureRecognizer(object sender, GestureRecognizedEventArgs e)
+        {
+            //Check to see which gesture it is that was recognized
+            for (int i = 0; i < serverMasterOptions.gestureCommands.Count; i++)
+            {
+                if (serverMasterOptions.gestureCommands[i].gestureName == e.GestureName)
+                {
+                    //Find the VRPN server to use to send the command
+                    for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
+                    {
+                        if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.gestureCommands[i].serverName)
+                        {
+                            //Figure out what type of button to emulate and send the command
+                            GestureCommand shortCommand = serverMasterOptions.gestureCommands[i];
+                            if (shortCommand.buttonType == ButtonType.Momentary)
+                            {
+                                UpdateButtonData(j, shortCommand.buttonNumber, shortCommand.setState);
+
+                                //Run a delegate to change the state back, that way, even though it uses a blocking call, it will be blocking a thread we don't care about
+                                ToggleBackMomentaryButtonDelegate buttonDelegate = ToggleBackMomentaryButton;
+                                buttonDelegate.BeginInvoke(j, shortCommand.buttonNumber, shortCommand.initialState, null, null);
+                            }
+                            else if (shortCommand.buttonType == ButtonType.Setter)
+                            {
+                                UpdateButtonData(j, shortCommand.buttonNumber, shortCommand.setState);
+                            }
+                            else //Toggle button
+                            {
+                                InvertButton(j, shortCommand.buttonNumber);
+                            }
+                        }
+                    }
+                }
+            }
+
+            throw new NotImplementedException();
         }
 
         //This function goes through the skeletons from all the Kinects and figures out which ones are the same
@@ -845,9 +891,7 @@ namespace KinectWithVRServer
             //findSameSkeletons(mergeData);
             //List<MergedSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
 
-
-            //TODO: Add adjustable prediction time
-            List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(0));
+            List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
             List<KinectSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
 
             int usedSkeletonsCount = Math.Min(sortedSkeletons.Count, serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count);
@@ -2477,6 +2521,20 @@ namespace KinectWithVRServer
         }
         #endregion
 
+        private void WriteToVerboseLog(string message)
+        {
+            if (verbose)
+            {
+                HelperMethods.WriteToLog(message, parent);
+            }
+        }
+        private void ToggleBackMomentaryButton(int buttonServerIndex, int buttonNumber, bool state)
+        {
+            Thread.Sleep(500);
+            UpdateButtonData(buttonServerIndex, buttonNumber, state);
+        }
+
+        private delegate void ToggleBackMomentaryButtonDelegate(int buttonServerIndex, int buttonNumber, bool state);
         private delegate void runServerCoreDelegate();
         private delegate void launchVoiceRecognizerDelegate();
     }

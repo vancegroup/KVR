@@ -78,11 +78,13 @@ namespace KinectBase
 
             //Set defaults
             isSeatedMode = false;
+            predictAheadMS = 0;
             skeletonSortMode = SkeletonSortMethod.NoSort;
         }
 
         //public bool EnableTrackingInNearRange { get; set; } //This should just implicitly be enabled
         public bool isSeatedMode { get; set; }
+        public double predictAheadMS { get; set; }
         public SkeletonSortMethod skeletonSortMode { get; set; }
         public ObservableCollection<PerSkeletonSettings> individualSkeletons { get; set; }
     }
@@ -278,8 +280,14 @@ namespace KinectBase
         {
             get { return ServerType.Button; }
         }
-        public GestureType gestureType { get; set; }
+        public string gestureName { get; set; }
+
+        //Since the gestures will be sent as button commands, we need the button options here
         public int buttonNumber { get; set; }
+        public ButtonType buttonType { get; set; }
+        public bool initialState { get; set; }
+        public bool setState { get; set; }
+
         //This will likely need to be added to to handle recorded gestures
     }
 }

@@ -63,19 +63,21 @@ namespace KinectWithVRServer
 
         public Matrix IntegrateMeasurement(Matrix measurement, double deltaT)
         {
-            //"Prediction" Step
-            Matrix Xpredicted = getFMatrix(deltaT) * XLastMeasured;  //State estimate
-            Matrix Ppredicted = F * PLastMeasured * Matrix.Transpose(F) + getQMatrix(deltaT);  //Covariance estimate
-
-            //"Update" step
-            Matrix Y = measurement - H * Xpredicted;  //Measurement residual
-            Matrix S = H * Ppredicted * Matrix.Transpose(H) + R;  //Residual covariance
-            Matrix K = Ppredicted * Matrix.Transpose(H) * S.Inverse();  //Kalman gain
-            Matrix X = Xpredicted + K * Y; //Updated state
-            Matrix P = (Matrix.Identity(K.Rows) - K * H) * Ppredicted;
+            Matrix X;
 
             lock (XLastMeasured)
             {
+                //"Prediction" Step
+                Matrix Xpredicted = getFMatrix(deltaT) * XLastMeasured;  //State estimate
+                Matrix Ppredicted = F * PLastMeasured * Matrix.Transpose(F) + getQMatrix(deltaT);  //Covariance estimate
+
+                //"Update" step
+                Matrix Y = measurement - H * Xpredicted;  //Measurement residual
+                Matrix S = H * Ppredicted * Matrix.Transpose(H) + R;  //Residual covariance
+                Matrix K = Ppredicted * Matrix.Transpose(H) * S.Inverse();  //Kalman gain
+                X = Xpredicted + K * Y; //Updated state
+                Matrix P = (Matrix.Identity(K.Rows) - K * H) * Ppredicted;
+
                 timeSeconds += deltaT;
                 XLastMeasured = X;
                 PLastMeasured = P;
