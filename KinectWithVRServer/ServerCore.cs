@@ -885,9 +885,11 @@ namespace KinectWithVRServer
         }
         void parent_MergedSkeletonChanged(object sender, SkeletonEventArgs e)
         {
-            //These skeletons are pre-sorted, so we just need to send them on
-            doMergedSkeletonUpdate(new List<KinectSkeleton>(e.skeletons));
-            
+            if (e.kinectID == -105)  //Check that it is coming from the GUI skeleton merger
+            {
+                //These skeletons are pre-sorted, so we just need to send them on
+                doMergedSkeletonUpdate(new List<KinectSkeleton>(e.skeletons));
+            }
         }
         private void doMergedSkeletonUpdate(List<KinectSkeleton> sortedSkeletons)
         {

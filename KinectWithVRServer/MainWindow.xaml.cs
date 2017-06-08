@@ -222,7 +222,9 @@ namespace KinectWithVRServer
                         tempData.UseKinect = true;
                         tempData.KinectID = 0;
                         server.serverMasterOptions.kinectOptionsList.Add((IKinectSettings)(new KinectV1Wrapper.Settings(tempData.UniqueID, (int)tempData.KinectID)));
-                        server.kinects.Add((new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, (int)tempData.KinectID)));
+                        KinectV1Wrapper.Core temp = (new KinectV1Wrapper.Core(ref server.serverMasterOptions, true, (int)tempData.KinectID));
+                        temp.SkeletonChanged += sourceSkeletonChanged;
+                        server.kinects.Add(temp);
                         tempData.ServerStatus = "Running";
                     }
                     else
@@ -299,6 +301,7 @@ namespace KinectWithVRServer
             skeletonMergingTimer = new System.Timers.Timer();
             skeletonMergingTimer.Interval = 33;  //TODO: Change skeleton merging interval here, if desired
             skeletonMergingTimer.Elapsed += skeletonMergingTimer_Elapsed;
+            skeletonMergingTimer.Start();
 
             if (startOnLaunch)
             {
@@ -424,6 +427,8 @@ namespace KinectWithVRServer
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            skeletonMergingTimer.Stop();
+
             if (server.isRunning)
             {
                 server.stopServer();
@@ -1454,6 +1459,12 @@ namespace KinectWithVRServer
             //Predict ahead the skeletons and sort them
             List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(server.serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
             List<KinectSkeleton> sortedSkeletons = ServerCore.SortSkeletons(mergedSkeletons, server.serverMasterOptions.mergedSkeletonOptions.skeletonSortMode, null);
+
+            //Transmit the event
+            SkeletonEventArgs args = new SkeletonEventArgs();
+            args.kinectID = -105;  //This will be our code for "GUI merged skeleton"
+            args.skeletons = sortedSkeletons.ToArray();
+            OnSkeletonChanged(args);
         }
         private void sourceSkeletonChanged(object sender, SkeletonEventArgs e)
         {
@@ -1469,6 +1480,13 @@ namespace KinectWithVRServer
                     skeletons[i] = server.kinects[e.kinectID].TransformSkeleton(skeletons[i]);
                     mergerCore.MergeSkeleton(skeletons[i]);
                 }
+            }
+        }
+        private void OnSkeletonChanged(SkeletonEventArgs e)
+        {
+            if (MergedSkeletonChanged != null)
+            {
+                MergedSkeletonChanged(this, e);
             }
         }
         #endregion
