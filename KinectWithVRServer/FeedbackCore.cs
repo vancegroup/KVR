@@ -96,7 +96,7 @@ namespace KinectWithVRServer
             if (e.Sensor == watchedSensor)
             {
                 server.feedbackPosition = (System.Windows.Media.Media3D.Point3D)e.Position;
-
+                updateAudioBeamAngles(server.feedbackPosition.Value);
                 System.Diagnostics.Debug.WriteLine("Position: " + server.feedbackPosition.Value.X + ", " + server.feedbackPosition.Value.Y + ", " + server.feedbackPosition.Value.Z);
             }
         }
