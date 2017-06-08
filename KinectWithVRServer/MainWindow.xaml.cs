@@ -55,6 +55,9 @@ namespace KinectWithVRServer
         private float depthMax = 1;
         private bool updating = false;
 
+        //Event declarations
+        internal event SkeletonEventHandler MergedSkeletonChanged;
+
         public MainWindow(bool isVerbose, bool isAutoStart, AvaliableDLLs dlls, string startSettings = "")
         {
             verbose = isVerbose;

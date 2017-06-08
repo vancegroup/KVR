@@ -322,11 +322,18 @@ namespace KinectWithVRServer
             //Subscribe to the Kinect events
             subscribeToKinectEvents();
 
-            //Start the skeleton update timer
-            //TODO: Is this update rate okay?
-            skeletonUpdateTimer = new System.Timers.Timer(33); //Update at 30 FPS?
-            skeletonUpdateTimer.Elapsed += skeletonUpdateTimer_Elapsed;
-            skeletonUpdateTimer.Start();
+            //Subscribe to the skeleton merger, if in GUI mode (otherwise it runs off the update timer
+            if (GUI)
+            {
+                parent.MergedSkeletonChanged += parent_MergedSkeletonChanged;
+            }
+            else
+            {
+                //Start the skeleton update timer
+                skeletonUpdateTimer = new System.Timers.Timer(33); //Update at 30 FPS?
+                skeletonUpdateTimer.Elapsed += skeletonUpdateTimer_Elapsed;
+                skeletonUpdateTimer.Start();
+            }
 
             //The server isn't really running until everything is setup here.
             serverState = ServerRunState.Running;
@@ -351,8 +358,15 @@ namespace KinectWithVRServer
 
             //Cleanup everything
             unsubscribeFromKinectEvents();
-            skeletonUpdateTimer.Stop();
-            skeletonUpdateTimer.Elapsed -= skeletonUpdateTimer_Elapsed;
+            if (GUI)
+            {
+                parent.MergedSkeletonChanged -= parent_MergedSkeletonChanged;
+            }
+            else
+            {
+                skeletonUpdateTimer.Stop();
+                skeletonUpdateTimer.Elapsed -= skeletonUpdateTimer_Elapsed;
+            }
 
             //Dispose the analog servers
             serverState = ServerRunState.Stopping;
@@ -368,6 +382,7 @@ namespace KinectWithVRServer
 
             serverState = ServerRunState.Stopped;
         }
+
         private void keepAliveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             updateServersEvent.Set();
@@ -886,14 +901,26 @@ namespace KinectWithVRServer
         //}
         private void skeletonUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            //Old Merging method
-            //KinectSkeletonsData[] mergeData = perKinectSkeletons.ToArray();
-            //findSameSkeletons(mergeData);
-            //List<MergedSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
+            //If we aren't running off the GUI, do the merged skeleton update
+            //If we are running GUI, an event will get thrown from the GUI to update the skeleton
+            if (!GUI)
+            {
+                //Predict ahead the skeletons and sort them
+                List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
+                List<KinectSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
 
-            List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
-            List<KinectSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
-
+                doMergedSkeletonUpdate(sortedSkeletons);
+            }
+        }
+        void parent_MergedSkeletonChanged(object sender, SkeletonEventArgs e)
+        {
+            //These skeletons are pre-sorted, so we just need to send them on
+            doMergedSkeletonUpdate(new List<KinectSkeleton>(e.skeletons));
+            
+        }
+        private void doMergedSkeletonUpdate(List<KinectSkeleton> sortedSkeletons)
+        {
+            //Transmit the skeleton information over VRPN
             int usedSkeletonsCount = Math.Min(sortedSkeletons.Count, serverMasterOptions.mergedSkeletonOptions.individualSkeletons.Count);
             for (int i = 0; i < usedSkeletonsCount; i++)
             {
@@ -1311,219 +1338,6 @@ namespace KinectWithVRServer
                             KinectSkeleton tempSkeleton = trackedSkeletons[i];
                             //SkeletonPoint feedPosition = new SkeletonPoint() { X = (float)feedbackPosition.Value.X, Y = (float)feedbackPosition.Value.Y, Z = (float)feedbackPosition.Value.Z };
                             //double tempDistance = InterPointDistance(feedPosition, trackedSkeletons[i].skeleton.Position);
-                            double tempDistance = (feedbackPosition.Value - trackedSkeletons[i].Position).Length;
-
-                            while (insertIndex > 0 && tempDistance < (feedbackPosition.Value - trackedSkeletons[insertIndex - 1].Position).Length)
-                            {
-                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                                insertIndex--;
-                            }
-                            trackedSkeletons[insertIndex] = tempSkeleton;
-                        }
-
-                        if (sortMethod == SkeletonSortMethod.FeedbackEuclidFarthest)
-                        {
-                            trackedSkeletons.Reverse();
-                        }
-                    }
-                    else
-                    {
-                        return unsortedSkeletons;
-                    }
-                }
-                else
-                {
-                    return unsortedSkeletons;
-                }
-
-                //Add the untracked skeletons to the tracked ones before sending everything back
-                trackedSkeletons.AddRange(untrackedSkeletons);
-
-                return trackedSkeletons;
-            }
-        }
-        private List<MergedSkeleton> SortSkeletons(List<MergedSkeleton> unsortedSkeletons, SkeletonSortMethod sortMethod)
-        {
-            if (sortMethod == SkeletonSortMethod.NoSort)
-            {
-                return unsortedSkeletons;
-            }
-            else
-            {
-                //TODO: What point do I want to sort by?  Right now i am using head, but should i use something else?
-                //Seperate the tracked and untracked skeletons
-                List<MergedSkeleton> trackedSkeletons = new List<MergedSkeleton>();
-                List<MergedSkeleton> untrackedSkeletons = new List<MergedSkeleton>();
-                for (int i = 0; i < unsortedSkeletons.Count; i++)
-                {
-                    if (unsortedSkeletons[i].SkeletonTrackingState == TrackingState.NotTracked)
-                    {
-                        untrackedSkeletons.Add(unsortedSkeletons[i]);
-                    }
-                    else
-                    {
-                        trackedSkeletons.Add(unsortedSkeletons[i]);
-                    }
-                }
-
-                if (sortMethod == SkeletonSortMethod.OriginXClosest || sortMethod == SkeletonSortMethod.OriginXFarthest)
-                {
-                    //We only care about the tracked skeletons, so only sort those
-                    for (int i = 1; i < trackedSkeletons.Count; i++)
-                    {
-                        int insertIndex = i;
-                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
-
-                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.X) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.X))
-                        {
-                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                            insertIndex--;
-                        }
-                        trackedSkeletons[insertIndex] = tempSkeleton;
-                    }
-
-                    if (sortMethod == SkeletonSortMethod.OriginXFarthest)
-                    {
-                        trackedSkeletons.Reverse();
-                    }
-                }
-                else if (sortMethod == SkeletonSortMethod.OriginYClosest || sortMethod == SkeletonSortMethod.OriginYFarthest)
-                {
-                    //We only care about the tracked skeletons, so only sort those
-                    for (int i = 1; i < trackedSkeletons.Count; i++)
-                    {
-                        int insertIndex = i;
-                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
-
-                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Y))
-                        {
-                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                            insertIndex--;
-                        }
-                        trackedSkeletons[insertIndex] = tempSkeleton;
-                    }
-
-                    if (sortMethod == SkeletonSortMethod.OriginYFarthest)
-                    {
-                        trackedSkeletons.Reverse();
-                    }
-                }
-                else if (sortMethod == SkeletonSortMethod.OriginZClosest || sortMethod == SkeletonSortMethod.OriginZFarthest)
-                {
-                    //We only care about the tracked skeletons, so only sort those
-                    for (int i = 1; i < trackedSkeletons.Count; i++)
-                    {
-                        int insertIndex = i;
-                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
-
-                        while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Z))
-                        {
-                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                            insertIndex--;
-                        }
-                        trackedSkeletons[insertIndex] = tempSkeleton;
-                    }
-
-                    if (sortMethod == SkeletonSortMethod.OriginZFarthest)
-                    {
-                        trackedSkeletons.Reverse();
-                    }
-                }
-                else if (sortMethod == SkeletonSortMethod.OriginEuclidClosest || sortMethod == SkeletonSortMethod.OriginEuclidFarthest)
-                {
-                    //We only care about the tracked skeletons, so only sort those
-                    for (int i = 1; i < trackedSkeletons.Count; i++)
-                    {
-                        int insertIndex = i;
-                        MergedSkeleton tempSkeleton = trackedSkeletons[i];
-                        Point3D origin = new Point3D(0, 0, 0);
-                        double tempDistance = (origin - trackedSkeletons[i].Position).Length;
-
-                        while (insertIndex > 0 && tempDistance < (origin - trackedSkeletons[insertIndex - 1].Position).Length)
-                        {
-                            trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                            insertIndex--;
-                        }
-                        trackedSkeletons[insertIndex] = tempSkeleton;
-                    }
-
-                    if (sortMethod == SkeletonSortMethod.OriginEuclidFarthest)
-                    {
-                        trackedSkeletons.Reverse();
-                    }
-                }
-                else if (feedbackPosition != null)  //Sort based on the feedback position, if it isn't null
-                {
-                    if (sortMethod == SkeletonSortMethod.FeedbackXClosest || sortMethod == SkeletonSortMethod.FeedbackXFarthest)
-                    {
-                        //We only care about the tracked skeletons, so only sort those
-                        for (int i = 1; i < trackedSkeletons.Count; i++)
-                        {
-                            int insertIndex = i;
-                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
-
-                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.X - feedbackPosition.Value.X) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.X - feedbackPosition.Value.X))
-                            {
-                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                                insertIndex--;
-                            }
-                            trackedSkeletons[insertIndex] = tempSkeleton;
-                        }
-
-                        if (sortMethod == SkeletonSortMethod.FeedbackXFarthest)
-                        {
-                            trackedSkeletons.Reverse();
-                        }
-                    }
-                    else if (sortMethod == SkeletonSortMethod.FeedbackYClosest || sortMethod == SkeletonSortMethod.FeedbackYFarthest)
-                    {
-                        //We only care about the tracked skeletons, so only sort those
-                        for (int i = 1; i < trackedSkeletons.Count; i++)
-                        {
-                            int insertIndex = i;
-                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
-
-                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Y - feedbackPosition.Value.Y) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Y - feedbackPosition.Value.Y))
-                            {
-                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                                insertIndex--;
-                            }
-                            trackedSkeletons[insertIndex] = tempSkeleton;
-                        }
-
-                        if (sortMethod == SkeletonSortMethod.FeedbackYFarthest)
-                        {
-                            trackedSkeletons.Reverse();
-                        }
-                    }
-                    else if (sortMethod == SkeletonSortMethod.FeedbackZClosest || sortMethod == SkeletonSortMethod.FeedbackZFarthest)
-                    {
-                        //We only care about the tracked skeletons, so only sort those
-                        for (int i = 1; i < trackedSkeletons.Count; i++)
-                        {
-                            int insertIndex = i;
-                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
-
-                            while (insertIndex > 0 && Math.Abs(tempSkeleton.Position.Z - feedbackPosition.Value.Z) < Math.Abs(trackedSkeletons[insertIndex - 1].Position.Z - feedbackPosition.Value.Z))
-                            {
-                                trackedSkeletons[insertIndex] = trackedSkeletons[insertIndex - 1];
-                                insertIndex--;
-                            }
-                            trackedSkeletons[insertIndex] = tempSkeleton;
-                        }
-
-                        if (sortMethod == SkeletonSortMethod.FeedbackZFarthest)
-                        {
-                            trackedSkeletons.Reverse();
-                        }
-                    }
-                    else if (sortMethod == SkeletonSortMethod.FeedbackEuclidClosest || sortMethod == SkeletonSortMethod.FeedbackEuclidFarthest)
-                    {
-                        //We only care about the tracked skeletons, so only sort those
-                        for (int i = 1; i < trackedSkeletons.Count; i++)
-                        {
-                            int insertIndex = i;
-                            MergedSkeleton tempSkeleton = trackedSkeletons[i];
                             double tempDistance = (feedbackPosition.Value - trackedSkeletons[i].Position).Length;
 
                             while (insertIndex > 0 && tempDistance < (feedbackPosition.Value - trackedSkeletons[insertIndex - 1].Position).Length)

@@ -151,7 +151,6 @@
       <DependentUpon>KV2SettingsControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="KinectV2Wrapper\KV2StatusHelper.cs" />
-    <Compile Include="MergedSkeleton.cs" />
     <Compile Include="ServerCore.cs" />
     <Compile Include="Shaders\NoScalingEffect\NoScalingEffectWrapper.cs" />
     <Compile Include="SkeletonMerger.cs" />
