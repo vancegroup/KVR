@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Timers;
 
 namespace NetworkKinectCore
 {
@@ -32,6 +33,8 @@ namespace NetworkKinectCore
         private KinectBase.MasterSettings masterSettings;
         private NetworkKinectSettings kinectSettings;
         private NetworkKinectCore kinectCore;
+        private Timer guiUpdateTimer;
+        private bool hasNewData = false;
 
         //TODO: Subscribe this to the skeletonChanged event and update the GUI with a preview of the skeleton positions
         public NetworkKinectSettingsControl(int kinectNumber, ref KinectBase.MasterSettings settings, KinectBase.IKinectCore kinect)
@@ -55,6 +58,15 @@ namespace NetworkKinectCore
                     //Set the binding on the joint mapping data grid
                     jointMappingDataGrid.ItemsSource = kinectSettings.jointMappings;
                     jointMappingDataGrid.Items.Refresh();
+
+                    //Subscribe to the skeletonChanged event
+                    kinectCore.SkeletonChanged += kinectCore_SkeletonChanged;
+
+                    guiUpdateTimer = new Timer();
+                    guiUpdateTimer.Interval = 1000;
+                    guiUpdateTimer.AutoReset = true;
+                    guiUpdateTimer.Elapsed += guiUpdateTimer_Elapsed;
+                    guiUpdateTimer.Start();
                 }
                 else
                 {
@@ -65,6 +77,39 @@ namespace NetworkKinectCore
             {
                 throw new ArgumentNullException("settings");
             }
+        }
+
+        void guiUpdateTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            if (hasNewData)
+            {
+                this.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Normal, (System.Windows.Threading.DispatcherOperationCallback)delegate(object arg)
+                {
+                    jointMappingDataGrid.Items.Refresh();
+                    return null;
+                }, null);
+            }
+            hasNewData = false;
+        }
+
+        void kinectCore_SkeletonChanged(object sender, KinectBase.SkeletonEventArgs e)
+        {
+            for (int i = 0; i < e.skeletons[0].skeleton.Count; i++)
+            {
+                if (e.skeletons[0].skeleton[i].TrackingState == KinectBase.TrackingState.Tracked)
+                {
+                    for (int j = 0; j < kinectCore.masterKinectSettings.jointMappings.Count; j++)
+                    {
+                        if (e.skeletons[0].skeleton[i].JointType == kinectCore.masterKinectSettings.jointMappings[j].joint)
+                        {
+                            kinectCore.masterKinectSettings.jointMappings[j].lastPosition = e.skeletons[0].skeleton[i].Position;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            hasNewData = true;
         }
 
         public void UpdateGUI(KinectBase.MasterSettings settings)
