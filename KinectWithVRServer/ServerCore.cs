@@ -81,8 +81,11 @@ namespace KinectWithVRServer
             {
                 GUI = true;
             }
-
-            mergerCore = new SkeletonMerger();
+            else
+            {
+                //We need the merge core here if it is in console mode, otherwise it is in the parent window
+                mergerCore = new SkeletonMerger();
+            }
         }
 
         public void launchServer()
@@ -395,7 +398,7 @@ namespace KinectWithVRServer
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
                     KinectV1Wrapper.Settings tempSettings = (KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
-                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    if (tempSettings.sendRawSkeletons || (tempSettings.mergeSkeletons && !GUI))
                     {
                         kinects[i].SkeletonChanged += kinect_SkeletonChanged;
                     }
@@ -419,7 +422,7 @@ namespace KinectWithVRServer
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
                     KinectV2Wrapper.Settings tempSettings = (KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
-                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    if (tempSettings.sendRawSkeletons || (tempSettings.mergeSkeletons && !GUI))
                     {
                         kinects[i].SkeletonChanged += kinect_SkeletonChanged;
                     }
@@ -440,7 +443,7 @@ namespace KinectWithVRServer
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
                 {
                     NetworkKinectWrapper.Settings tempSettings = (NetworkKinectWrapper.Settings)serverMasterOptions.kinectOptionsList[i];
-                    if (tempSettings.mergeSkeletons)
+                    if (tempSettings.mergeSkeletons && !GUI)
                     {
                         kinects[i].SkeletonChanged += kinect_SkeletonChanged;
                     }
@@ -455,7 +458,7 @@ namespace KinectWithVRServer
                 if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV1)
                 {
                     KinectV1Wrapper.Settings tempSettings = (KinectV1Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
-                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    if (tempSettings.sendRawSkeletons || (tempSettings.mergeSkeletons && !GUI))
                     {
                         kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
                     }
@@ -479,7 +482,7 @@ namespace KinectWithVRServer
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.KinectV2)
                 {
                     KinectV2Wrapper.Settings tempSettings = (KinectV2Wrapper.Settings)serverMasterOptions.kinectOptionsList[i];
-                    if (tempSettings.mergeSkeletons || tempSettings.sendRawSkeletons)
+                    if (tempSettings.sendRawSkeletons || (tempSettings.mergeSkeletons && !GUI))
                     {
                         kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
                     }
@@ -499,7 +502,7 @@ namespace KinectWithVRServer
                 else if (serverMasterOptions.kinectOptionsList[i].version == KinectVersion.NetworkKinect)
                 {
                     NetworkKinectWrapper.Settings tempSettings = (NetworkKinectWrapper.Settings)serverMasterOptions.kinectOptionsList[i];
-                    if (tempSettings.mergeSkeletons)
+                    if (tempSettings.mergeSkeletons && !GUI)
                     {
                         kinects[i].SkeletonChanged -= kinect_SkeletonChanged;
                     }
@@ -599,7 +602,7 @@ namespace KinectWithVRServer
                         }
 
                         //Sort the raw skeletons
-                        List<KinectSkeleton> sortedSkeletons = SortSkeletons(new List<KinectSkeleton>(skeletons), tempSettings.rawSkeletonSettings.skeletonSortMode);
+                        List<KinectSkeleton> sortedSkeletons = SortSkeletons(new List<KinectSkeleton>(skeletons), tempSettings.rawSkeletonSettings.skeletonSortMode, feedbackPosition);
 
                         //Transmit the skeleton data
                         for (int i = 0; i < sortedSkeletons.Count; i++)
@@ -651,7 +654,7 @@ namespace KinectWithVRServer
                         }
 
                         //Sort the raw skeletons
-                        List<KinectSkeleton> sortedSkeletons = SortSkeletons(new List<KinectSkeleton>(skeletons), tempSettings.rawSkeletonSettings.skeletonSortMode);
+                        List<KinectSkeleton> sortedSkeletons = SortSkeletons(new List<KinectSkeleton>(skeletons), tempSettings.rawSkeletonSettings.skeletonSortMode, feedbackPosition);
 
                         //Transmit the skeleton data
                         for (int i = 0; i < sortedSkeletons.Count; i++)
@@ -684,54 +687,22 @@ namespace KinectWithVRServer
                 }
 
                 //Merge the skeletons into the ones collected by the other Kinects
-                //Note: this is code works for all types of Kinects
-                if (serverMasterOptions.kinectOptionsList[e.kinectID].mergeSkeletons)
+                //This only needs to run if it is in console mode, in GUI mode it is done elsewhere 
+                if (!GUI)
                 {
-                    //Copy the skeletons to a temporary variable
-                    KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
-                    Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
-
-                    //Transform the skeletons and send them to be merged
-                    for (int i = 0; i < skeletons.Length; i++)
+                    if (serverMasterOptions.kinectOptionsList[e.kinectID].mergeSkeletons)
                     {
-                        skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
-                        mergerCore.MergeSkeleton(skeletons[i]);
+                        //Copy the skeletons to a temporary variable
+                        KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
+                        Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
+
+                        //Transform the skeletons and send them to be merged
+                        for (int i = 0; i < skeletons.Length; i++)
+                        {
+                            skeletons[i] = kinects[e.kinectID].TransformSkeleton(skeletons[i]);
+                            mergerCore.MergeSkeleton(skeletons[i]);
+                        }
                     }
-
-                    ////NOTE: Old way of merging.  Delete once the new method is tested
-                    ////Add the skeletons to the merge list
-                    //Debug.WriteLine("Per Kinect Skeletons size: {0}", perKinectSkeletons.Count);
-                    //int tempCount = hitCount;
-                    //hitCount++;
-                    //Debug.WriteLine("Starting hit {0}", tempCount);
-                    ////This loop removes any skeletons from the perKinectSkeletons queue that are from the same Kinect as the one we have new data from
-                    //for (int i = 0; i < perKinectSkeletons.Count; i++)
-                    //{
-                    //    bool found = false;
-
-                    //    while (!found)
-                    //    {
-                    //        //Since we are using a concurrent collection, we have to take out the object, check if it is the one we want, and put it back if it isn't the one we want
-                    //        //It seems like a pain, but hopefully this fixes the threading issue
-                    //        KinectSkeletonsData skel;
-                    //        found = perKinectSkeletons.TryDequeue(out skel);
-                    //        if (found && skel.uniqueID != kinects[e.kinectID].uniqueKinectID)
-                    //        {
-                    //            perKinectSkeletons.Enqueue(skel);
-                    //        }
-                    //        //if (perKinectSkeletons[i].uniqueID == kinects[e.kinectID].uniqueKinectID)
-                    //        //{
-                    //        //    perKinectSkeletons.RemoveAt(i);
-                    //        //}
-                    //    }
-                    //}
-                    ////Add the new skeleton data to the queue to merge
-                    //KinectSkeletonsData kinectSkel = new KinectSkeletonsData(kinects[e.kinectID].uniqueKinectID, e.skeletons.Length);
-                    //kinectSkel.actualSkeletons = new List<KinectSkeleton>(skeletons);
-                    //kinectSkel.kinectID = e.kinectID;
-                    //perKinectSkeletons.Enqueue(kinectSkel);
-
-                    //Debug.WriteLine("Ending hit {0}", tempCount);
                 }
             }
         }
@@ -907,7 +878,7 @@ namespace KinectWithVRServer
             {
                 //Predict ahead the skeletons and sort them
                 List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
-                List<KinectSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode);
+                List<KinectSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode, feedbackPosition);
 
                 doMergedSkeletonUpdate(sortedSkeletons);
             }
@@ -1154,7 +1125,7 @@ namespace KinectWithVRServer
                 HelperMethods.WriteToLog(String.Format("Could not find the ID of the button server {0}.", handServerName), parent);
             }
         }
-        private List<KinectSkeleton> SortSkeletons(List<KinectSkeleton> unsortedSkeletons, SkeletonSortMethod sortMethod)
+        internal static List<KinectSkeleton> SortSkeletons(List<KinectSkeleton> unsortedSkeletons, SkeletonSortMethod sortMethod, Point3D? feedbackPosition)
         {
             if (sortMethod == SkeletonSortMethod.NoSort)
             {

@@ -34,6 +34,7 @@ namespace KinectWithVRServer
         internal string ColorStreamUniqueID = "";
         internal string DepthStreamUniqueID = "";
         System.Timers.Timer uptimeUpdateTimer;
+        System.Timers.Timer skeletonMergingTimer;
         internal ObservableCollection<AvailableKinectData> availableKinects = new ObservableCollection<AvailableKinectData>();
         internal ObservableCollection<ConfiguredServerData> configuredServers = new ObservableCollection<ConfiguredServerData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
@@ -54,6 +55,7 @@ namespace KinectWithVRServer
         private float depthMin = 0;
         private float depthMax = 1;
         private bool updating = false;
+        private SkeletonMerger mergerCore;
 
         //Event declarations
         internal event SkeletonEventHandler MergedSkeletonChanged;
@@ -291,6 +293,12 @@ namespace KinectWithVRServer
             //Set the initial shader for the depth image
             depthEffect = new Shaders.NoScalingEffect();
             DepthImage.Effect = depthEffect;
+
+            //Start a timer for the skeleton merging
+            mergerCore = new SkeletonMerger();
+            skeletonMergingTimer = new System.Timers.Timer();
+            skeletonMergingTimer.Interval = 33;  //TODO: Change skeleton merging interval here, if desired
+            skeletonMergingTimer.Elapsed += skeletonMergingTimer_Elapsed;
 
             if (startOnLaunch)
             {
@@ -715,9 +723,9 @@ namespace KinectWithVRServer
                         }
                         else if (availableKinects[i].kinectType == KinectVersion.NetworkKinect)
                         {
-                            //TODO: Launch the networked kinect server here (unless I have a VRPN limitation I need to work around)
                             server.kinects.Add(new NetworkKinectWrapper.Core(ref server.serverMasterOptions, true, (int)availableKinects[i].KinectID, availableKinects[i].UniqueID));
                         }
+                        server.kinects[i].SkeletonChanged += sourceSkeletonChanged;
                         availableKinects[i].ServerStatus = "Running";
                     }
                 }
@@ -735,6 +743,7 @@ namespace KinectWithVRServer
                                 kinectsAvailableDataGrid.UpdateLayout();
                                 System.Threading.Thread.Sleep(10);
                                 ForceGUIUpdate();
+                                server.kinects[j].SkeletonChanged -= sourceSkeletonChanged;
                                 server.kinects[j].ShutdownSensor(); //TODO: This fails sometimes...  There seems to be a race condition and the obect is getting removed between the if statement and the shutdown call
                                 server.kinects.RemoveAt(j);
                                 availableKinects[i].ServerStatus = "Stopped";
@@ -1149,7 +1158,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        void MainWindow_ColorFrameReceived(object sender, ColorFrameEventArgs e)
+        private void MainWindow_ColorFrameReceived(object sender, ColorFrameEventArgs e)
         {
             if (!updating)
             {
@@ -1183,7 +1192,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        void MainWindow_DepthFrameReceived(object sender, DepthFrameEventArgs e)
+        private void MainWindow_DepthFrameReceived(object sender, DepthFrameEventArgs e)
         {
             if (!updating)
             {
@@ -1213,7 +1222,7 @@ namespace KinectWithVRServer
                 DepthFPSTextBlock.Text = tempFPS.ToString("F1");
             }
         }
-        void MainWindow_SkeletonChangedColor(object sender, SkeletonEventArgs e)
+        private void MainWindow_SkeletonChangedColor(object sender, SkeletonEventArgs e)
         {
             if (!drawingColorSkeleton && !updating)
             {                
@@ -1226,7 +1235,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        void MainWindow_SkeletonChangedDepth(object sender, SkeletonEventArgs e)
+        private void MainWindow_SkeletonChangedDepth(object sender, SkeletonEventArgs e)
         {
             if (!drawingDepthSkeleton && !updating)
             {
@@ -1239,7 +1248,7 @@ namespace KinectWithVRServer
                 }
             }
         }
-        void CheckAndChangeDepthShader(int kinectIndex)
+        private void CheckAndChangeDepthShader(int kinectIndex)
         {
             bool colorize = false;
             bool scale = false;
@@ -1291,7 +1300,7 @@ namespace KinectWithVRServer
                 DepthImage.Effect = depthEffect;
             }
         }
-        void UpdateShaderMinMax(float min, float max)
+        private void UpdateShaderMinMax(float min, float max)
         {
             //Check if the min or max has changed, and update it accordingly if needed
             if (scaleDepth || colorDepth)
@@ -1434,6 +1443,32 @@ namespace KinectWithVRServer
             if (!KinectBase.HelperMethods.NumberKeys.Contains(e.Key))
             {
                 e.Handled = true;
+            }
+        }
+        #endregion
+
+        #region Skeleton Merging Methods
+        //Skeleton merging update event
+        private void skeletonMergingTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            //Predict ahead the skeletons and sort them
+            List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(server.serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
+            List<KinectSkeleton> sortedSkeletons = ServerCore.SortSkeletons(mergedSkeletons, server.serverMasterOptions.mergedSkeletonOptions.skeletonSortMode, null);
+        }
+        private void sourceSkeletonChanged(object sender, SkeletonEventArgs e)
+        {
+            if (server.serverMasterOptions.kinectOptionsList[e.kinectID].mergeSkeletons)
+            {
+                //Copy the skeletons to a temporary variable
+                KinectSkeleton[] skeletons = new KinectSkeleton[e.skeletons.Length];
+                Array.Copy(e.skeletons, skeletons, e.skeletons.Length);
+
+                //Transform the skeletons and send them to be merged
+                for (int i = 0; i < skeletons.Length; i++)
+                {
+                    skeletons[i] = server.kinects[e.kinectID].TransformSkeleton(skeletons[i]);
+                    mergerCore.MergeSkeleton(skeletons[i]);
+                }
             }
         }
         #endregion
@@ -1815,7 +1850,10 @@ namespace KinectWithVRServer
                 }
                 else if (server.kinects[i].version == KinectVersion.NetworkKinect)
                 {
-                    //TODO: Add the number of skeletons for each used networked kinect
+                    if (((NetworkKinectWrapper.Settings)server.serverMasterOptions.kinectOptionsList[i]).mergeSkeletons)
+                    {
+                        totalSkeletons += 1;  //Each networked Kinect only supports 1 person
+                    }
                 }
             }
 
