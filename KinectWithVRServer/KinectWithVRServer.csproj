@@ -123,7 +123,6 @@
     <Compile Include="ConcurrentSkeletonCollection.cs" />
     <Compile Include="ConsoleUI.cs" />
     <Compile Include="GestureCore.cs" />
-    <Compile Include="KalmanFilter.cs" />
     <Compile Include="NetworkKinectWrapper\NKAddDialog.xaml.cs">
       <DependentUpon>NKAddDialog.xaml</DependentUpon>
     </Compile>

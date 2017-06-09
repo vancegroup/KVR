@@ -47,13 +47,12 @@ namespace KinectV1Core
 
         internal KinectBase.MasterSettings masterSettings;
         internal KinectV1Settings masterKinectSettings;
-        //public int skelcount;  //TODO: Where was this going to be used? I can't find any references to it.
         private InteractionStream interactStream;
         private System.Timers.Timer updateTimer;
         private List<HandGrabInfo> skeletonHandGrabData = new List<HandGrabInfo>();
         private Matrix3D skeletonTransformation = Matrix3D.Identity;
         private Quaternion skeletonRotQuaternion = Quaternion.Identity;  //TODO: This needs to be set to rotate the joint orientations appropriately
-        private Vector4 lastAcceleration;
+        //private Vector4 lastAcceleration;
         private bool isColorStreamOn = false;
         private bool isDepthStreamOn = false;
         internal bool? isXbox360Kinect = null;
@@ -61,6 +60,8 @@ namespace KinectV1Core
         private System.IO.Stream audioStream = null;
         private KinectBase.ObjectPool<byte[]> colorImagePool;
         private KinectBase.ObjectPool<byte[]> depthImagePool;
+        private bool accelFilterStarted = false;
+        private KinectBase.Const3DFilter accelerationFilter = new KinectBase.Const3DFilter();
 
         //Event declarations
         public event KinectBase.SkeletonEventHandler SkeletonChanged;
@@ -450,7 +451,7 @@ namespace KinectV1Core
             {
                 if (kinect != null && kinect.IsRunning)
                 {
-                    //I wish these try/catch statements weren't necessary, but these two calls seemed to failed often
+                    //I wish these try/catch statements weren't necessary, but these two calls seemed to fail often
                     dataValid = true;
                     try
                     {
@@ -480,8 +481,15 @@ namespace KinectV1Core
             //Update the GUI
             if (dataValid)
             {
+                //Update the filtered acceleration
+                EigenWrapper.Matrix accelMat = new EigenWrapper.Matrix(3, 1);
+                accelMat[0, 0] = acceleration.Value.X;
+                accelMat[1, 0] = acceleration.Value.Y;
+                accelMat[2, 0] = acceleration.Value.Z;
+                accelerationFilter.IntegrateMeasurement(accelMat, DateTime.UtcNow, 0.01);
+                accelFilterStarted = true;
+                //lastAcceleration = acceleration.Value;
                 //Transmits the acceleration data using an event
-                lastAcceleration = acceleration.Value;
                 KinectBase.AccelerationEventArgs accelE = new KinectBase.AccelerationEventArgs();
                 accelE.kinectID = this.kinectID;
                 accelE.acceleration = new Vector3D(acceleration.Value.X, acceleration.Value.Y, acceleration.Value.Z);
@@ -495,8 +503,15 @@ namespace KinectV1Core
 
                 //Send the acceleration, if it is valid
                 if (acceleration.HasValue)
-                {
-                    lastAcceleration = acceleration.Value;
+                {                
+                    //Update the filtered acceleration
+                    EigenWrapper.Matrix accelMat = new EigenWrapper.Matrix(3, 1);
+                    accelMat[0, 0] = acceleration.Value.X;
+                    accelMat[1, 0] = acceleration.Value.Y;
+                    accelMat[2, 0] = acceleration.Value.Z;
+                    accelerationFilter.IntegrateMeasurement(accelMat, DateTime.UtcNow, 0.01);
+                    accelFilterStarted = true;
+                    //lastAcceleration = acceleration.Value;
                     accelE.acceleration = new Vector3D(acceleration.Value.X, acceleration.Value.Y, acceleration.Value.Z);
                 }
                 else
@@ -528,15 +543,30 @@ namespace KinectV1Core
                     Skeleton[] skeletons = new Skeleton[skelFrame.SkeletonArrayLength];
                     skelFrame.CopySkeletonDataTo(skeletons);
 
-                    if (interactStream != null && lastAcceleration != null)
+
+                    EigenWrapper.Matrix predAccel = new EigenWrapper.Matrix(3, 1);
+                    predAccel[2, 0] = 1;
+                    if (accelFilterStarted)
                     {
-                        interactStream.ProcessSkeleton(skeletons, lastAcceleration, skelFrame.Timestamp);
+                        predAccel = accelerationFilter.PredictAndDiscard(0);
+                    }
+
+                    if (interactStream != null)
+                    {
+                        Vector4 filteredAccel = new Vector4();
+                        filteredAccel.W = 0;
+                        filteredAccel.X = (float)predAccel[0, 0];
+                        filteredAccel.Y = (float)predAccel[1, 0];
+                        filteredAccel.Z = (float)predAccel[2, 0];
+                        interactStream.ProcessSkeleton(skeletons, filteredAccel, skelFrame.Timestamp);
+
+                        System.Diagnostics.Trace.WriteLine("[" + filteredAccel.X + ", " + filteredAccel.Y + ", " + filteredAccel.Z + "]");
                     }
 
                     //Generate the transformation matrix for the skeletons
                     double kinectYaw = masterKinectSettings.kinectYaw;
                     Point3D kinectPosition = masterKinectSettings.kinectPosition;
-                    Matrix3D gravityBasedKinectRotation = findRotation(new Vector3D(lastAcceleration.X, lastAcceleration.Y, lastAcceleration.Z), new Vector3D(0, -1, 0));
+                    Matrix3D gravityBasedKinectRotation = findRotation(new Vector3D(predAccel[0, 0], predAccel[1, 0], predAccel[2, 0]), new Vector3D(0, -1, 0));
                     AxisAngleRotation3D yawRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), -kinectYaw);
                     RotateTransform3D tempTrans = new RotateTransform3D(yawRotation);
                     TranslateTransform3D transTrans = new TranslateTransform3D((Vector3D)kinectPosition);
