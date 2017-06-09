@@ -52,6 +52,8 @@ namespace KinectWithVRServer
         private System.Windows.Media.Effects.ShaderEffect depthEffect;
         private bool scaleDepth = false;
         private bool colorDepth = false;
+        private bool colorKinectSkeleton = true;
+        private bool depthKinectSkeleton = true;
         private float depthMin = 0;
         private float depthMax = 1;
         private bool updating = false;
@@ -1087,7 +1089,14 @@ namespace KinectWithVRServer
                         if (server.kinects[i].uniqueKinectID == ColorStreamUniqueID)
                         {
                             server.kinects[i].ColorFrameReceived -= MainWindow_ColorFrameReceived;
-                            server.kinects[i].SkeletonChanged -= MainWindow_SkeletonChangedColor;
+                            if (colorKinectSkeletonsRadioButton.IsChecked == true)
+                            {
+                                server.kinects[i].SkeletonChanged -= MainWindow_SkeletonChangedColor;
+                            }
+                            else
+                            {
+                                this.MergedSkeletonChanged -= MainWindow_SkeletonChangedColor;
+                            }
                             ColorStreamUniqueID = "";
                         }
                     }
@@ -1098,6 +1107,7 @@ namespace KinectWithVRServer
                 {
                     ColorStreamUniqueID = "";
                     ColorImage.Visibility = System.Windows.Visibility.Hidden;
+                    ChangeColorSkeletonOptionEnabled(false);
 
                     //Set the frame rate display to 0
                     ColorFPSTextBlock.Text = "0.0";
@@ -1112,8 +1122,18 @@ namespace KinectWithVRServer
                     {
                         ColorStreamUniqueID = server.kinects[kinectIndex].uniqueKinectID;
                         ColorImage.Visibility = System.Windows.Visibility.Visible;
+                        ChangeColorSkeletonOptionEnabled(true);
                         server.kinects[kinectIndex].ColorFrameReceived += MainWindow_ColorFrameReceived;
-                        server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedColor;
+                        if (colorKinectSkeletonsRadioButton.IsChecked == true)
+                        {
+                            colorKinectSkeleton = true;
+                            server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedColor;
+                        }
+                        else
+                        {
+                            colorKinectSkeleton = false;
+                            this.MergedSkeletonChanged += MainWindow_SkeletonChangedColor;
+                        }
                     }
                 }
             }
@@ -1130,7 +1150,14 @@ namespace KinectWithVRServer
                         if (server.kinects[i].uniqueKinectID == DepthStreamUniqueID)
                         {
                             server.kinects[i].DepthFrameReceived -= MainWindow_DepthFrameReceived;
-                            server.kinects[i].SkeletonChanged -= MainWindow_SkeletonChangedDepth;
+                            if (depthKinectSkeletonsRadioButton.IsChecked == true)
+                            {
+                                server.kinects[i].SkeletonChanged -= MainWindow_SkeletonChangedDepth;
+                            }
+                            else
+                            {
+                                this.MergedSkeletonChanged -= MainWindow_SkeletonChangedDepth;
+                            }
                             DepthStreamUniqueID = "";
                         }
                     }
@@ -1141,6 +1168,7 @@ namespace KinectWithVRServer
                 {
                     DepthStreamUniqueID = "";
                     DepthImage.Visibility = System.Windows.Visibility.Hidden;
+                    ChangeDepthSkeletonOptionEnabled(false);
 
                     //Set the frame rate display to 0
                     DepthFPSTextBlock.Text = "0.0";
@@ -1155,10 +1183,114 @@ namespace KinectWithVRServer
                     {
                         DepthStreamUniqueID = server.kinects[kinectIndex].uniqueKinectID;
                         DepthImage.Visibility = System.Windows.Visibility.Visible;
+                        ChangeDepthSkeletonOptionEnabled(true);
                         server.kinects[kinectIndex].DepthFrameReceived += MainWindow_DepthFrameReceived;
-                        server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedDepth;
+                        if (depthKinectSkeletonsRadioButton.IsChecked == true)
+                        {
+                            depthKinectSkeleton = true;
+                            server.kinects[kinectIndex].SkeletonChanged += MainWindow_SkeletonChangedDepth;
+                        }
+                        else
+                        {
+                            depthKinectSkeleton = false;
+                            this.MergedSkeletonChanged += MainWindow_SkeletonChangedDepth;
+                        }
 
                         CheckAndChangeDepthShader(kinectIndex);
+                    }
+                }
+            }
+        }
+        private void colorSkeletonsRadioButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ColorSourcePickerComboBox.SelectedItem != null)
+            {
+                bool goingToKinect = colorKinectSkeletonsRadioButton.IsChecked.Value;
+
+                //Remove the events from the previous selection
+                if (server != null)
+                {
+                    if (goingToKinect)
+                    {
+                        this.MergedSkeletonChanged -= MainWindow_SkeletonChangedColor;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < server.kinects.Count; i++)
+                        {
+                            if (server.kinects[i].uniqueKinectID == ColorStreamUniqueID)
+                            {
+                                server.kinects[i].SkeletonChanged -= MainWindow_SkeletonChangedColor;
+                            }
+                        }
+                    }
+                }
+
+                //Add the event for the current selection
+                if (ColorStreamUniqueID != "")
+                {
+                    if (goingToKinect)
+                    {
+                        for (int i = 0; i < server.kinects.Count; i++)
+                        {
+                            if (server.kinects[i].uniqueKinectID == ColorStreamUniqueID)
+                            {
+                                colorKinectSkeleton = true;
+                                server.kinects[i].SkeletonChanged += MainWindow_SkeletonChangedColor;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        colorKinectSkeleton = false;
+                        this.MergedSkeletonChanged += MainWindow_SkeletonChangedColor;
+                    }
+                }
+            }
+        }
+        private void depthSkeletonsRadioButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DepthSourcePickerComboBox.SelectedItem != null)
+            {
+                bool goingToKinect = depthKinectSkeletonsRadioButton.IsChecked.Value;
+
+                //Remove the events from the previous selection
+                if (server != null)
+                {
+                    if (goingToKinect)
+                    {
+                        this.MergedSkeletonChanged -= MainWindow_SkeletonChangedDepth;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < server.kinects.Count; i++)
+                        {
+                            if (server.kinects[i].uniqueKinectID == DepthStreamUniqueID)
+                            {
+                                server.kinects[i].SkeletonChanged -= MainWindow_SkeletonChangedDepth;
+                            }
+                        }
+                    }
+                }
+
+                //Add the event for the current selection
+                if (DepthStreamUniqueID != "")
+                {
+                    if (goingToKinect)
+                    {
+                        for (int i = 0; i < server.kinects.Count; i++)
+                        {
+                            if (server.kinects[i].uniqueKinectID == DepthStreamUniqueID)
+                            {
+                                depthKinectSkeleton = true;
+                                server.kinects[i].SkeletonChanged += MainWindow_SkeletonChangedDepth;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        depthKinectSkeleton = false;
+                        this.MergedSkeletonChanged += MainWindow_SkeletonChangedDepth;
                     }
                 }
             }
@@ -1229,27 +1361,62 @@ namespace KinectWithVRServer
         }
         private void MainWindow_SkeletonChangedColor(object sender, SkeletonEventArgs e)
         {
-            if (!drawingColorSkeleton && !updating)
-            {                
-                drawingColorSkeleton = true;
-
-                ColorImageCanvas.Children.Clear();
-                for (int i = 0; i < e.skeletons.Length; i++)
+            if (!drawingColorSkeleton && !updating && e.skeletons.Length > 0)
+            {
+                if (colorKinectSkeleton)
                 {
-                    RenderSkeletonOnColor(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID);
+                    drawingColorSkeleton = true;
+
+                    ColorImageCanvas.Children.Clear();
+                    for (int i = 0; i < e.skeletons.Length; i++)
+                    {
+                        RenderSkeletonOnColor(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID, false);
+                    }
+                }
+                else
+                {
+                    //The merged skeleton event gets thrown from a timer, on another thread, so we have to invoke the drawing
+                    this.Dispatcher.BeginInvoke((Action<KinectSkeleton[]>)(skeletons =>
+                    {
+                        drawingColorSkeleton = true;
+
+                        ColorImageCanvas.Children.Clear();
+                        for (int i = 0; i < skeletons.Length; i++)
+                        {
+                            RenderSkeletonOnColor(skeletons[i], AutoPickSkeletonRenderColor(i), GetIDofKinect(ColorStreamUniqueID), true);
+                        }
+                    }), (object)e.skeletons);
                 }
             }
         }
         private void MainWindow_SkeletonChangedDepth(object sender, SkeletonEventArgs e)
         {
-            if (!drawingDepthSkeleton && !updating)
+            if (!drawingDepthSkeleton && !updating && e.skeletons.Length > 0)
             {
-                drawingDepthSkeleton = true;
-
-                DepthImageCanvas.Children.Clear();
-                for (int i = 0; i < e.skeletons.Length; i++)
+                if (depthKinectSkeleton)
                 {
-                    RenderSkeletonOnDepth(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID);
+                    drawingDepthSkeleton = true;
+
+                    DepthImageCanvas.Children.Clear();
+                    for (int i = 0; i < e.skeletons.Length; i++)
+                    {
+                        RenderSkeletonOnDepth(e.skeletons[i], AutoPickSkeletonRenderColor(i), e.kinectID, false);
+                    }
+                }
+                else
+                {
+                    this.Dispatcher.BeginInvoke((Action<KinectSkeleton[]>)(skeletons =>
+                    {
+                        drawingDepthSkeleton = true;
+
+                        DepthImageCanvas.Children.Clear();
+                        for (int i = 0; i < skeletons.Length; i++)
+                        {
+                            Trace.WriteLine("Point 4, i=" + i.ToString());
+                            RenderSkeletonOnDepth(skeletons[i], AutoPickSkeletonRenderColor(i), GetIDofKinect(DepthStreamUniqueID), true);
+                            Trace.WriteLine("Point 5, i=" + i.ToString());
+                        }
+                    }), (object)e.skeletons);
                 }
             }
         }
@@ -1332,6 +1499,28 @@ namespace KinectWithVRServer
                     }
                 }
             }
+        }
+        private void ChangeColorSkeletonOptionEnabled(bool isEnabled)
+        {
+            colorKinectSkeletonsRadioButton.IsEnabled = isEnabled;
+            colorMergedSkeletonsRadioButton.IsEnabled = isEnabled;
+        }
+        private void ChangeDepthSkeletonOptionEnabled(bool isEnabled)
+        {
+            depthKinectSkeletonsRadioButton.IsEnabled = isEnabled;
+            depthMergedSkeletonsRadioButton.IsEnabled = isEnabled;
+        }
+        private int GetIDofKinect(string kinectUniqueID)
+        {
+            for (int i = 0; i < server.kinects.Count; i++)
+            {
+                if (server.kinects[i].uniqueKinectID == kinectUniqueID)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
         #endregion
 
@@ -1461,10 +1650,13 @@ namespace KinectWithVRServer
             List<KinectSkeleton> sortedSkeletons = ServerCore.SortSkeletons(mergedSkeletons, server.serverMasterOptions.mergedSkeletonOptions.skeletonSortMode, null);
 
             //Transmit the event
-            SkeletonEventArgs args = new SkeletonEventArgs();
-            args.kinectID = -105;  //This will be our code for "GUI merged skeleton"
-            args.skeletons = sortedSkeletons.ToArray();
-            OnSkeletonChanged(args);
+            if (sortedSkeletons.Count > 0)
+            {
+                SkeletonEventArgs args = new SkeletonEventArgs();
+                args.kinectID = -105;  //This will be our code for "GUI merged skeleton"
+                args.skeletons = sortedSkeletons.ToArray();
+                OnSkeletonChanged(args);
+            }
         }
         private void sourceSkeletonChanged(object sender, SkeletonEventArgs e)
         {
@@ -1492,13 +1684,13 @@ namespace KinectWithVRServer
         #endregion
 
         #region Skeleton Rendering Methods
-        private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID)
+        private void DrawBoneOnColor(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID, bool inverseTransform)
         {
-            if (startJoint.TrackingState != TrackingState.NotTracked && endJoint.TrackingState != TrackingState.NotTracked)
+            if (startJoint.TrackingState != TrackingState.NotTracked && endJoint.TrackingState != TrackingState.NotTracked && kinectID >= 0)
             {
                 //Map the joint from the skeleton to the color image
-                Point startPoint = server.kinects[kinectID].MapJointToColor(startJoint, false);
-                Point endPoint = server.kinects[kinectID].MapJointToColor(endJoint, false);
+                Point startPoint = server.kinects[kinectID].MapJointToColor(startJoint, inverseTransform);
+                Point endPoint = server.kinects[kinectID].MapJointToColor(endJoint, inverseTransform);
 
                 //Don't draw bones that are off the image
                 if (startPoint.X < 0 || startPoint.Y < 0 || startPoint.X >= colorSource.PixelWidth || startPoint.Y >= colorSource.PixelHeight ||
@@ -1531,13 +1723,13 @@ namespace KinectWithVRServer
                 ColorImageCanvas.Children.Add(line);
             }
         }
-        private void DrawBoneOnDepth(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID)
+        private void DrawBoneOnDepth(Joint startJoint, Joint endJoint, Color boneColor, double thickness, Point offset, int kinectID, bool inverseTransform)
         {
-            if (startJoint.TrackingState != TrackingState.NotTracked && endJoint.TrackingState != TrackingState.NotTracked)
+            if (startJoint.TrackingState != TrackingState.NotTracked && endJoint.TrackingState != TrackingState.NotTracked && kinectID >= 0)
             {
                 //Map the joint from the skeleton to the depth image
-                Point startPoint = server.kinects[kinectID].MapJointToDepth(startJoint, false);
-                Point endPoint = server.kinects[kinectID].MapJointToDepth(endJoint, false);
+                Point startPoint = server.kinects[kinectID].MapJointToDepth(startJoint, inverseTransform);
+                Point endPoint = server.kinects[kinectID].MapJointToDepth(endJoint, inverseTransform);
 
                 //Don't draw bones that are off the image
                 if (startPoint.X < 0 || startPoint.Y < 0 || startPoint.X >= depthSource.PixelWidth || startPoint.Y >= depthSource.PixelHeight ||
@@ -1570,12 +1762,12 @@ namespace KinectWithVRServer
                 DepthImageCanvas.Children.Add(line);
             }
         }
-        private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset, int kinectID)
+        private void DrawJointPointOnColor(Joint joint, Color jointColor, double radius, Point offset, int kinectID, bool inverseTransform)
         {
-            if (joint.TrackingState != TrackingState.NotTracked)
+            if (joint.TrackingState != TrackingState.NotTracked && kinectID >= 0)
             {
                 //Map the joint from the skeleton to the color image
-                Point point = server.kinects[kinectID].MapJointToColor(joint, false);
+                Point point = server.kinects[kinectID].MapJointToColor(joint, inverseTransform);
 
                 //Don't draw points that are off the image
                 if (point.X < 0 || point.Y < 0 || point.X >= colorSource.PixelWidth || point.Y >= colorSource.PixelHeight)
@@ -1605,12 +1797,12 @@ namespace KinectWithVRServer
                 ColorImageCanvas.Children.Add(circle);
             }
         }
-        private void DrawJointPointOnDepth(Joint joint, Color jointColor, double radius, Point offset, int kinectID)
+        private void DrawJointPointOnDepth(Joint joint, Color jointColor, double radius, Point offset, int kinectID, bool inverseTransform)
         {
-            if (joint.TrackingState != TrackingState.NotTracked)
+            if (joint.TrackingState != TrackingState.NotTracked && kinectID >= 0)
             {
                 //Map the joint from the skeleton to the depth image
-                Point point = server.kinects[kinectID].MapJointToDepth(joint, false);
+                Point point = server.kinects[kinectID].MapJointToDepth(joint, inverseTransform);
 
                 //Don't draw points that are off the image
                 if (point.X < 0 || point.Y < 0 || point.X >= depthSource.PixelWidth || point.Y >= depthSource.PixelHeight)
@@ -1640,9 +1832,9 @@ namespace KinectWithVRServer
                 DepthImageCanvas.Children.Add(circle);
             }
         }
-        private void RenderSkeletonOnColor(KinectSkeleton skeleton, Color renderColor, int kinectID)
+        private void RenderSkeletonOnColor(KinectSkeleton skeleton, Color renderColor, int kinectID, bool inverseTransform)
         {
-            if (colorSource != null)
+            if (colorSource != null && kinectID >= 0)
             {
                 //Calculate the offset
                 Point offset = new Point(0.0, 0.0);
@@ -1660,52 +1852,52 @@ namespace KinectWithVRServer
                 //If there is a neck, we need to draw it different
                 if (skeleton.skeleton[JointType.Neck].TrackingState != TrackingState.NotTracked)
                 {
-                    DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.Neck], renderColor, 2.0, offset, kinectID);
-                    DrawBoneOnColor(skeleton.skeleton[JointType.Neck], skeleton.skeleton[JointType.SpineShoulder], renderColor, 2.0, offset, kinectID);
+                    DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.Neck], renderColor, 2.0, offset, kinectID, inverseTransform);
+                    DrawBoneOnColor(skeleton.skeleton[JointType.Neck], skeleton.skeleton[JointType.SpineShoulder], renderColor, 2.0, offset, kinectID, inverseTransform);
                 }
                 else if (skeleton.skeleton[JointType.Head].TrackingState != TrackingState.NotTracked && skeleton.skeleton[JointType.ShoulderCenter].TrackingState != TrackingState.NotTracked)
                 {
-                    DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
+                    DrawBoneOnColor(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID, inverseTransform);
                 }
 
-                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderLeft], skeleton.skeleton[JointType.ElbowLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.ElbowLeft], skeleton.skeleton[JointType.WristLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.WristLeft], skeleton.skeleton[JointType.HandLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderRight], skeleton.skeleton[JointType.ElbowRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.ElbowRight], skeleton.skeleton[JointType.WristRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.WristRight], skeleton.skeleton[JointType.HandRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.Spine], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.Spine], skeleton.skeleton[JointType.HipCenter], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HipLeft], skeleton.skeleton[JointType.KneeLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.KneeLeft], skeleton.skeleton[JointType.AnkleLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.AnkleLeft], skeleton.skeleton[JointType.FootLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HipRight], skeleton.skeleton[JointType.KneeRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.KneeRight], skeleton.skeleton[JointType.AnkleRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.AnkleRight], skeleton.skeleton[JointType.FootRight], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderLeft], skeleton.skeleton[JointType.ElbowLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ElbowLeft], skeleton.skeleton[JointType.WristLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.WristLeft], skeleton.skeleton[JointType.HandLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderRight], skeleton.skeleton[JointType.ElbowRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ElbowRight], skeleton.skeleton[JointType.WristRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.WristRight], skeleton.skeleton[JointType.HandRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.Spine], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.Spine], skeleton.skeleton[JointType.HipCenter], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HipLeft], skeleton.skeleton[JointType.KneeLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.KneeLeft], skeleton.skeleton[JointType.AnkleLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.AnkleLeft], skeleton.skeleton[JointType.FootLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HipRight], skeleton.skeleton[JointType.KneeRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.KneeRight], skeleton.skeleton[JointType.AnkleRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.AnkleRight], skeleton.skeleton[JointType.FootRight], renderColor, 2.0, offset, kinectID, inverseTransform);
                 //The thumb and hand tip only get draw if the skeleton is a Kinect v2, but that's okay, the logic in the method will figure it out
-                DrawBoneOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.ThumbLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.HandTipLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.ThumbRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnColor(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.HandTipRight], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.ThumbLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.HandTipLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.ThumbRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnColor(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.HandTipRight], renderColor, 2.0, offset, kinectID, inverseTransform);
 
                 for (int i = 0; i < skeleton.skeleton.Count; i++)
                 {
-                    DrawJointPointOnColor(skeleton.skeleton[i], renderColor, 2.0, offset, kinectID);
+                    DrawJointPointOnColor(skeleton.skeleton[i], renderColor, 2.0, offset, kinectID, inverseTransform);
                 }
 
-                DrawHandStateOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.leftHandClosed, 5.0, offset, kinectID);
-                DrawHandStateOnColor(skeleton.skeleton[JointType.HandRight], skeleton.rightHandClosed, 5.0, offset, kinectID);
+                DrawHandStateOnColor(skeleton.skeleton[JointType.HandLeft], skeleton.leftHandClosed, 5.0, offset, kinectID, inverseTransform);
+                DrawHandStateOnColor(skeleton.skeleton[JointType.HandRight], skeleton.rightHandClosed, 5.0, offset, kinectID, inverseTransform);
             }
 
             drawingColorSkeleton = false;
         }
-        private void RenderSkeletonOnDepth(KinectSkeleton skeleton, Color renderColor, int kinectID)
+        private void RenderSkeletonOnDepth(KinectSkeleton skeleton, Color renderColor, int kinectID, bool inverseTransform)
         {
-            if (depthSource != null)
+            if (depthSource != null && kinectID >= 0)
             {
                 //Calculate the offset
                 Point offset = new Point(0.0, 0.0);
@@ -1723,55 +1915,55 @@ namespace KinectWithVRServer
                 //If there is a neck, we need to draw it different
                 if (skeleton.skeleton[JointType.Neck].TrackingState != TrackingState.NotTracked)
                 {
-                    DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.Neck], renderColor, 2.0, offset, kinectID);
-                    DrawBoneOnDepth(skeleton.skeleton[JointType.Neck], skeleton.skeleton[JointType.SpineShoulder], renderColor, 2.0, offset, kinectID);
+                    DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.Neck], renderColor, 2.0, offset, kinectID, inverseTransform);
+                    DrawBoneOnDepth(skeleton.skeleton[JointType.Neck], skeleton.skeleton[JointType.SpineShoulder], renderColor, 2.0, offset, kinectID, inverseTransform);
                 }
                 else if (skeleton.skeleton[JointType.Head].TrackingState != TrackingState.NotTracked && skeleton.skeleton[JointType.ShoulderCenter].TrackingState != TrackingState.NotTracked)
                 {
-                    DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
+                    DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID, inverseTransform);
                 }
-                DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderLeft], skeleton.skeleton[JointType.ElbowLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ElbowLeft], skeleton.skeleton[JointType.WristLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.WristLeft], skeleton.skeleton[JointType.HandLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderRight], skeleton.skeleton[JointType.ElbowRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ElbowRight], skeleton.skeleton[JointType.WristRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.WristRight], skeleton.skeleton[JointType.HandRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.Spine], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.Spine], skeleton.skeleton[JointType.HipCenter], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HipLeft], skeleton.skeleton[JointType.KneeLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.KneeLeft], skeleton.skeleton[JointType.AnkleLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.AnkleLeft], skeleton.skeleton[JointType.FootLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HipRight], skeleton.skeleton[JointType.KneeRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.KneeRight], skeleton.skeleton[JointType.AnkleRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.AnkleRight], skeleton.skeleton[JointType.FootRight], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.Head], skeleton.skeleton[JointType.ShoulderCenter], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderLeft], skeleton.skeleton[JointType.ElbowLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ElbowLeft], skeleton.skeleton[JointType.WristLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.WristLeft], skeleton.skeleton[JointType.HandLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.ShoulderRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderRight], skeleton.skeleton[JointType.ElbowRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ElbowRight], skeleton.skeleton[JointType.WristRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.WristRight], skeleton.skeleton[JointType.HandRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.ShoulderCenter], skeleton.skeleton[JointType.Spine], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.Spine], skeleton.skeleton[JointType.HipCenter], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HipLeft], skeleton.skeleton[JointType.KneeLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.KneeLeft], skeleton.skeleton[JointType.AnkleLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.AnkleLeft], skeleton.skeleton[JointType.FootLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HipCenter], skeleton.skeleton[JointType.HipRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HipRight], skeleton.skeleton[JointType.KneeRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.KneeRight], skeleton.skeleton[JointType.AnkleRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.AnkleRight], skeleton.skeleton[JointType.FootRight], renderColor, 2.0, offset, kinectID, inverseTransform);
                 //The thumb and hand tip only get draw if the skeleton is a Kinect v2, but that's okay, the logic in the method will figure it out
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.ThumbLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.HandTipLeft], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.ThumbRight], renderColor, 2.0, offset, kinectID);
-                DrawBoneOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.HandTipRight], renderColor, 2.0, offset, kinectID);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.ThumbLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.skeleton[JointType.HandTipLeft], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.ThumbRight], renderColor, 2.0, offset, kinectID, inverseTransform);
+                DrawBoneOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.skeleton[JointType.HandTipRight], renderColor, 2.0, offset, kinectID, inverseTransform);
 
                 for (int i = 0; i < skeleton.skeleton.Count; i++)
                 {
-                    DrawJointPointOnDepth(skeleton.skeleton[i], renderColor, 2.0, offset, kinectID);
+                    DrawJointPointOnDepth(skeleton.skeleton[i], renderColor, 2.0, offset, kinectID, inverseTransform);
                 }
 
-                DrawHandStateOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.leftHandClosed, 5.0, offset, kinectID);
-                DrawHandStateOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.rightHandClosed, 5.0, offset, kinectID);
+                DrawHandStateOnDepth(skeleton.skeleton[JointType.HandLeft], skeleton.leftHandClosed, 5.0, offset, kinectID, inverseTransform);
+                DrawHandStateOnDepth(skeleton.skeleton[JointType.HandRight], skeleton.rightHandClosed, 5.0, offset, kinectID, inverseTransform);
             }
 
             drawingDepthSkeleton = false;
         }
-        private void DrawHandStateOnColor(Joint joint, bool handState, double radius, Point offset, int kinectID)
+        private void DrawHandStateOnColor(Joint joint, bool handState, double radius, Point offset, int kinectID, bool inverseTransform)
         {
-            if (joint.TrackingState == TrackingState.Tracked)
+            if (joint.TrackingState == TrackingState.Tracked && kinectID >= 0)
             {
                 //Map the joint from the skeleton to the depth image
-                Point point = server.kinects[kinectID].MapJointToColor(joint, false);
+                Point point = server.kinects[kinectID].MapJointToColor(joint, inverseTransform);
 
                 //Don't draw points that are off the image
                 if (point.X < 0 || point.Y < 0 || point.X >= colorSource.PixelWidth || point.Y >= colorSource.PixelHeight)
@@ -1804,12 +1996,12 @@ namespace KinectWithVRServer
                 ColorImageCanvas.Children.Add(circle);
             }
         }
-        private void DrawHandStateOnDepth(Joint joint, bool handState, double radius, Point offset, int kinectID)
+        private void DrawHandStateOnDepth(Joint joint, bool handState, double radius, Point offset, int kinectID, bool inverseTransform)
         {
-            if (joint.TrackingState == TrackingState.Tracked)
+            if (joint.TrackingState == TrackingState.Tracked && kinectID >= 0)
             {
                 //Map the joint from the skeleton to the depth image
-                Point point = server.kinects[kinectID].MapJointToDepth(joint, false);
+                Point point = server.kinects[kinectID].MapJointToDepth(joint, inverseTransform);
 
                 //Don't draw points that are off the image
                 if (point.X < 0 || point.Y < 0 || point.X >= depthSource.PixelWidth || point.Y >= depthSource.PixelHeight)
