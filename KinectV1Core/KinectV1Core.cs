@@ -610,6 +610,7 @@ namespace KinectV1Core
                             SkeletonPoint tempPos = skeletons[i].Joints[(JointType)j].Position;
                             newJoint.Position = new Point3D(tempPos.X, tempPos.Y, tempPos.Z);
                             newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
+                            newJoint.spatialErrorStdDev = getJointError(newJoint.Position, newJoint.TrackingState);
                             newJoint.utcTime = now;
                             kvrSkeletons[i].skeleton[newJoint.JointType] = newJoint; //Skeleton doesn't need to be initialized because it is done in the KinectSkeleton constructor
                         }
@@ -869,6 +870,44 @@ namespace KinectV1Core
         {
             //The depth formats are all numbered the same for the Kienct v1, so we can do a straight cast
             return (DepthImageFormat)format;
+        }
+        private Point3D getJointError(Point3D jointPosition, KinectBase.TrackingState trackingState)
+        {
+            Point3D error = new Point3D();
+
+            if (trackingState != KinectBase.TrackingState.NotTracked)
+            {
+                double depthDepError = 0.0004946 * Math.Exp(0.7 * jointPosition.Z);  //Based on "Performance Measurements for the Microsoft Kinect Skeleton" by Livingston, et al.
+
+                if (trackingState == KinectBase.TrackingState.Inferred)
+                {
+                    error.X = 10 * depthDepError;
+                    error.Y = 10 * depthDepError;
+                    error.Z = 10 * depthDepError;
+                }
+                else  //tracked or position only
+                {
+                    error.X = depthDepError;
+                    error.Y = depthDepError;
+                    error.Z = depthDepError;
+
+                    //These are for making the error dependent on the direction
+                    //However, these directional errors are not preserved in the coordinate system transformation
+                    //Also, I am not 100% sure the ratios are derived from the paper correctly
+                    //error.X = 0.669 * depthDepError;
+                    //error.Y = 1.011 * depthDepError;
+                    //error.Z = 1.321 * depthDepError;
+                }
+            }
+            else
+            {
+                //If the joint isn't tracked, set the error really high so if the filter tries to use it, it doesn't significantly contribute to the estimate
+                error.X = 1000;
+                error.Y = 1000;
+                error.Z = 1000;
+            }
+
+            return error;
         }
 
         //Methods to fire the events

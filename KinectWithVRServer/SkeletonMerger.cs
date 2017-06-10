@@ -195,7 +195,7 @@ namespace KinectWithVRServer
             {
                 if (skeleton.skeleton[i].TrackingState == TrackingState.Tracked)
                 {
-                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[i].Position), skeleton.skeleton[i].utcTime, skeleton.skeleton[i].spatialErrorStdDev);
+                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[i].Position), skeleton.skeleton[i].utcTime, PointToEigVector(skeleton.skeleton[i].spatialErrorStdDev));
                     if (skeleton.skeleton[i].utcTime > lastTrackedTime[i])
                     {
                         lastTrackedTime[i] = skeleton.skeleton[i].utcTime;
@@ -203,7 +203,7 @@ namespace KinectWithVRServer
                 }
                 else if (skeleton.skeleton[i].TrackingState == TrackingState.Inferred)
                 {
-                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[i].Position), skeleton.skeleton[i].utcTime, skeleton.skeleton[i].spatialErrorStdDev);
+                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[i].Position), skeleton.skeleton[i].utcTime, PointToEigVector(skeleton.skeleton[i].spatialErrorStdDev));
                     if (skeleton.skeleton[i].utcTime > lastInferredTime[i])
                     {
                         lastInferredTime[i] = skeleton.skeleton[i].utcTime;
@@ -278,6 +278,16 @@ namespace KinectWithVRServer
             matrix[2, 0] = point.Z;
 
             return matrix;
+        }
+
+        private EigenWrapper.Vector PointToEigVector(System.Windows.Media.Media3D.Point3D point)
+        {
+            EigenWrapper.Vector vector = new EigenWrapper.Vector(3);
+            vector[0] = point.X;
+            vector[1] = point.Y;
+            vector[2] = point.Z;
+
+            return vector;
         }
 
         private System.Windows.Media.Media3D.Point3D FilteredMatrixToPoint(EigenWrapper.Matrix matrix)

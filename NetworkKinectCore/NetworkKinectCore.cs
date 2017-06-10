@@ -368,6 +368,7 @@ namespace NetworkKinectCore
             newJoint.Position = new Point3D(e.Position.X, e.Position.Y, e.Position.Z);
             newJoint.Orientation = e.Orientation;
             newJoint.TrackingState = TrackingState.Tracked;
+            newJoint.spatialErrorStdDev = GetJointErrorFromChannel(e.Sensor);
 
             lastSkeleton.skeleton[map.joint] = newJoint;
         }
@@ -422,6 +423,32 @@ namespace NetworkKinectCore
             }
 
             return map;
+        }
+        private Point3D GetJointErrorFromChannel(int channel)
+        {
+            Point3D error = new Point3D();
+            bool found = false;
+
+            for (int i = 0; i < masterKinectSettings.jointMappings.Count; i++)
+            {
+                if (masterKinectSettings.jointMappings[i].channel == channel)
+                {
+                    found = true;
+                    error.X = masterKinectSettings.jointMappings[i].accuracy;
+                    error.Y = error.X;
+                    error.Z = error.X;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                error.X = 1000;
+                error.Y = 1000;
+                error.Z = 1000;
+            }
+
+            return error;
         }
 
         private delegate void RunNetworkKinectDelegate(string serverName, string rhServerName, string lhServerName);

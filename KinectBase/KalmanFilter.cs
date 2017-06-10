@@ -109,11 +109,11 @@ namespace KinectBase
         //     └z┘
 
         private double sigmaxSensor = 0.2;  //These are inital guesses that can be overridden by using the appropriate IntegrateMeasurement function
-        private double sigmaySensor = 0.2;
+        private double sigmaySensor = 0.2;  //These are standard deviations and will be squared later
         private double sigmazSensor = 0.2;
-        private double sigmaxActual = 1;    //These are related to the physics of a human moving 
-        private double sigmayActual = 1;
-        private double sigmazActual = 1;
+        private double sigmaSqxActual = 4;    //These are related to the physics of a human moving 
+        private double sigmaSqyActual = 4;    //These are variance, not standard deviation, to save a bunch of multiplications
+        private double sigmaSqzActual = 4;
         private DateTime? lastTime = null;
 
         public JerkConst3DFilter()
@@ -160,45 +160,41 @@ namespace KinectBase
                 Q = new Matrix(9, 9);
             }
 
-            double varXActual = Math.Pow(sigmaxActual, 2);
-            double varYActual = Math.Pow(sigmayActual, 2);
-            double varZActual = Math.Pow(sigmazActual, 2);
-
             double t5D20 = Math.Pow(deltaT, 5) / 20.0;
             double t4D8 = Math.Pow(deltaT, 4) / 8.0;
             double t3D6 = Math.Pow(deltaT, 3) / 6.0;
             double t3D3 = Math.Pow(deltaT, 3) / 3.0;
             double t2D2 = Math.Pow(deltaT, 2) / 2.0;
 
-            Q[0, 0] = t5D20  * varXActual;
-            Q[0, 1] = t4D8   * varXActual;
-            Q[0, 2] = t3D6   * varXActual;
-            Q[1, 0] = t4D8   * varXActual;
-            Q[1, 1] = t3D3   * varXActual;
-            Q[1, 2] = t2D2   * varXActual;
-            Q[2, 0] = t3D6   * varXActual;
-            Q[2, 1] = t2D2   * varXActual;
-            Q[2, 2] = deltaT * varXActual;
+            Q[0, 0] = t5D20  * sigmaSqxActual;
+            Q[0, 1] = t4D8   * sigmaSqxActual;
+            Q[0, 2] = t3D6   * sigmaSqxActual;
+            Q[1, 0] = t4D8   * sigmaSqxActual;
+            Q[1, 1] = t3D3   * sigmaSqxActual;
+            Q[1, 2] = t2D2   * sigmaSqxActual;
+            Q[2, 0] = t3D6   * sigmaSqxActual;
+            Q[2, 1] = t2D2   * sigmaSqxActual;
+            Q[2, 2] = deltaT * sigmaSqxActual;
 
-            Q[3, 3] = t5D20  * varYActual;
-            Q[3, 4] = t4D8   * varYActual;
-            Q[3, 5] = t3D6   * varYActual;
-            Q[4, 3] = t4D8   * varYActual;
-            Q[4, 4] = t3D3   * varYActual;
-            Q[4, 5] = t2D2   * varYActual;
-            Q[5, 3] = t3D6   * varYActual;
-            Q[5, 4] = t2D2   * varYActual;
-            Q[5, 5] = deltaT * varYActual;
+            Q[3, 3] = t5D20  * sigmaSqyActual;
+            Q[3, 4] = t4D8   * sigmaSqyActual;
+            Q[3, 5] = t3D6   * sigmaSqyActual;
+            Q[4, 3] = t4D8   * sigmaSqyActual;
+            Q[4, 4] = t3D3   * sigmaSqyActual;
+            Q[4, 5] = t2D2   * sigmaSqyActual;
+            Q[5, 3] = t3D6   * sigmaSqyActual;
+            Q[5, 4] = t2D2   * sigmaSqyActual;
+            Q[5, 5] = deltaT * sigmaSqyActual;
 
-            Q[6, 6] = t5D20  * varZActual;
-            Q[6, 7] = t4D8   * varZActual;
-            Q[6, 8] = t3D6   * varZActual;
-            Q[7, 6] = t4D8   * varZActual;
-            Q[7, 7] = t3D3   * varZActual;
-            Q[7, 8] = t2D2   * varZActual;
-            Q[8, 6] = t3D6   * varZActual;
-            Q[8, 7] = t2D2   * varZActual;
-            Q[8, 8] = deltaT * varZActual;
+            Q[6, 6] = t5D20  * sigmaSqzActual;
+            Q[6, 7] = t4D8   * sigmaSqzActual;
+            Q[6, 8] = t3D6   * sigmaSqzActual;
+            Q[7, 6] = t4D8   * sigmaSqzActual;
+            Q[7, 7] = t3D3   * sigmaSqzActual;
+            Q[7, 8] = t2D2   * sigmaSqzActual;
+            Q[8, 6] = t3D6   * sigmaSqzActual;
+            Q[8, 7] = t2D2   * sigmaSqzActual;
+            Q[8, 8] = deltaT * sigmaSqzActual;
 
             return Q;
         }

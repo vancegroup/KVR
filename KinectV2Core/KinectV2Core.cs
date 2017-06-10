@@ -482,6 +482,7 @@ namespace KinectV2Core
                             newJoint.Position = convertJointPosition(skeletons[i].Joints[(JointType)j].Position);
                             newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
                             newJoint.Orientation = convertJointOrientation(skeletons[i].JointOrientations[(JointType)j].Orientation);
+                            newJoint.spatialErrorStdDev = getJointError(newJoint.Position, newJoint.TrackingState);
                             newJoint.utcTime = now;
 
                             //Tracking confidence only exists for the hand states, so set those and leave the rest as unknown
@@ -686,6 +687,38 @@ namespace KinectV2Core
             {
                 return false;
             }
+        }
+        private Point3D getJointError(Point3D jointPosition, KinectBase.TrackingState trackingState)
+        {
+            //TODO: Update this method once I have better information on how good the skeleton measurements of the Kinect v2 are
+            //Note, the error is likely depth dependent, thus the joint position is passed in, inspite of not being used in the current implementation
+            Point3D error = new Point3D();
+
+            if (trackingState == KinectBase.TrackingState.NotTracked)
+            {
+                //Set the error really high when the joint isn't tracked so it doesn't messup the the filter if it accidently gets included
+                error.X = 1000;
+                error.Y = 1000;
+                error.Z = 1000;
+            }
+            else
+            {
+                double tempError = 0.005;  //Set the tracked error to 5 millimeters
+                if (trackingState == KinectBase.TrackingState.Inferred)
+                {
+                    error.X = 10 * tempError;
+                    error.Y = 10 * tempError;
+                    error.Z = 10 * tempError;
+                }
+                else
+                {
+                    error.X = tempError;
+                    error.Y = tempError;
+                    error.Z = tempError;
+                }
+            }
+
+            return error;
         }
 
         private delegate void launchKinectDelegate();

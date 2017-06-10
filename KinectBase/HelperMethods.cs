@@ -24,8 +24,7 @@ namespace KinectBase
         public TrackingState TrackingState;
         public TrackingConfidence Confidence;
         public DateTime utcTime;  //This is here instead of in the skeleton because networked kinects could have joints updated at different times
-        public double spatialErrorStdDev;
-        //TODO: What about temporal error?
+        public System.Windows.Media.Media3D.Point3D spatialErrorStdDev;
     }
 
     public class KinectSkeletonsData// : INotifyPropertyChanged
