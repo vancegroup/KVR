@@ -122,7 +122,9 @@
     </ApplicationDefinition>
     <Compile Include="ConcurrentSkeletonCollection.cs" />
     <Compile Include="ConsoleUI.cs" />
-    <Compile Include="GestureCore.cs" />
+    <Compile Include="GestureRecognition\DiscreteHMM.cs" />
+    <Compile Include="GestureRecognition\GestureCore.cs" />
+    <Compile Include="GestureRecognition\KMeans.cs" />
     <Compile Include="NetworkKinectWrapper\NKAddDialog.xaml.cs">
       <DependentUpon>NKAddDialog.xaml</DependentUpon>
     </Compile>
