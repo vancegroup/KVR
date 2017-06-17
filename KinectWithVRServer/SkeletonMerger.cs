@@ -239,12 +239,12 @@ namespace KinectWithVRServer
             }
 
             //Calculate the orientations for all the skeletons
-            Quaternion[] orientations = CalculateOrientations(tempJoints);
+            Matrix3D[] orientations = CalculateOrientations(tempJoints);
 
             //Add the orientations to the joints and pass them into the newSkeleton object
             for (int i = 0; i < KinectBase.HelperMethods.TotalJointCount; i++)
             {
-                tempJoints[i].Orientation = orientations[i];
+                tempJoints[i].Orientation.orientationMatrix = orientations[i];
                 newSkeleton.skeleton[i] = tempJoints[i];
             }
 
@@ -302,16 +302,16 @@ namespace KinectWithVRServer
         #region Joint Orientation Calculation Stuff
         //There are a couple different methods of calculating the orientations that I've been playing with
         //This will call the correct one and return the results
-        internal Quaternion[] CalculateOrientations(Joint[] skeleton)
+        internal Matrix3D[] CalculateOrientations(Joint[] skeleton)
         {
             //return CalculateOrientationsKV1Method(ref skeleton);
             return CalculateOrientationsImprovedKV1Method(skeleton);
         }
 
         //This calculates the orientations in the same way as the Kinect v1
-        private Quaternion[] CalculateOrientationsKV1Method(Joint[] skeleton)
+        private Matrix3D[] CalculateOrientationsKV1Method(Joint[] skeleton)
         {
-            Quaternion[] orientations = new Quaternion[KinectBase.HelperMethods.TotalJointCount];
+            Matrix3D[] orientations = new Matrix3D[KinectBase.HelperMethods.TotalJointCount];
 
             #region Hip Center [AKA Spine Base] Joint Orientation
             Point3D HC = skeleton[(int)JointType.HipCenter].Position;
@@ -329,7 +329,8 @@ namespace KinectWithVRServer
             Vector3D xHC = Vector3D.CrossProduct(yHC, zHC);
             xHC.Normalize();
             Matrix3D hcMat = RotationMatFromRowVecs(xHC, yHC, zHC);
-            orientations[(int)JointType.HipCenter] = MatrixToQuat(hcMat);
+            //orientations[(int)JointType.HipCenter] = MatrixToQuat(hcMat);
+            orientations[(int)JointType.HipCenter] = hcMat;
             #endregion
             #region Spine [AKA Spine Mid] Joint Orientation
             Point3D SP = skeleton[(int)JointType.Spine].Position;
@@ -344,7 +345,8 @@ namespace KinectWithVRServer
             Vector3D xSP = Vector3D.CrossProduct(SP2HC, zSP);
             xSP.Normalize();
             Matrix3D spMat = RotationMatFromRowVecs(xSP, SP2HC, zSP);
-            orientations[(int)JointType.Spine] = MatrixToQuat(spMat);
+            //orientations[(int)JointType.Spine] = MatrixToQuat(spMat);
+            orientations[(int)JointType.Spine] = spMat;
             #endregion
             #region Shoulder Center [AKA Spine Shoulder] Joint Orientation
             Point3D SC = skeleton[(int)JointType.ShoulderCenter].Position;
@@ -355,7 +357,8 @@ namespace KinectWithVRServer
             Vector3D xSC = Vector3D.CrossProduct(SC2SP, zSC);
             xSC.Normalize();
             Matrix3D scMat = RotationMatFromRowVecs(xSC, SC2SP, zSC);
-            orientations[(int)JointType.ShoulderCenter] = MatrixToQuat(scMat);
+            //orientations[(int)JointType.ShoulderCenter] = MatrixToQuat(scMat);
+            orientations[(int)JointType.ShoulderCenter] = scMat;
             #endregion
             #region Head Joint Orientation
             Point3D HD = skeleton[(int)JointType.Head].Position;
@@ -366,7 +369,8 @@ namespace KinectWithVRServer
             Vector3D xHD = Vector3D.CrossProduct(HD2SC, zHD);
             xHD.Normalize();
             Matrix3D hdMat = RotationMatFromRowVecs(xHD, HD2SC, zHD);
-            orientations[(int)JointType.Head] = MatrixToQuat(hdMat);
+            //orientations[(int)JointType.Head] = MatrixToQuat(hdMat);
+            orientations[(int)JointType.Head] = hdMat;
             #endregion
             #region Shoulder Left Joint Orientation
             Vector3D SL2SC = SL - SC;
@@ -376,7 +380,8 @@ namespace KinectWithVRServer
             Vector3D zSL = Vector3D.CrossProduct(xSL, SL2SC);
             zSL.Normalize();
             Matrix3D slMat = RotationMatFromRowVecs(xSL, SL2SC, zSL);
-            orientations[(int)JointType.ShoulderLeft] = MatrixToQuat(slMat);
+            //orientations[(int)JointType.ShoulderLeft] = MatrixToQuat(slMat);
+            orientations[(int)JointType.ShoulderLeft] = slMat;
             #endregion
             #region Shoulder Right Joint Orientation
             Vector3D SR2SC = SR - SC;
@@ -386,7 +391,8 @@ namespace KinectWithVRServer
             Vector3D zSR = Vector3D.CrossProduct(xSR, SR2SC);
             zSR.Normalize();
             Matrix3D srMat = RotationMatFromRowVecs(xSR, SR2SC, zSR);
-            orientations[(int)JointType.ShoulderRight] = MatrixToQuat(srMat);
+            //orientations[(int)JointType.ShoulderRight] = MatrixToQuat(srMat);
+            orientations[(int)JointType.ShoulderRight] = srMat;
             #endregion
             #region Elbow Left Joint Orientation
             Point3D WL = skeleton[(int)JointType.WristLeft].Position;
@@ -426,7 +432,8 @@ namespace KinectWithVRServer
                 }
             }
             Matrix3D elMat = RotationMatFromRowVecs(xEL, EL2SL, zEL);
-            orientations[(int)JointType.ElbowLeft] = MatrixToQuat(elMat);
+            //orientations[(int)JointType.ElbowLeft] = MatrixToQuat(elMat);
+            orientations[(int)JointType.ElbowLeft] = elMat;
             #endregion
             #region Wrist Left Joint Orientation
             Vector3D zWL = Vector3D.CrossProduct(xEL, WL2EL);
@@ -434,7 +441,8 @@ namespace KinectWithVRServer
             Vector3D xWL = Vector3D.CrossProduct(WL2EL, zWL);
             xWL.Normalize();
             Matrix3D wlMat = RotationMatFromRowVecs(xWL, WL2EL, zWL);
-            orientations[(int)JointType.WristLeft] = MatrixToQuat(wlMat);
+            //orientations[(int)JointType.WristLeft] = MatrixToQuat(wlMat);
+            orientations[(int)JointType.WristLeft] = wlMat;
             #endregion
             #region Hand Left Joint Orientation
             Point3D HDL = skeleton[(int)JointType.HandLeft].Position;
@@ -445,7 +453,8 @@ namespace KinectWithVRServer
             Vector3D zHDL = Vector3D.CrossProduct(xHDL, HDL2WL);
             zHDL.Normalize();
             Matrix3D hdlMat = RotationMatFromRowVecs(xHDL, HDL2WL, zHDL);
-            orientations[(int)JointType.HandLeft] = MatrixToQuat(hdlMat);
+            //orientations[(int)JointType.HandLeft] = MatrixToQuat(hdlMat);
+            orientations[(int)JointType.HandLeft] = hdlMat;
             #endregion
             #region Elbow Right Joint Orientation
             Point3D WR = skeleton[(int)JointType.WristRight].Position;
@@ -485,7 +494,8 @@ namespace KinectWithVRServer
                 }
             }
             Matrix3D erMat = RotationMatFromRowVecs(xER, ER2SR, zER);
-            orientations[(int)JointType.ElbowRight] = MatrixToQuat(erMat);
+            //orientations[(int)JointType.ElbowRight] = MatrixToQuat(erMat);
+            orientations[(int)JointType.ElbowRight] = erMat;
             #endregion
             #region Wrist Right Joint Orientation
             Vector3D zWR = Vector3D.CrossProduct(xER, WR2ER);
@@ -493,7 +503,8 @@ namespace KinectWithVRServer
             Vector3D xWR = Vector3D.CrossProduct(WR2ER, zWR);
             xWR.Normalize();
             Matrix3D wrMat = RotationMatFromRowVecs(xWR, WR2ER, zWR);
-            orientations[(int)JointType.WristRight] = MatrixToQuat(wrMat);
+            //orientations[(int)JointType.WristRight] = MatrixToQuat(wrMat);
+            orientations[(int)JointType.WristRight] = wrMat;
             #endregion
             #region  Joint Orientation
             Point3D HDR = skeleton[(int)JointType.HandRight].Position;
@@ -504,7 +515,8 @@ namespace KinectWithVRServer
             Vector3D zHDR = Vector3D.CrossProduct(xHDR, HDR2WR);
             zHDR.Normalize();
             Matrix3D hdrMat = RotationMatFromRowVecs(xHDR, HDR2WR, zHDR);
-            orientations[(int)JointType.HandRight] = MatrixToQuat(hdrMat);
+            //orientations[(int)JointType.HandRight] = MatrixToQuat(hdrMat);
+            orientations[(int)JointType.HandRight] = hdrMat;
             #endregion
             #region Hip Left Joint Orientation
             Vector3D HL2HC = HL - HC;
@@ -514,7 +526,8 @@ namespace KinectWithVRServer
             Vector3D xHL = Vector3D.CrossProduct(zHL, HC2HL);
             xHL.Normalize();
             Matrix3D hlMat = RotationMatFromRowVecs(xHL, HL2HC, zHL);
-            orientations[(int)JointType.HipLeft] = MatrixToQuat(hlMat);
+            //orientations[(int)JointType.HipLeft] = MatrixToQuat(hlMat);
+            orientations[(int)JointType.HipLeft] = hlMat;
             #endregion
             #region Knee Left and Ankle Left Joint Orientations
             //Note, these need to be done together as the knee sometimes depends on the ankle
@@ -575,9 +588,11 @@ namespace KinectWithVRServer
                 xAL.Normalize();
             }
             Matrix3D klMat = RotationMatFromRowVecs(xKL, KL2HL, zKL);
-            orientations[(int)JointType.KneeLeft] = MatrixToQuat(klMat);
+            //orientations[(int)JointType.KneeLeft] = MatrixToQuat(klMat);
+            orientations[(int)JointType.KneeLeft] = klMat;
             Matrix3D alMat = RotationMatFromRowVecs(xAL, AL2KL, zAL);
-            orientations[(int)JointType.AnkleLeft] = MatrixToQuat(alMat);
+            //orientations[(int)JointType.AnkleLeft] = MatrixToQuat(alMat);
+            orientations[(int)JointType.AnkleLeft] = alMat;
             #endregion
             #region Foot Left Joint Orientation
             Point3D FL = skeleton[(int)JointType.FootLeft].Position;
@@ -587,7 +602,8 @@ namespace KinectWithVRServer
             Vector3D xFL = Vector3D.CrossProduct(FL2AL, zFL);
             xFL.Normalize();
             Matrix3D flMat = RotationMatFromRowVecs(xFL, FL2AL, zFL);
-            orientations[(int)JointType.FootLeft] = MatrixToQuat(flMat);
+            //orientations[(int)JointType.FootLeft] = MatrixToQuat(flMat);
+            orientations[(int)JointType.FootLeft] = flMat;
             #endregion
             #region Hip Right Joint Orientation
             Vector3D HR2HC = HR - HC;
@@ -597,7 +613,8 @@ namespace KinectWithVRServer
             Vector3D xHR = Vector3D.CrossProduct(HR2HC, zHR);
             xHR.Normalize();
             Matrix3D hrMat = RotationMatFromRowVecs(xHR, HR2HC, zHR);
-            orientations[(int)JointType.HipRight] = MatrixToQuat(hrMat);
+            //orientations[(int)JointType.HipRight] = MatrixToQuat(hrMat);
+            orientations[(int)JointType.HipRight] = hrMat;
             #endregion
             #region Knee Right and Ankle Right Joint Orientations
             //Note, these need to be done together as the knee sometimes depends on the ankle
@@ -658,9 +675,11 @@ namespace KinectWithVRServer
                 xAR.Normalize();
             }
             Matrix3D krMat = RotationMatFromRowVecs(xKR, KR2HR, zKR);
-            orientations[(int)JointType.KneeRight] = MatrixToQuat(krMat);
+            //orientations[(int)JointType.KneeRight] = MatrixToQuat(krMat);
+            orientations[(int)JointType.KneeRight] = krMat;
             Matrix3D arMat = RotationMatFromRowVecs(xAR, AR2KR, zAR);
-            orientations[(int)JointType.AnkleRight] = MatrixToQuat(arMat);
+            //orientations[(int)JointType.AnkleRight] = MatrixToQuat(arMat);
+            orientations[(int)JointType.AnkleRight] = arMat;
             #endregion
             #region Foot Right Joint Orientation
             Point3D FR = skeleton[(int)JointType.FootRight].Position;
@@ -670,77 +689,408 @@ namespace KinectWithVRServer
             Vector3D xFR = Vector3D.CrossProduct(FR2AR, zFR);
             xFR.Normalize();
             Matrix3D frMat = RotationMatFromRowVecs(xFR, FR2AR, zFR);
-            orientations[(int)JointType.FootRight] = MatrixToQuat(frMat);
+            //orientations[(int)JointType.FootRight] = MatrixToQuat(frMat);
+            orientations[(int)JointType.FootRight] = frMat;
             #endregion
 
             //These joint orientations are all set to identity because they don't exist on the Kinect v1
             //The improved KV1 orientation method contains code to set these in a way that is similiar to what the KV1 does for other joints
-            orientations[(int)JointType.Neck] = Quaternion.Identity;
-            orientations[(int)JointType.HandTipLeft] = Quaternion.Identity;
-            orientations[(int)JointType.ThumbLeft] = Quaternion.Identity;
-            orientations[(int)JointType.HandTipRight] = Quaternion.Identity;
-            orientations[(int)JointType.ThumbRight] = Quaternion.Identity;
+            orientations[(int)JointType.Neck] = Matrix3D.Identity;
+            orientations[(int)JointType.HandTipLeft] = Matrix3D.Identity;
+            orientations[(int)JointType.ThumbLeft] = Matrix3D.Identity;
+            orientations[(int)JointType.HandTipRight] = Matrix3D.Identity;
+            orientations[(int)JointType.ThumbRight] = Matrix3D.Identity;
 
             return orientations;
         }
 
         //This calculates the orientations similiar to the Kinect v1, but handles some error cases the KV1 doesn't
-        private Quaternion[] CalculateOrientationsImprovedKV1Method(Joint[] skeleton)
+        private Matrix3D[] CalculateOrientationsImprovedKV1Method(Joint[] skeleton)
         {
-            Quaternion[] orientations = new Quaternion[KinectBase.HelperMethods.TotalJointCount];
+            //TODO: Update this to handle the KV2 joints and to handle degenerate cases
+            Matrix3D[] orientations = new Matrix3D[KinectBase.HelperMethods.TotalJointCount];
 
-
-            return orientations;
-        }
-
-        //Converts a rotation matrix into a rotation quaternion
-        private Quaternion MatrixToQuat(Matrix3D mat)
-        {
-            Quaternion result = new Quaternion(0, 0, 0, 0);
-
-            double t = Trace3(mat);
-            if (1 + t > 0)
+            #region Hip Center [AKA Spine Base] Joint Orientation
+            Point3D HC = skeleton[(int)JointType.HipCenter].Position;
+            Point3D HR = skeleton[(int)JointType.HipRight].Position;
+            Point3D HL = skeleton[(int)JointType.HipLeft].Position;
+            Vector3D HC2HR = HC - HR;
+            HC2HR.Normalize();
+            Vector3D HC2HL = HC - HL;
+            HC2HL.Normalize();
+            Vector3D zHC = Vector3D.CrossProduct(HC2HR, HC2HL);
+            zHC.Normalize();
+            Vector3D HR2HL = HR - HL;
+            Vector3D yHC = Vector3D.CrossProduct(HR2HL, zHC);
+            yHC.Normalize();
+            Vector3D xHC = Vector3D.CrossProduct(yHC, zHC);
+            xHC.Normalize();
+            Matrix3D hcMat = RotationMatFromRowVecs(xHC, yHC, zHC);
+            //orientations[(int)JointType.HipCenter] = MatrixToQuat(hcMat);
+            orientations[(int)JointType.HipCenter] = hcMat;
+            #endregion
+            #region Spine [AKA Spine Mid] Joint Orientation
+            Point3D SP = skeleton[(int)JointType.Spine].Position;
+            Point3D SR = skeleton[(int)JointType.ShoulderRight].Position;
+            Point3D SL = skeleton[(int)JointType.ShoulderLeft].Position;
+            Vector3D SP2HC = SP - HC;
+            SP2HC.Normalize();
+            Vector3D SL2SR = SL - SR;
+            SL2SR.Normalize();
+            Vector3D zSP = Vector3D.CrossProduct(SL2SR, SP2HC);
+            zSP.Normalize();
+            Vector3D xSP = Vector3D.CrossProduct(SP2HC, zSP);
+            xSP.Normalize();
+            Matrix3D spMat = RotationMatFromRowVecs(xSP, SP2HC, zSP);
+            //orientations[(int)JointType.Spine] = MatrixToQuat(spMat);
+            orientations[(int)JointType.Spine] = spMat;
+            #endregion
+            #region Shoulder Center [AKA Spine Shoulder] Joint Orientation
+            Point3D SC = skeleton[(int)JointType.ShoulderCenter].Position;
+            Vector3D SC2SP = SC - SP;
+            SC2SP.Normalize();
+            Vector3D zSC = Vector3D.CrossProduct(SL2SR, SC2SP);
+            zSC.Normalize();
+            Vector3D xSC = Vector3D.CrossProduct(SC2SP, zSC);
+            xSC.Normalize();
+            Matrix3D scMat = RotationMatFromRowVecs(xSC, SC2SP, zSC);
+            //orientations[(int)JointType.ShoulderCenter] = MatrixToQuat(scMat);
+            orientations[(int)JointType.ShoulderCenter] = scMat;
+            #endregion
+            #region Head Joint Orientation
+            Point3D HD = skeleton[(int)JointType.Head].Position;
+            Vector3D HD2SC = HD - SC;
+            HD2SC.Normalize();
+            Vector3D zHD = Vector3D.CrossProduct(xSC, HD2SC);
+            zHD.Normalize();
+            Vector3D xHD = Vector3D.CrossProduct(HD2SC, zHD);
+            xHD.Normalize();
+            Matrix3D hdMat = RotationMatFromRowVecs(xHD, HD2SC, zHD);
+            //orientations[(int)JointType.Head] = MatrixToQuat(hdMat);
+            orientations[(int)JointType.Head] = hdMat;
+            #endregion
+            #region Shoulder Left Joint Orientation
+            Vector3D SL2SC = SL - SC;
+            SL2SC.Normalize();
+            Vector3D xSL = Vector3D.CrossProduct(SL2SC, zSC);
+            xSL.Normalize();
+            Vector3D zSL = Vector3D.CrossProduct(xSL, SL2SC);
+            zSL.Normalize();
+            Matrix3D slMat = RotationMatFromRowVecs(xSL, SL2SC, zSL);
+            //orientations[(int)JointType.ShoulderLeft] = MatrixToQuat(slMat);
+            orientations[(int)JointType.ShoulderLeft] = slMat;
+            #endregion
+            #region Shoulder Right Joint Orientation
+            Vector3D SR2SC = SR - SC;
+            SR2SC.Normalize();
+            Vector3D xSR = Vector3D.CrossProduct(SR2SC, zSC);
+            xSR.Normalize();
+            Vector3D zSR = Vector3D.CrossProduct(xSR, SR2SC);
+            zSR.Normalize();
+            Matrix3D srMat = RotationMatFromRowVecs(xSR, SR2SC, zSR);
+            //orientations[(int)JointType.ShoulderRight] = MatrixToQuat(srMat);
+            orientations[(int)JointType.ShoulderRight] = srMat;
+            #endregion
+            #region Elbow Left Joint Orientation
+            Point3D WL = skeleton[(int)JointType.WristLeft].Position;
+            Point3D EL = skeleton[(int)JointType.ElbowLeft].Position;
+            Vector3D EL2SL = EL - SL;
+            EL2SL.Normalize();
+            Vector3D WL2EL = WL - EL;
+            WL2EL.Normalize();
+            Vector3D xEL;
+            Vector3D zEL;
+            double cosAngleEL = Vector3D.DotProduct(EL2SL, WL2EL);  //Because these are both unit vectors, the dot product of the two equals cos(angle)
+            if (Math.Abs(cosAngleEL) < 0.94)  //The cosine of the angular thresholds are precalculated, this is roughly an angle of 19.5 degrees (160.5 on the other side)
             {
-                double r = Math.Sqrt(1 + t);
-                double s = 0.5 / r;
-                double w = 0.5 * r;
-                double x = (mat.M32 - mat.M23) * s;
-                double y = (mat.M13 - mat.M31) * s;
-                double z = (mat.M21 - mat.M12) * s;
-                result = new Quaternion(x, y, z, w);
-            }
-            else if (mat.M11 > mat.M22 && mat.M11 > mat.M22)
-            {
-                double r = Math.Sqrt(1 + mat.M11 - mat.M22 - mat.M33);
-                double s = 0.5 / r;
-                double w = (mat.M32 - mat.M23) * s;
-                double x = 0.5 * r;
-                double y = (mat.M12 + mat.M21) * s;
-                double z = (mat.M13 + mat.M31) * s;
-                result = new Quaternion(x, y, z, w);
-            }
-            else if (mat.M22 > mat.M33)
-            {
-                double r = Math.Sqrt(1 + mat.M22 - mat.M11 - mat.M33);
-                double s = 0.5 / r;
-                double w = (mat.M13 - mat.M31) * s;
-                double x = (mat.M12 + mat.M21) * s;
-                double y = 0.5 * r;
-                double z = (mat.M23 + mat.M32) * s;
-                result = new Quaternion(x, y, z, w);
+                Vector3D preXel = Vector3D.CrossProduct(EL2SL, WL2EL);
+                preXel.Normalize();
+                zEL = Vector3D.CrossProduct(preXel, EL2SL);
+                zEL.Normalize();
+                xEL = Vector3D.CrossProduct(EL2SL, zEL);
+                xEL.Normalize();
             }
             else
             {
-                double r = Math.Sqrt(1 + mat.M33 - mat.M11 - mat.M22);
-                double s = 0.5 / r;
-                double w = (mat.M12 - mat.M21) * s;
-                double x = (mat.M13 + mat.M31) * s;
-                double y = (mat.M23 + mat.M32) * s;
-                double z = 0.5 * r;
-                result = new Quaternion(x, y, z, w);
+                double cosAngleEL2 = Vector3D.DotProduct(SC2SP, EL2SL);
+                if (cosAngleEL2 <= 0)  //This is equivalent to an angle >= 90 degrees
+                {
+                    zEL = Vector3D.CrossProduct(EL2SL, xSC);
+                    zEL.Normalize();
+                    xEL = Vector3D.CrossProduct(EL2SL, zEL);
+                    xEL.Normalize();
+                }
+                else
+                {
+                    zEL = Vector3D.CrossProduct(EL2SL, SC2SP);
+                    zEL.Normalize();
+                    xEL = Vector3D.CrossProduct(EL2SL, zEL);
+                    xEL.Normalize();
+                }
             }
+            Matrix3D elMat = RotationMatFromRowVecs(xEL, EL2SL, zEL);
+            //orientations[(int)JointType.ElbowLeft] = MatrixToQuat(elMat);
+            orientations[(int)JointType.ElbowLeft] = elMat;
+            #endregion
+            #region Wrist Left Joint Orientation
+            Vector3D zWL = Vector3D.CrossProduct(xEL, WL2EL);
+            zWL.Normalize();
+            Vector3D xWL = Vector3D.CrossProduct(WL2EL, zWL);
+            xWL.Normalize();
+            Matrix3D wlMat = RotationMatFromRowVecs(xWL, WL2EL, zWL);
+            //orientations[(int)JointType.WristLeft] = MatrixToQuat(wlMat);
+            orientations[(int)JointType.WristLeft] = wlMat;
+            #endregion
+            #region Hand Left Joint Orientation
+            Point3D HDL = skeleton[(int)JointType.HandLeft].Position;
+            Vector3D HDL2WL = HDL - WL;
+            HDL2WL.Normalize();
+            Vector3D xHDL = Vector3D.CrossProduct(HDL2WL, zWL);
+            xHDL.Normalize();
+            Vector3D zHDL = Vector3D.CrossProduct(xHDL, HDL2WL);
+            zHDL.Normalize();
+            Matrix3D hdlMat = RotationMatFromRowVecs(xHDL, HDL2WL, zHDL);
+            //orientations[(int)JointType.HandLeft] = MatrixToQuat(hdlMat);
+            orientations[(int)JointType.HandLeft] = hdlMat;
+            #endregion
+            #region Elbow Right Joint Orientation
+            Point3D WR = skeleton[(int)JointType.WristRight].Position;
+            Point3D ER = skeleton[(int)JointType.ElbowRight].Position;
+            Vector3D ER2SR = ER - WR;
+            ER2SR.Normalize();
+            Vector3D WR2ER = WR - ER;
+            WR2ER.Normalize();
+            Vector3D xER;
+            Vector3D zER;
+            double cosAngleER = Vector3D.DotProduct(ER2SR, WR2ER);  //Because these are both unit vectors, the dot product of the two equals cos(angle)
+            if (Math.Abs(cosAngleER) < 0.94)  //The cosine of the angular thresholds are precalculated, this is roughly an angle of 19.5 degrees (160.5 on the other side)
+            {
+                Vector3D preXer = Vector3D.CrossProduct(ER2SR, WR2ER);
+                preXer.Normalize();
+                zER = Vector3D.CrossProduct(preXer, ER2SR);
+                zER.Normalize();
+                xER = Vector3D.CrossProduct(ER2SR, zER);
+                xER.Normalize();
+            }
+            else
+            {
+                double cosAngleER2 = Vector3D.DotProduct(SC2SP, ER2SR);
+                if (cosAngleER2 <= 0)  //This is equivalent to an angle >= 90 degrees
+                {
+                    zER = Vector3D.CrossProduct(ER2SR, xSC);
+                    zER.Normalize();
+                    xER = Vector3D.CrossProduct(ER2SR, zER);
+                    xER.Normalize();
+                }
+                else
+                {
+                    zER = Vector3D.CrossProduct(SC2SP, ER2SR);
+                    zER.Normalize();
+                    xER = Vector3D.CrossProduct(ER2SR, zER);
+                    xER.Normalize();
+                }
+            }
+            Matrix3D erMat = RotationMatFromRowVecs(xER, ER2SR, zER);
+            //orientations[(int)JointType.ElbowRight] = MatrixToQuat(erMat);
+            orientations[(int)JointType.ElbowRight] = erMat;
+            #endregion
+            #region Wrist Right Joint Orientation
+            Vector3D zWR = Vector3D.CrossProduct(xER, WR2ER);
+            zWR.Normalize();
+            Vector3D xWR = Vector3D.CrossProduct(WR2ER, zWR);
+            xWR.Normalize();
+            Matrix3D wrMat = RotationMatFromRowVecs(xWR, WR2ER, zWR);
+            //orientations[(int)JointType.WristRight] = MatrixToQuat(wrMat);
+            orientations[(int)JointType.WristRight] = wrMat;
+            #endregion
+            #region  Joint Orientation
+            Point3D HDR = skeleton[(int)JointType.HandRight].Position;
+            Vector3D HDR2WR = HDR - WR;
+            HDR2WR.Normalize();
+            Vector3D xHDR = Vector3D.CrossProduct(HDR2WR, zWR);
+            xHDR.Normalize();
+            Vector3D zHDR = Vector3D.CrossProduct(xHDR, HDR2WR);
+            zHDR.Normalize();
+            Matrix3D hdrMat = RotationMatFromRowVecs(xHDR, HDR2WR, zHDR);
+            //orientations[(int)JointType.HandRight] = MatrixToQuat(hdrMat);
+            orientations[(int)JointType.HandRight] = hdrMat;
+            #endregion
+            #region Hip Left Joint Orientation
+            Vector3D HL2HC = HL - HC;
+            HL2HC.Normalize();
+            Vector3D zHL = Vector3D.CrossProduct(xHC, HC2HL);
+            zHL.Normalize();
+            Vector3D xHL = Vector3D.CrossProduct(zHL, HC2HL);
+            xHL.Normalize();
+            Matrix3D hlMat = RotationMatFromRowVecs(xHL, HL2HC, zHL);
+            //orientations[(int)JointType.HipLeft] = MatrixToQuat(hlMat);
+            orientations[(int)JointType.HipLeft] = hlMat;
+            #endregion
+            #region Knee Left and Ankle Left Joint Orientations
+            //Note, these need to be done together as the knee sometimes depends on the ankle
+            Point3D KL = skeleton[(int)JointType.KneeLeft].Position;
+            Point3D AL = skeleton[(int)JointType.AnkleLeft].Position;
+            Vector3D KL2HL = KL - HL;
+            KL2HL.Normalize();
+            Vector3D AL2KL = AL - KL;
+            AL2KL.Normalize();
+            Vector3D xKL;
+            Vector3D zKL;
+            Vector3D xAL;
+            Vector3D zAL;
+            if (skeleton[(int)JointType.KneeLeft].TrackingState == TrackingState.Tracked)
+            {
+                double cosAngleKL = Vector3D.DotProduct(KL2HL, AL2KL);
+                if (cosAngleKL < 0.972) //This is roughly an angle of 13.5 degrees
+                {
+                    //Ankle orientation calculation
+                    zAL = Vector3D.CrossProduct(AL2KL, xHC);
+                    zAL.Normalize();
+                    xAL = Vector3D.CrossProduct(AL2KL, zAL);
+                    xAL.Normalize();
 
-            return result;
+                    //Knee orientation calculation
+                    zKL = Vector3D.CrossProduct(xAL, KL2HL);
+                    zKL.Normalize();
+                    xKL = Vector3D.CrossProduct(KL2HL, zKL);
+                    xKL.Normalize();
+                }
+                else
+                {
+                    //Knee orientation calculation
+                    zKL = Vector3D.CrossProduct(KL2HL, xHC);
+                    zKL.Normalize();
+                    xKL = Vector3D.CrossProduct(KL2HL, zKL);
+                    xKL.Normalize();
+
+                    //Ankle orientation calculation
+                    zAL = Vector3D.CrossProduct(xKL, AL2KL);
+                    zAL.Normalize();
+                    xAL = Vector3D.CrossProduct(AL2KL, zAL);
+                    xAL.Normalize();
+                }
+            }
+            else
+            {
+                //Knee orientation calculation
+                zKL = Vector3D.CrossProduct(KL2HL, xHC);
+                zKL.Normalize();
+                xKL = Vector3D.CrossProduct(KL2HL, zKL);
+                xKL.Normalize();
+
+                //Ankle orientation calculation
+                zAL = Vector3D.CrossProduct(xKL, AL2KL);
+                zAL.Normalize();
+                xAL = Vector3D.CrossProduct(AL2KL, zAL);
+                xAL.Normalize();
+            }
+            Matrix3D klMat = RotationMatFromRowVecs(xKL, KL2HL, zKL);
+            //orientations[(int)JointType.KneeLeft] = MatrixToQuat(klMat);
+            orientations[(int)JointType.KneeLeft] = klMat;
+            Matrix3D alMat = RotationMatFromRowVecs(xAL, AL2KL, zAL);
+            //orientations[(int)JointType.AnkleLeft] = MatrixToQuat(alMat);
+            orientations[(int)JointType.AnkleLeft] = alMat;
+            #endregion
+            #region Foot Left Joint Orientation
+            Point3D FL = skeleton[(int)JointType.FootLeft].Position;
+            Vector3D FL2AL = FL - AL;
+            Vector3D zFL = Vector3D.CrossProduct(xAL, FL2AL);
+            zFL.Normalize();
+            Vector3D xFL = Vector3D.CrossProduct(FL2AL, zFL);
+            xFL.Normalize();
+            Matrix3D flMat = RotationMatFromRowVecs(xFL, FL2AL, zFL);
+            //orientations[(int)JointType.FootLeft] = MatrixToQuat(flMat);
+            orientations[(int)JointType.FootLeft] = flMat;
+            #endregion
+            #region Hip Right Joint Orientation
+            Vector3D HR2HC = HR - HC;
+            HR2HC.Normalize();
+            Vector3D zHR = Vector3D.CrossProduct(HR2HC, xHC);
+            zHR.Normalize();
+            Vector3D xHR = Vector3D.CrossProduct(HR2HC, zHR);
+            xHR.Normalize();
+            Matrix3D hrMat = RotationMatFromRowVecs(xHR, HR2HC, zHR);
+            //orientations[(int)JointType.HipRight] = MatrixToQuat(hrMat);
+            orientations[(int)JointType.HipRight] = hrMat;
+            #endregion
+            #region Knee Right and Ankle Right Joint Orientations
+            //Note, these need to be done together as the knee sometimes depends on the ankle
+            Point3D KR = skeleton[(int)JointType.KneeRight].Position;
+            Point3D AR = skeleton[(int)JointType.AnkleRight].Position;
+            Vector3D KR2HR = KR - HR;
+            KR2HR.Normalize();
+            Vector3D AR2KR = AR - KR;
+            AR2KR.Normalize();
+            Vector3D xKR;
+            Vector3D zKR;
+            Vector3D xAR;
+            Vector3D zAR;
+            if (skeleton[(int)JointType.KneeRight].TrackingState == TrackingState.Tracked)
+            {
+                double cosAngleKR = Vector3D.DotProduct(KR2HR, AR2KR);
+                if (cosAngleKR < 0.972) //This is roughly an angle of 13.5 degrees
+                {
+                    //Ankle orientation calculation
+                    zAR = Vector3D.CrossProduct(AR2KR, xHC);
+                    zAR.Normalize();
+                    xAR = Vector3D.CrossProduct(AR2KR, zAR);
+                    xAR.Normalize();
+
+                    //Knee orientation calculation
+                    zKR = Vector3D.CrossProduct(xAR, KR2HR);
+                    zKR.Normalize();
+                    xKR = Vector3D.CrossProduct(KR2HR, zKR);
+                    xKR.Normalize();
+                }
+                else
+                {
+                    //Knee orientation calculation
+                    zKR = Vector3D.CrossProduct(KR2HR, xHC);
+                    zKR.Normalize();
+                    xKR = Vector3D.CrossProduct(KR2HR, zKR);
+                    xKR.Normalize();
+
+                    //Ankle orientation calculation
+                    zAR = Vector3D.CrossProduct(xKR, AR2KR);
+                    zAR.Normalize();
+                    xAR = Vector3D.CrossProduct(AR2KR, zAR);
+                    xAR.Normalize();
+                }
+            }
+            else
+            {
+                //Knee orientation calculation
+                zKR = Vector3D.CrossProduct(KR2HR, xHC);
+                zKR.Normalize();
+                xKR = Vector3D.CrossProduct(KR2HR, zKR);
+                xKR.Normalize();
+
+                //Ankle orientation calculation
+                zAR = Vector3D.CrossProduct(xKR, AR2KR);
+                zAR.Normalize();
+                xAR = Vector3D.CrossProduct(AR2KR, zAR);
+                xAR.Normalize();
+            }
+            Matrix3D krMat = RotationMatFromRowVecs(xKR, KR2HR, zKR);
+            //orientations[(int)JointType.KneeRight] = MatrixToQuat(krMat);
+            orientations[(int)JointType.KneeRight] = krMat;
+            Matrix3D arMat = RotationMatFromRowVecs(xAR, AR2KR, zAR);
+            //orientations[(int)JointType.AnkleRight] = MatrixToQuat(arMat);
+            orientations[(int)JointType.AnkleRight] = arMat;
+            #endregion
+            #region Foot Right Joint Orientation
+            Point3D FR = skeleton[(int)JointType.FootRight].Position;
+            Vector3D FR2AR = FR - AR;
+            Vector3D zFR = Vector3D.CrossProduct(xAR, FR2AR);
+            zFR.Normalize();
+            Vector3D xFR = Vector3D.CrossProduct(FR2AR, zFR);
+            xFR.Normalize();
+            Matrix3D frMat = RotationMatFromRowVecs(xFR, FR2AR, zFR);
+            //orientations[(int)JointType.FootRight] = MatrixToQuat(frMat);
+            orientations[(int)JointType.FootRight] = frMat;
+            #endregion
+
+            return orientations;
         }
 
         //Creates a rotation matrix from three vectors that represent the first three rows of the matrix
@@ -769,12 +1119,6 @@ namespace KinectWithVRServer
             m.M44 = 1;
 
             return m;
-        }
-
-        //This takes the trace of a 4x4 matrix as if it were a 3x3 (i.e., it leaves out the M44 component)
-        private double Trace3(Matrix3D m)
-        {
-            return m.M11 + m.M22 + m.M33;
         }
         #endregion
 
@@ -820,7 +1164,7 @@ namespace KinectWithVRServer
             if (trackingAge.TotalMilliseconds > 1000)
             {
                 //If the tracking age is old, but it still has a decent prediction, the joint is inferred
-                if (logNorm < 2)
+                if (logNorm < 4)
                 {
                     state = TrackingState.Inferred;
                 }
@@ -828,11 +1172,11 @@ namespace KinectWithVRServer
             else
             {
                 //If the tracking age is new, determine if it is tracked, inferred, or not tracked (default) based on how good the prediction is
-                if (logNorm < 0.75)
+                if (logNorm < 2)
                 {
                     state = TrackingState.Tracked;
                 }
-                else if (logNorm < 2)
+                else if (logNorm < 4)
                 {
                     state = TrackingState.Inferred;
                 }

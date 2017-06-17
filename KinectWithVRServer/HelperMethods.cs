@@ -164,6 +164,39 @@ namespace KinectWithVRServer
             avePoint.Z = (float)((double)x.Z + ((double)y.Z - (double)x.Z) / (double)(n + 1));
             return avePoint;
         }
+
+        internal static KinectSkeleton DeepCopySkeleton(KinectSkeleton inSkel)
+        {
+            KinectSkeleton outSkel = new KinectSkeleton();
+
+            outSkel.leftHandClosed = inSkel.leftHandClosed;
+            outSkel.Position = inSkel.Position;
+            outSkel.rightHandClosed = inSkel.rightHandClosed;
+            outSkel.SkeletonTrackingState = inSkel.SkeletonTrackingState;
+            outSkel.sourceKinectID = inSkel.sourceKinectID;
+            outSkel.TrackingId = inSkel.TrackingId;
+
+            for (int i = 0; i < inSkel.skeleton.Count; i++)
+            {
+                outSkel.skeleton[i] = DeepCopyJoint(inSkel.skeleton[i]);
+            }
+
+            return outSkel;
+        }
+
+        internal static Joint DeepCopyJoint(Joint inJoint)
+        {
+            Joint outJoint = new Joint();
+            outJoint.Confidence = inJoint.Confidence;
+            outJoint.JointType = inJoint.JointType;
+            outJoint.Orientation = inJoint.Orientation;  //Orientation is a struct, so it will set by value
+            outJoint.Position = inJoint.Position;  //Point3D is a struct, so it will set by value
+            outJoint.spatialErrorStdDev = inJoint.spatialErrorStdDev;
+            outJoint.TrackingState = inJoint.TrackingState;
+            outJoint.utcTime = inJoint.utcTime;  //DateTime is a struct, so it will set by value
+
+            return outJoint;
+        }
     }
 
     public class AvailableKinectData : INotifyPropertyChanged

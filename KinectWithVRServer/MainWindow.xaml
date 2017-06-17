@@ -221,7 +221,7 @@
                         <DataGrid.Columns>
                             <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
                             <DataGridTextColumn Header="Button #" Binding="{Binding buttonNumber}"/>                            
-                            <DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
+                            <!--<DataGridComboBoxColumn Header="Initial State" SelectedItemBinding="{Binding initialState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>-->
                             <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
                             <DataGridTextColumn Header="Confidence" Binding="{Binding confidence}"/>
                             <!--<DataGridCheckBoxColumn Header="Send Source Angle" Binding="{Binding sendSourceAngle}"/>-->
@@ -263,13 +263,32 @@
                         <ColumnDefinition Width="4"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <ListBox Name="gestureTabListBox"/>
+                    <ListBox Name="gestureTabListBox" SelectionChanged="gestureTabListBox_SelectionChanged"/>
                     <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns"/>
-                    <Grid Name="perGestureLayoutGrid" Grid.Column="2">
+                    <Grid Name="gesturesLayoutGrid" Grid.Column="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+                        <DataGrid Name="currentGesturesDataGrid" AutoGenerateColumns="False" ItemsSource="{Binding}" HeadersVisibility="Column" CanUserAddRows="False" SelectionChanged="currentGesturesDataGrid_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name" IsReadOnly="True" Binding="{Binding Path=gestureName, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridCheckBoxColumn Header="Trained" IsReadOnly="True" Binding="{Binding Path=isTrained, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridTextColumn Header="Sensitivity" IsReadOnly="True" Binding="{Binding Path=sensitivity, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridTextColumn Header="Joint" IsReadOnly="True" Binding="{Binding Path=moniteredJoint, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridTextColumn Header="Skeleton" IsReadOnly="True" Binding="{Binding Path=trackedSkeleton, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridTextColumn Header="Server Name" IsReadOnly="False" Binding="{Binding Path=serverName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridComboBoxColumn Header="Button Type" SelectedItemBinding="{Binding buttonType, Mode=TwoWay}" ItemsSource="{Binding Source={StaticResource ButtonTypeEnum}}"/>
+                                <DataGridTextColumn Header="Button #" IsReadOnly="False" Binding="{Binding Path=buttonNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <DataGridComboBoxColumn Header="Set State" SelectedItemBinding="{Binding setState, Converter={StaticResource boolToPressConverter}}" ItemsSource="{Binding Source={StaticResource PressStateEnum}}"/>
+                                <DataGridTextColumn Header="Comments" Binding="{Binding Path=comments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <StackPanel Name="addGestureStackPanel" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="Gestures:" VerticalAlignment="Center" Margin="2"/>
+                            <Button Name="AddGestureButton" Content="Add" Margin="2" Width="50" Click="AddGestureButton_Click"/>
+                            <Button Name="RemoveGestureButton" Content="Remove" Margin="2" Width="50" IsEnabled="False" Click="RemoveGestureButton_Click"/>
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </TabItem>

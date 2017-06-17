@@ -7,6 +7,7 @@ using System.Windows.Media.Media3D;
 using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using System;
+using System.ComponentModel;
 
 namespace KinectBase
 {
@@ -232,24 +233,34 @@ namespace KinectBase
 
     public class Command
     {
-        public string serverName { get; set; }
-        public CommandType commandType { get; set; }
-        public string comments { get; set; }  //I think this should either be changed to button name (for use in VR juggler JCONFs) or a seperate name should be added for it
+        protected CommandType innerCommandType;
+        public CommandType commandType
+        {
+            get { return innerCommandType; }
+        }
+        public virtual string serverName { get; set; }
+        public virtual string comments { get; set; }  //I think this should either be changed to button name (for use in VR juggler JCONFs) or a seperate name should be added for it
     }
 
     public class VoiceCommand : Command
     {
-        public ServerType serverType { get; set; }
+        protected ServerType innerServerType;
+        public ServerType serverType
+        {
+            get { return innerServerType; }
+        }
         public double confidence { get; set; }
         public string recognizedWord { get; set; }
+        public override string comments { get; set; }
+        public override string serverName { get; set; }
     }
 
     public class VoiceTextCommand : VoiceCommand
     {
         public VoiceTextCommand()
         {
-            base.serverType = ServerType.Text;
-            base.commandType = CommandType.Voice;
+            base.innerServerType = ServerType.Text;
+            base.innerCommandType = CommandType.Voice;
         }
 
         public string actionText { get; set; }
@@ -259,35 +270,144 @@ namespace KinectBase
     {
         public VoiceButtonCommand()
         {
-            base.serverType = ServerType.Button;
-            base.commandType = CommandType.Voice;
+            base.innerServerType = ServerType.Button;
+            base.innerCommandType = CommandType.Voice;
         }
 
         public ButtonType buttonType { get; set; }
         public int buttonNumber { get; set; }
-        public bool initialState { get; set; }
         public bool setState { get; set; }
     }
 
-    public class GestureCommand : Command
+    public class GestureCommand : Command, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public GestureCommand()
         {
-            base.commandType = CommandType.Gesture;
+            base.innerCommandType = CommandType.Gesture;
+            trainingData = new List<List<KinectSkeleton>>();
+            isGesture = false;
+        }
+
+        private void NotifyPropertyChanged(string info)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(info));
+            }
         }
 
         public ServerType serverType
         {
             get { return ServerType.Button; }
         }
-        public string gestureName { get; set; }
+        private string gestName;
+        public string gestureName 
+        {
+            get { return gestName; }
+            set
+            {
+                gestName = value;
+                NotifyPropertyChanged("gestureName");
+            }
+        }
 
         //Since the gestures will be sent as button commands, we need the button options here
-        public int buttonNumber { get; set; }
-        public ButtonType buttonType { get; set; }
-        public bool initialState { get; set; }
-        public bool setState { get; set; }
+        private int buttonNum = 0;
+        public int buttonNumber
+        {
+            get { return buttonNum; }
+            set
+            {
+                buttonNum = value;
+                NotifyPropertyChanged("buttonNumber");
+            }
+        }
+        private ButtonType type = ButtonType.Momentary;
+        public ButtonType buttonType
+        {
+            get { return type; }
+            set
+            {
+                type = value;
+                NotifyPropertyChanged("buttonType");
+            }
+        }
+        private bool buttonState = true;
+        public bool setState
+        {
+            get { return buttonState; }
+            set
+            {
+                buttonState = value;
+                NotifyPropertyChanged("setState");
+            }
+        }
+        private string serveName = "Server";
+        public override string serverName
+        {
+            get { return serveName; }
+            set
+            {
+                serveName = value;
+                NotifyPropertyChanged("serverName");
+            }
+        }
+        private string com = "";
+        public override string comments
+        {
+            get { return com; }
+            set
+            {
+                com = value;
+                NotifyPropertyChanged("comments");
+            }
+        }
 
         //This will likely need to be added to to handle recorded gestures
+        public List<List<KinectSkeleton>> trainingData {get; set;}
+        public HMMModel hmmModel { get; set; }
+        public bool isGesture { get; set; }
+        private JointType joint = JointType.HandRight;
+        public JointType monitoredJoint
+        {
+            get { return joint; }
+            set
+            {
+                joint = value;
+                NotifyPropertyChanged("monitoredJoint");
+            }
+        }
+        private bool trained = false;
+        public bool isTrained
+        {
+            get { return trained; }
+            set
+            {
+                trained = value;
+                NotifyPropertyChanged("isTrained");
+            }
+        }
+        private double sensitive = 1.0;
+        public double sensitivity
+        {
+            get { return sensitive; }
+            set
+            {
+                sensitive = value;
+                NotifyPropertyChanged("sensitivity");
+            }
+        }
+        private int skeleton = 0;
+        public int trackedSkeleton 
+        {
+            get { return skeleton; }
+            set
+            {
+                skeleton = value;
+                NotifyPropertyChanged("trackedSkeleton");
+            }
+        }
     }
 }

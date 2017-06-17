@@ -162,7 +162,7 @@ namespace KinectWithVRServer
 
                                         //Run a delegate to change the state back, that way, even though it uses a blocking call, it will be blocking a thread we don't care about
                                         ToggleBackMomentaryButtonDelegate buttonDelegate = ToggleBackMomentaryButton;
-                                        buttonDelegate.BeginInvoke(j, shortCommand.buttonNumber, shortCommand.initialState, null, null);
+                                        buttonDelegate.BeginInvoke(j, shortCommand.buttonNumber, !shortCommand.setState, null, null);
                                     }
                                     else if (shortCommand.buttonType == ButtonType.Setter)
                                     {

@@ -130,7 +130,7 @@ namespace NetworkKinectCore
             transformedJoint.Confidence = joint.Confidence;
             transformedJoint.JointType = joint.JointType;
             transformedJoint.TrackingState = joint.TrackingState;
-            transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
+            transformedJoint.Orientation.orientationQuaternion = skeletonRotQuaternion * joint.Orientation.orientationQuaternion;
             transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
             transformedJoint.utcTime = joint.utcTime;
 
@@ -366,7 +366,7 @@ namespace NetworkKinectCore
             JointMapping map = GetJointMapFromChannel(e.Sensor);
             newJoint.JointType = map.joint;
             newJoint.Position = new Point3D(e.Position.X, e.Position.Y, e.Position.Z);
-            newJoint.Orientation = e.Orientation;
+            newJoint.Orientation.orientationQuaternion = e.Orientation;
             newJoint.TrackingState = TrackingState.Tracked;
             newJoint.spatialErrorStdDev = GetJointErrorFromChannel(e.Sensor);
 

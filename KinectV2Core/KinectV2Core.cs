@@ -279,7 +279,7 @@ namespace KinectV2Core
             transformedJoint.Confidence = joint.Confidence;
             transformedJoint.JointType = joint.JointType;
             transformedJoint.TrackingState = joint.TrackingState;
-            transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
+            transformedJoint.Orientation.orientationQuaternion = skeletonRotQuaternion * joint.Orientation.orientationQuaternion;
             transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
             transformedJoint.utcTime = joint.utcTime;
 
@@ -481,7 +481,7 @@ namespace KinectV2Core
                             newJoint.JointType = convertJointType(skeletons[i].Joints[(JointType)j].JointType);
                             newJoint.Position = convertJointPosition(skeletons[i].Joints[(JointType)j].Position);
                             newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
-                            newJoint.Orientation = convertJointOrientation(skeletons[i].JointOrientations[(JointType)j].Orientation);
+                            newJoint.Orientation.orientationQuaternion = convertJointOrientation(skeletons[i].JointOrientations[(JointType)j].Orientation);
                             newJoint.spatialErrorStdDev = getJointError(newJoint.Position, newJoint.TrackingState);
                             newJoint.utcTime = now;
 

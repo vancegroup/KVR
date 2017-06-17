@@ -124,6 +124,9 @@
     <Compile Include="ConsoleUI.cs" />
     <Compile Include="GestureRecognition\DiscreteHMM.cs" />
     <Compile Include="GestureRecognition\GestureCore.cs" />
+    <Compile Include="GestureRecognition\GestureSettingsUserControl.xaml.cs">
+      <DependentUpon>GestureSettingsUserControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="GestureRecognition\KMeans.cs" />
     <Compile Include="NetworkKinectWrapper\NKAddDialog.xaml.cs">
       <DependentUpon>NKAddDialog.xaml</DependentUpon>
@@ -157,6 +160,10 @@
     <Compile Include="SkeletonMerger.cs" />
     <Compile Include="VerifyDLLs.cs" />
     <Compile Include="VoiceRecogCore.cs" />
+    <Page Include="GestureRecognition\GestureSettingsUserControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="KinectV1Wrapper\KV1SettingsControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

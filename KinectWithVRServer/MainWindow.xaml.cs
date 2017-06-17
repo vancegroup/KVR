@@ -39,6 +39,8 @@ namespace KinectWithVRServer
         internal ObservableCollection<ConfiguredServerData> configuredServers = new ObservableCollection<ConfiguredServerData>();
         private List<string> kinectsPageList = new List<string>(new string[] {"Available Kinects"});
         internal List<IKinectSettingsControl> kinectOptionGUIPages = new List<IKinectSettingsControl>();
+        private List<string> gesturesPageList = new List<string>(new string[] { "Gesture Overview" });
+        internal List<GestureSettingsUserControl> gestureOptionGUIPages = new List<GestureSettingsUserControl>();
         private string voiceRecogSourceUniqueID = "";
         private WriteableBitmap depthSource;
         private WriteableBitmap colorSource;
@@ -58,6 +60,7 @@ namespace KinectWithVRServer
         private float depthMax = 1;
         private bool updating = false;
         private SkeletonMerger mergerCore;
+        Stopwatch watch = new Stopwatch();
 
         //Event declarations
         internal event SkeletonEventHandler MergedSkeletonChanged;
@@ -190,6 +193,8 @@ namespace KinectWithVRServer
             //Set all the data for the data grids
             VoiceButtonDataGrid.ItemsSource = server.serverMasterOptions.voiceButtonCommands;
             VoiceTextDataGrid.ItemsSource = server.serverMasterOptions.voiceTextCommands;
+            currentGesturesDataGrid.ItemsSource = server.serverMasterOptions.gestureCommands;
+            UpdateGesturePageListing();
 
             if (startupFile != null && startupFile != "")
             {
@@ -1645,6 +1650,8 @@ namespace KinectWithVRServer
         //Skeleton merging update event
         private void skeletonMergingTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            //watch.Restart();
+
             //Predict ahead the skeletons and sort them
             List<KinectSkeleton> mergedSkeletons = new List<KinectSkeleton>(mergerCore.GetAllPredictedSkeletons(server.serverMasterOptions.mergedSkeletonOptions.predictAheadMS));
             List<KinectSkeleton> sortedSkeletons = ServerCore.SortSkeletons(mergedSkeletons, server.serverMasterOptions.mergedSkeletonOptions.skeletonSortMode, null);
@@ -1656,7 +1663,12 @@ namespace KinectWithVRServer
                 args.kinectID = -105;  //This will be our code for "GUI merged skeleton"
                 args.skeletons = sortedSkeletons.ToArray();
                 OnSkeletonChanged(args);
+
+                DateTime temp = DateTime.Now;
             }
+
+            //watch.Stop();
+            //Trace.WriteLine("Merge time: " + watch.ElapsedMilliseconds.ToString() + ", Skeletons: " + sortedSkeletons.Count.ToString());
         }
         private void sourceSkeletonChanged(object sender, SkeletonEventArgs e)
         {
@@ -2343,5 +2355,102 @@ namespace KinectWithVRServer
         }
         #endregion
 
+        #region Gesture Tab GUI Stuff
+        private void currentGesturesDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+        private void AddGestureButton_Click(object sender, RoutedEventArgs e)
+        {
+            int number = 1;
+            bool valid = false;
+
+            while (!valid)
+            {
+                bool found = false;
+
+                for (int i = 0; i < server.serverMasterOptions.gestureCommands.Count; i++)
+                {
+                    if (string.Compare("Gesture " + number.ToString(), server.serverMasterOptions.gestureCommands[i].gestureName, true) == 0)
+                    {
+                        number++;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    valid = true;
+                }
+            }
+
+            string name = "Gesture " + number.ToString();
+            GestureCommand newCommand = new GestureCommand();
+            newCommand.gestureName = name;
+            server.serverMasterOptions.gestureCommands.Add(newCommand);
+            GestureSettingsUserControl newGUI = new GestureSettingsUserControl(server.serverMasterOptions.gestureCommands.Count - 1, this);
+            newGUI.Visibility = System.Windows.Visibility.Collapsed;
+            GestureTabMasterGrid.Children.Add(newGUI);
+            gestureOptionGUIPages.Add(newGUI);
+            server.gestRecog.AddGesture();
+
+            UpdateGesturePageListing();
+        }
+        private void RemoveGestureButton_Click(object sender, RoutedEventArgs e)
+        {
+            int index = currentGesturesDataGrid.SelectedIndex;
+            if (index >= 0 && index < server.serverMasterOptions.gestureCommands.Count)
+            {
+                server.gestRecog.RemoveGesture(index);
+                server.serverMasterOptions.gestureCommands.RemoveAt(index);
+                gestureOptionGUIPages.RemoveAt(index);
+
+                UpdateGesturePageListing();
+            }
+        }
+        internal void UpdateGesturePageListing()
+        {
+            gesturesPageList.RemoveRange(1, gesturesPageList.Count - 1); //Clear all but the first page, which we will always show
+
+            for (int i = 0; i < gestureOptionGUIPages.Count; i++)
+            {
+                gesturesPageList.Add(gestureOptionGUIPages[i].GestureName);
+            }
+
+            gestureTabListBox.ItemsSource = gesturesPageList;
+            gestureTabListBox.Items.Refresh();
+        }
+        private void gestureTabListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            int index = gestureTabListBox.SelectedIndex;
+            if (index >= 0 && index <= gestureOptionGUIPages.Count)  //This is <= not < because there is 1 less GUI page than list options
+            {
+                if (index == 0)
+                {
+                    for (int i = 0; i < gestureOptionGUIPages.Count; i++)
+                    {
+                        gestureOptionGUIPages[i].Visibility = System.Windows.Visibility.Collapsed;
+                    }
+                    gesturesLayoutGrid.Visibility = System.Windows.Visibility.Visible;
+                }
+                else
+                {
+                    gesturesLayoutGrid.Visibility = System.Windows.Visibility.Collapsed;
+                    for (int i = 0; i < gestureOptionGUIPages.Count; i++)
+                    {
+                        if (index - 1 == i)
+                        {
+                            gestureOptionGUIPages[i].Visibility = System.Windows.Visibility.Visible;
+                        }
+                        else
+                        {
+                            gestureOptionGUIPages[i].Visibility = System.Windows.Visibility.Collapsed;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
     }
 }

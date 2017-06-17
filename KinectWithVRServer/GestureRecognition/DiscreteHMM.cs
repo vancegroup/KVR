@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KinectBase;
 
 namespace KinectWithVRServer
 {
@@ -302,11 +303,13 @@ namespace KinectWithVRServer
                 {
                     if (i == 0)
                     {
-                        initialStateDistribution[i] = 1.0;
+                        //initialStateDistribution[i] = 1.0;
+                        initialStateDistribution[i] = 0.9;
                     }
                     else
                     {
-                        initialStateDistribution[i] = 0;
+                        //initialStateDistribution[i] = 0;
+                        initialStateDistribution[i] = 0.1 / (statesList.Length - 1);
                     }
                 }
 
@@ -364,6 +367,7 @@ namespace KinectWithVRServer
         /// </summary>
         /// <param name="observedSymbolSequence">The observed symbol sequence.</param>
         /// <returns>The probability of the occurance of the observed sequence.</returns>
+        //TODO: This is broken.  it is going to states in the direction of symbols
         internal double LogFastObservationSequenceProbability(T[] observedSymbolSequence)
         {
             //Initialize the alphas
@@ -677,7 +681,7 @@ namespace KinectWithVRServer
                     pNew += newHMM.LogFastObservationSequenceProbability(trainingData[k]);
                 }
 
-                if (pNew > pOld)
+                if (pNew > pOld + .00000001) //Add some error margin so this won't loop forever
                 {
                     Array.Copy(tempPI, initialStateDistribution, tempPI.Length);
                     Array.Copy(tempA, stateTransitionProbabilities, tempA.Length);
@@ -862,6 +866,4 @@ namespace KinectWithVRServer
             return -1;
         }
     }
-
-    public enum HMMModel { LeftToRight, Ergodic }
 }

@@ -56,8 +56,8 @@ namespace KinectWithVRServer
             {
                 Point3D temp = new Point3D();
                 temp.X = rand.NextDouble() * (maxes.X - mins.X) + mins.X;
-                temp.Y = rand.NextDouble() * (maxes.X - mins.X) + mins.X;
-                temp.Z = rand.NextDouble() * (maxes.X - mins.X) + mins.X;
+                temp.Y = rand.NextDouble() * (maxes.Y - mins.Y) + mins.Y;
+                temp.Z = rand.NextDouble() * (maxes.Z - mins.Z) + mins.Z;
 
                 centroids.Add(temp);
 
@@ -182,8 +182,8 @@ namespace KinectWithVRServer
             for (int j = 0; j < clusterPoints.Count; j++)
             {
                 averageX += (clusterPoints[j].X - averageX) / (j + 1);
-                averageY += (clusterPoints[j].Y - averageX) / (j + 1);
-                averageZ += (clusterPoints[j].Z - averageX) / (j + 1);
+                averageY += (clusterPoints[j].Y - averageY) / (j + 1);
+                averageZ += (clusterPoints[j].Z - averageZ) / (j + 1);
             }
 
             centroid.X = averageX;

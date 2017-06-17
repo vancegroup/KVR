@@ -65,9 +65,9 @@ namespace KinectWithVRServer
         }
         MainWindow parent;
         internal List<KinectBase.IKinectCore> kinects = new List<KinectBase.IKinectCore>();
-        VoiceRecogCore voiceRecog;
-        GestureCore gestRecog;
-        FeedbackCore feedbackCore;
+        internal VoiceRecogCore voiceRecog;
+        internal GestureCore gestRecog;
+        internal FeedbackCore feedbackCore;
         internal Point3D? feedbackPosition = null;
         private SkeletonMerger mergerCore;
 
@@ -76,6 +76,7 @@ namespace KinectWithVRServer
             parent = guiParent;
             verbose = isVerbose;
             serverMasterOptions = serverOptions;
+            gestRecog = new GestureCore(ref serverMasterOptions);
 
             if (guiParent != null)
             {
@@ -153,7 +154,7 @@ namespace KinectWithVRServer
                 //Start gesture recognition, if necessary
                 if (serverMasterOptions.gestureCommands.Count > 0)
                 {
-                    gestRecog = new GestureCore();
+                    gestRecog.StartRecognizer();
                     gestRecog.GestureRecognizer += gestRecog_GestureRecognizer;
                     WriteToVerboseLog("Gesture recognizer started.");
                 }
@@ -820,7 +821,7 @@ namespace KinectWithVRServer
 
                                 //Run a delegate to change the state back, that way, even though it uses a blocking call, it will be blocking a thread we don't care about
                                 ToggleBackMomentaryButtonDelegate buttonDelegate = ToggleBackMomentaryButton;
-                                buttonDelegate.BeginInvoke(j, shortCommand.buttonNumber, shortCommand.initialState, null, null);
+                                buttonDelegate.BeginInvoke(j, shortCommand.buttonNumber, !shortCommand.setState, null, null);
                             }
                             else if (shortCommand.buttonType == ButtonType.Setter)
                             {
@@ -838,38 +839,6 @@ namespace KinectWithVRServer
             throw new NotImplementedException();
         }
 
-        //This function goes through the skeletons from all the Kinects and figures out which ones are the same
-        //When multiple skeletons from different Kinects are the same, they will need to be merged together
-        //private void findSameSkeletons(KinectSkeletonsData[] kinectSkeletons)
-        //{
-        //    List<Point3D> averageCenters = new List<Point3D>();
-        //    mergedSkeletons.Clear();
-
-        //    for (int i = 0; i < kinectSkeletons.Length; i++) //For each Kinect
-        //    {
-        //        for (int j = 0; j < kinectSkeletons[i].actualSkeletons.Count; j++) //For each skeleton from the Kinect
-        //        {
-        //            bool matchFound = false;
-        //            for (int k = 0; k < averageCenters.Count; k++)
-        //            {
-        //                Vector3D distance = averageCenters[k] - kinectSkeletons[i].actualSkeletons[j].Position;
-        //                if (Math.Abs(distance.Length) < 0.3)
-        //                {
-        //                    matchFound = true;
-        //                    averageCenters[k] = HelperMethods.IncAverage(averageCenters[k], kinectSkeletons[i].actualSkeletons[j].Position, mergedSkeletons[k].Count);
-        //                    mergedSkeletons[k].AddSkeletonToMerge(kinectSkeletons[i].actualSkeletons[j]);
-        //                }
-        //            }
-
-        //            if (!matchFound)
-        //            {
-        //                mergedSkeletons.Add(new MergedSkeleton());
-        //                mergedSkeletons[mergedSkeletons.Count - 1].AddSkeletonToMerge(kinectSkeletons[i].actualSkeletons[j]);
-        //                averageCenters.Add(kinectSkeletons[i].actualSkeletons[j].Position);
-        //            }
-        //        }
-        //    }
-        //}
         private void skeletonUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             //If we aren't running off the GUI, do the merged skeleton update
@@ -1095,17 +1064,17 @@ namespace KinectWithVRServer
                     //TODO: I am including inferred joints as well, should I? 
                     if (joint.TrackingState != TrackingState.NotTracked)
                     {
-                        if (joint.Orientation.W == 0 && joint.Orientation.X == 0 && joint.Orientation.Y == 0 && joint.Orientation.Z == 0)
+                        Quaternion quat = joint.Orientation.orientationQuaternion;
+                        if (quat.W == 0 && quat.X == 0 && quat.Y == 0 && quat.Z == 0)
                         {
-                            joint.Orientation = Quaternion.Identity;
+                            quat = Quaternion.Identity;
                         }
                         else
                         {
-                            joint.Orientation.Normalize();
+                            quat.Normalize();
                         }
 
-                        joint.Orientation.Normalize();
-                        UpdateTrackerPoseData(jointServerID.Value, GetSkeletonSensorNumber(joint.JointType), joint.Position, joint.Orientation);
+                        UpdateTrackerPoseData(jointServerID.Value, GetSkeletonSensorNumber(joint.JointType), joint.Position, quat);
                     }
                 }
             }

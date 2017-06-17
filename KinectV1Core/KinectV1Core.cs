@@ -329,7 +329,7 @@ namespace KinectV1Core
             transformedJoint.Confidence = joint.Confidence;
             transformedJoint.JointType = joint.JointType;
             transformedJoint.TrackingState = joint.TrackingState;
-            transformedJoint.Orientation = skeletonRotQuaternion * joint.Orientation;
+            transformedJoint.Orientation.orientationQuaternion = skeletonRotQuaternion * joint.Orientation.orientationQuaternion;
             transformedJoint.Position = skeletonTransformation.Transform(joint.Position);
             transformedJoint.utcTime = joint.utcTime;
 
@@ -560,7 +560,7 @@ namespace KinectV1Core
                         filteredAccel.Z = (float)predAccel[2, 0];
                         interactStream.ProcessSkeleton(skeletons, filteredAccel, skelFrame.Timestamp);
 
-                        System.Diagnostics.Trace.WriteLine("[" + filteredAccel.X + ", " + filteredAccel.Y + ", " + filteredAccel.Z + "]");
+                        //System.Diagnostics.Trace.WriteLine("[" + filteredAccel.X + ", " + filteredAccel.Y + ", " + filteredAccel.Z + "]");
                     }
 
                     //Generate the transformation matrix for the skeletons
@@ -570,8 +570,10 @@ namespace KinectV1Core
                     AxisAngleRotation3D yawRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), -kinectYaw);
                     RotateTransform3D tempTrans = new RotateTransform3D(yawRotation);
                     TranslateTransform3D transTrans = new TranslateTransform3D((Vector3D)kinectPosition);
-                    Matrix3D masterMatrix = Matrix3D.Multiply(Matrix3D.Multiply(tempTrans.Value, gravityBasedKinectRotation), transTrans.Value);
+                    Matrix3D rotationOnlyMatrix = Matrix3D.Multiply(tempTrans.Value, gravityBasedKinectRotation);
+                    Matrix3D masterMatrix = Matrix3D.Multiply(rotationOnlyMatrix, transTrans.Value);
                     skeletonTransformation = masterMatrix;
+                    skeletonRotQuaternion = KinectBase.HelperMethods.MatrixToQuaternion(rotationOnlyMatrix);
 
                     //Convert from Kinect v1 skeletons to KVR skeletons
                     KinectBase.KinectSkeleton[] kvrSkeletons = new KinectBase.KinectSkeleton[skeletons.Length];
@@ -606,7 +608,12 @@ namespace KinectV1Core
                             newJoint.Confidence = KinectBase.TrackingConfidence.Unknown; //The Kinect 1 doesn't support the confidence property
                             newJoint.JointType = convertJointType(skeletons[i].Joints[(JointType)j].JointType);
                             Vector4 tempQuat = skeletons[i].BoneOrientations[(JointType)j].AbsoluteRotation.Quaternion;
-                            newJoint.Orientation = new Quaternion(tempQuat.X, tempQuat.Y, tempQuat.Z, tempQuat.W);
+                            newJoint.Orientation.orientationQuaternion = new Quaternion(tempQuat.X, tempQuat.Y, tempQuat.Z, tempQuat.W);
+                            Matrix4 tempMat = skeletons[i].BoneOrientations[(JointType)j].AbsoluteRotation.Matrix;
+                            newJoint.Orientation.orientationMatrix = new Matrix3D(tempMat.M11, tempMat.M12, tempMat.M13, tempMat.M14,
+                                                                                  tempMat.M21, tempMat.M22, tempMat.M23, tempMat.M24,
+                                                                                  tempMat.M31, tempMat.M32, tempMat.M33, tempMat.M34,
+                                                                                  tempMat.M41, tempMat.M42, tempMat.M43, tempMat.M44);
                             SkeletonPoint tempPos = skeletons[i].Joints[(JointType)j].Position;
                             newJoint.Position = new Point3D(tempPos.X, tempPos.Y, tempPos.Z);
                             newJoint.TrackingState = convertTrackingState(skeletons[i].Joints[(JointType)j].TrackingState);
@@ -769,38 +776,38 @@ namespace KinectV1Core
         }
 
         #region Methods to transform the skeletons
-        private Skeleton makeTransformedSkeleton(Skeleton inputSkel, Matrix3D transformationMatrix)
-        {
-            Skeleton adjSkel = new Skeleton();
+        //private Skeleton makeTransformedSkeleton(Skeleton inputSkel, Matrix3D transformationMatrix)
+        //{
+        //    Skeleton adjSkel = new Skeleton();
 
-            //Make sure the ancillary properties are copied over
-            adjSkel.TrackingState = inputSkel.TrackingState;
-            adjSkel.ClippedEdges = inputSkel.ClippedEdges;
-            adjSkel.TrackingId = inputSkel.TrackingId;
-            //Don't copy bone orientations, it appears they are calculated on the fly from the joint positions
+        //    //Make sure the ancillary properties are copied over
+        //    adjSkel.TrackingState = inputSkel.TrackingState;
+        //    adjSkel.ClippedEdges = inputSkel.ClippedEdges;
+        //    adjSkel.TrackingId = inputSkel.TrackingId;
+        //    //Don't copy bone orientations, it appears they are calculated on the fly from the joint positions
             
-            //Transform the skeleton position
-            SkeletonPoint tempPosition = transform(inputSkel.Position, transformationMatrix);
-            //tempPosition.X += (float)kinectLocation.X;
-            //tempPosition.Y += (float)kinectLocation.Y;
-            //tempPosition.Z += (float)kinectLocation.Z;
-            adjSkel.Position = tempPosition;
+        //    //Transform the skeleton position
+        //    SkeletonPoint tempPosition = transform(inputSkel.Position, transformationMatrix);
+        //    //tempPosition.X += (float)kinectLocation.X;
+        //    //tempPosition.Y += (float)kinectLocation.Y;
+        //    //tempPosition.Z += (float)kinectLocation.Z;
+        //    adjSkel.Position = tempPosition;
 
-            //Transform all the joint positions
-            for (int j = 0; j < inputSkel.Joints.Count; j++)
-            {
-                Joint tempJoint = adjSkel.Joints[(JointType)j];
-                tempJoint.TrackingState = inputSkel.Joints[(JointType)j].TrackingState;
-                SkeletonPoint tempPoint = transform(inputSkel.Joints[(JointType)j].Position, transformationMatrix);
-                //tempPoint.X += (float)kinectLocation.X;
-                //tempPoint.Y += (float)kinectLocation.Y;
-                //tempPoint.Z += (float)kinectLocation.Z;
-                tempJoint.Position = tempPoint;
-                adjSkel.Joints[(JointType)j] = tempJoint;
-            }
+        //    //Transform all the joint positions
+        //    for (int j = 0; j < inputSkel.Joints.Count; j++)
+        //    {
+        //        Joint tempJoint = adjSkel.Joints[(JointType)j];
+        //        tempJoint.TrackingState = inputSkel.Joints[(JointType)j].TrackingState;
+        //        SkeletonPoint tempPoint = transform(inputSkel.Joints[(JointType)j].Position, transformationMatrix);
+        //        //tempPoint.X += (float)kinectLocation.X;
+        //        //tempPoint.Y += (float)kinectLocation.Y;
+        //        //tempPoint.Z += (float)kinectLocation.Z;
+        //        tempJoint.Position = tempPoint;
+        //        adjSkel.Joints[(JointType)j] = tempJoint;
+        //    }
 
-            return adjSkel;
-        }
+        //    return adjSkel;
+        //}
         private Matrix3D findRotation(Vector3D u, Vector3D v)
         {
             Matrix3D rotationMatrix = new Matrix3D();
@@ -825,16 +832,16 @@ namespace KinectV1Core
         //    adjustedVector = Vector3D.Multiply(adjustedVector, rotation);
         //    return adjustedVector;
         //}
-        private SkeletonPoint transform(SkeletonPoint position, Matrix3D rotation)
-        {
-            Point3D adjustedVector = new Point3D(position.X, position.Y, position.Z);
-            adjustedVector = Point3D.Multiply(adjustedVector, rotation);
-            SkeletonPoint adjustedPoint = new SkeletonPoint();
-            adjustedPoint.X = (float)adjustedVector.X;
-            adjustedPoint.Y = (float)adjustedVector.Y;
-            adjustedPoint.Z = (float)adjustedVector.Z;
-            return adjustedPoint;
-        }
+        //private SkeletonPoint transform(SkeletonPoint position, Matrix3D rotation)
+        //{
+        //    Point3D adjustedVector = new Point3D(position.X, position.Y, position.Z);
+        //    adjustedVector = Point3D.Multiply(adjustedVector, rotation);
+        //    SkeletonPoint adjustedPoint = new SkeletonPoint();
+        //    adjustedPoint.X = (float)adjustedVector.X;
+        //    adjustedPoint.Y = (float)adjustedVector.Y;
+        //    adjustedPoint.Z = (float)adjustedVector.Z;
+        //    return adjustedPoint;
+        //}
         #endregion
 
         //Misc Methods

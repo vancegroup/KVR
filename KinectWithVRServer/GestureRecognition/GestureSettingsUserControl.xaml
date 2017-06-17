@@ -1,0 +1,125 @@
+﻿<UserControl x:Class="KinectWithVRServer.GestureSettingsUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="240" d:DesignWidth="530">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="Gesture Name:" Margin="2" VerticalAlignment="Center"/>
+            <TextBox Name="nameTextBox" Grid.Column="1" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" LostFocus="nameTextBox_LostFocus"/>
+        </Grid>
+        <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Text="Training Data:" Margin="2"/>
+            <ListBox Name="trainingSetsListBox" Margin="2" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        </Grid>
+        <Grid Grid.Row="1" Grid.Column="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="Training Data Name:" VerticalAlignment="Center" Margin="2"/>
+                <TextBox Name="trainingDataNameTextBox" Text="Training Data" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1"/>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Grid.Row="1">
+                <Label Content="Record Training Set:" Margin="2" VerticalAlignment="Center"/>
+                <Button Name="startButton" Height="27" Width="72" Content="Start" Margin="2" Click="startButton_Click"/>
+                <Button Name="stopButton" Height="27" Width="72" Content="Stop" Margin="2" IsEnabled="False" Click="stopButton_Click"/>
+                <Button Name="removeButton" Height="27" Width="72" Content="Remove" Margin="2" Click="removeButton_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Grid.Row="2">
+                <Label Content="Recognizer:" Margin="2" VerticalAlignment="Center"/>
+                <Button Name="trainButton" Height="27" Width="72" Content="Train" Margin="2" Click="trainButton_Click"/>
+                <Button Name="testButton" Height="27" Width="72" Content="Test" Margin="2" IsEnabled="False" Click="testButton_Click"/>
+                <TextBlock Text="Probability:" Margin="2" VerticalAlignment="Center"/>
+                <TextBlock Name="probTextBlock" Margin="2" VerticalAlignment="Center" Text="N/A"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Grid.Row="3">
+                <Label Content="Skeleton:" Margin="2" VerticalAlignment="Center"/>
+                <TextBox Name="skeletonTextBox" Margin="2" Width="50" VerticalAlignment="Center" Text="0" PreviewKeyDown="intNumberTextBox_PreviewKeyDown" LostFocus="skeletonTextBox_LostFocus"/>
+                <Label Content="Joint:" Margin="2" VerticalAlignment="Center"/>
+                <ComboBox Name="jointComboBox" Margin="2" SelectedIndex="11" SelectionChanged="jointComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Hip Center"/>
+                    <ComboBoxItem Content="Spine"/>
+                    <ComboBoxItem Content="Shoulder Center"/>
+                    <ComboBoxItem Content="Head"/>
+                    <ComboBoxItem Content="Left Shoulder"/>
+                    <ComboBoxItem Content="Left Elbow"/>
+                    <ComboBoxItem Content="Left Wrist"/>
+                    <ComboBoxItem Content="Left Hand"/>
+                    <ComboBoxItem Content="Right Shoulder"/>
+                    <ComboBoxItem Content="Right Elbow"/>
+                    <ComboBoxItem Content="Right Wrist"/>
+                    <ComboBoxItem Content="Right Hand"/>
+                    <ComboBoxItem Content="Left Hip"/>
+                    <ComboBoxItem Content="Left Knee"/>
+                    <ComboBoxItem Content="Left Ankle"/>
+                    <ComboBoxItem Content="Left Foot"/>
+                    <ComboBoxItem Content="Right Hip"/>
+                    <ComboBoxItem Content="Right Knee"/>
+                    <ComboBoxItem Content="Right Ankle"/>
+                    <ComboBoxItem Content="Right Foot"/>
+                    <!--The Kinect v2 specific joints are not options, but they could be added-->
+                </ComboBox>
+                <Label Content="Sensitivity:" Margin="2" VerticalAlignment="Center"/>
+                <TextBox Name="sensitivityTextBox" Text="1.0" Margin="2" VerticalAlignment="Center" Width="50" PreviewKeyDown="floatNumberTextBox_PreviewKeyDown" LostFocus="sensitivityTextBox_LostFocus"/>
+            </StackPanel>
+            <GroupBox Header="Button Settings" Grid.Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Server Name:" Margin="2" VerticalAlignment="Center"/>
+                        <TextBox Name="serverNameTextBox" Margin="2" VerticalAlignment="Center" Width="120" Text="Server" LostFocus="serverNameTextBox_LostFocus"/>
+                        <Label Content="Button Number:" Margin="2" VerticalAlignment="Center"/>
+                        <TextBox Name="buttonNumberTextBox" Margin="2" VerticalAlignment="Center" Width="50" Text="0" PreviewKeyDown="intNumberTextBox_PreviewKeyDown" LostFocus="buttonNumberTextBox_LostFocus"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Grid.Row="1">
+                        <Label Content="Button Type:" Margin="2" VerticalAlignment="Center"/>
+                        <ComboBox Name="buttonTypeComboBox" Margin="2" Width="95" SelectedIndex="0" VerticalAlignment="Center" SelectionChanged="buttonTypeComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Momentary"/>
+                            <ComboBoxItem Content="Setter"/>
+                            <ComboBoxItem Content="Toggle"/>
+                        </ComboBox>
+                        <Label Content="Button Number:" Margin="2" VerticalAlignment="Center"/>
+                        <ComboBox Name="buttonStateComboBox" Margin="2" Width="95" SelectedIndex="0" VerticalAlignment="Center" SelectionChanged="buttonStateComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Pressed"/>
+                            <ComboBoxItem Content="Not Pressed"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+        </Grid>
+    </Grid>
+</UserControl>
