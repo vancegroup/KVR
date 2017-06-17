@@ -355,6 +355,15 @@ namespace KinectV2Core
                 }
             }
         }
+        public void UpdateTransformationMatrix()
+        {
+            Quaternion yawRot = new Quaternion(new Vector3D(0, 1, 0), masterKinectSettings.kinectYaw);
+            Quaternion pitchRot = new Quaternion(new Vector3D(1, 0, 0), masterKinectSettings.kinectPitch);
+            Quaternion rollRot = new Quaternion(new Vector3D(0, 0, 1), masterKinectSettings.kinectRoll);
+            skeletonRotQuaternion = yawRot * pitchRot * rollRot;
+            TranslateTransform3D transTrans = new TranslateTransform3D((Vector3D)masterKinectSettings.kinectPosition);
+            skeletonTransformation = Matrix3D.Multiply(KinectBase.HelperMethods.QuaternionToMatrix(skeletonRotQuaternion), transTrans.Value);
+        }
 
         private void LaunchKinect()
         {

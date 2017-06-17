@@ -428,6 +428,7 @@ namespace KinectV2Core
                 System.Windows.Media.Media3D.Point3D tempPoint = kinectSettings.kinectPosition;
                 tempPoint.X = temp;
                 kinectSettings.kinectPosition = tempPoint;
+                kinectCore.UpdateTransformationMatrix();
             }
         }
         private void yPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -442,6 +443,7 @@ namespace KinectV2Core
                 System.Windows.Media.Media3D.Point3D tempPoint = kinectSettings.kinectPosition;
                 tempPoint.Y = temp;
                 kinectSettings.kinectPosition = tempPoint;
+                kinectCore.UpdateTransformationMatrix();
             }
         }
         private void zPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -456,6 +458,7 @@ namespace KinectV2Core
                 System.Windows.Media.Media3D.Point3D tempPoint = kinectSettings.kinectPosition;
                 tempPoint.Z = temp;
                 kinectSettings.kinectPosition = tempPoint;
+                kinectCore.UpdateTransformationMatrix();
             }
         }
         private void yawPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -464,6 +467,7 @@ namespace KinectV2Core
             if (double.TryParse(yawPosTextBox.Text, out temp))
             {
                 kinectSettings.kinectYaw = temp;
+                kinectCore.UpdateTransformationMatrix();
             }
         }
         private void pitchPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -472,6 +476,7 @@ namespace KinectV2Core
             if (double.TryParse(pitchPosTextBox.Text, out temp))
             {
                 kinectSettings.kinectPitch = temp;
+                kinectCore.UpdateTransformationMatrix();
             }
         }
         private void rollPosTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -480,6 +485,7 @@ namespace KinectV2Core
             if (double.TryParse(rollPosTextBox.Text, out temp))
             {
                 kinectSettings.kinectRoll = temp;
+                kinectCore.UpdateTransformationMatrix();
             }
         }
         #endregion

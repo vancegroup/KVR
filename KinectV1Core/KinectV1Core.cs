@@ -568,9 +568,9 @@ namespace KinectV1Core
                     Point3D kinectPosition = masterKinectSettings.kinectPosition;
                     Matrix3D gravityBasedKinectRotation = findRotation(new Vector3D(predAccel[0, 0], predAccel[1, 0], predAccel[2, 0]), new Vector3D(0, -1, 0));
                     AxisAngleRotation3D yawRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), -kinectYaw);
-                    RotateTransform3D tempTrans = new RotateTransform3D(yawRotation);
+                    RotateTransform3D tempYawTrans = new RotateTransform3D(yawRotation);
                     TranslateTransform3D transTrans = new TranslateTransform3D((Vector3D)kinectPosition);
-                    Matrix3D rotationOnlyMatrix = Matrix3D.Multiply(tempTrans.Value, gravityBasedKinectRotation);
+                    Matrix3D rotationOnlyMatrix = Matrix3D.Multiply(tempYawTrans.Value, gravityBasedKinectRotation);
                     Matrix3D masterMatrix = Matrix3D.Multiply(rotationOnlyMatrix, transTrans.Value);
                     skeletonTransformation = masterMatrix;
                     skeletonRotQuaternion = KinectBase.HelperMethods.MatrixToQuaternion(rotationOnlyMatrix);
