@@ -28,8 +28,9 @@ namespace KinectWithVRServer
             {
                 filteredSkeletons.HoldUpdates();
 
-                int filteredSkeletonIndex = FindSkeletonNumber(skeleton);
-                IntegrateSkeleton(skeleton, filteredSkeletonIndex);
+                bool isReversed = false;
+                int filteredSkeletonIndex = FindSkeletonNumber(skeleton, out isReversed);
+                IntegrateSkeleton(skeleton, filteredSkeletonIndex, isReversed);
 
                 filteredSkeletons.ReleaseForUpdates();
             }
@@ -72,65 +73,176 @@ namespace KinectWithVRServer
             return skeletons.ToArray();
         }
 
-        private int FindSkeletonNumber(KinectSkeleton skeleton)
+        private int FindSkeletonNumber(KinectSkeleton skeleton, out bool isReversed)
         {
-            List<double> averageDistance = new List<double>();
+            List<double> averageForwardDistance = new List<double>();
+            List<double> averageReverseDistance = new List<double>();
+            isReversed = false;
 
             for (int i = 0; i < filteredSkeletons.Count; i++)
             {
-                //TODO: Should the time before desposal be changed?
-                //Check if the skeleton has been updated in the last 5 seconds, and discard it if it hasn't
-                //if (filteredSkeletons[i].AgeMS > 5000)
-                //{
-                //    filteredSkeletons.RemoveAt(i);
-                //    i--;
-                //}
-                //else //If the skeleton is still current, check the average distance to the merging skeletons joints
-                //{
-                    Point3D[] skelToCompare = filteredSkeletons[i].PredictPositionsOnly(0);
-                    double average = 0;
-                    int n = 0;
+                Point3D[] skelToCompare = filteredSkeletons[i].PredictPositionsOnly(0);
+                double forwardAverage = 0;
+                double reverseAverage = 0;
+                int forwardN = 0;
+                int reverseN = 0;
 
-                    for (int j = 0; j < skeleton.skeleton.Count; j++)
+                for (int j = 0; j < skeleton.skeleton.Count; j++)
+                {
+                    if (skeleton.skeleton[j].TrackingState == TrackingState.Tracked)
                     {
-                        if (skeleton.skeleton[j].TrackingState == TrackingState.Tracked)
+                        #region Forward Comparison
+                        //Add the X distance to the average
+                        forwardAverage += ((skelToCompare[j].X - skeleton.skeleton[j].Position.X) - forwardAverage) / (forwardN + 1);
+                        forwardN++;
+                        //Add the Y distance to the average
+                        forwardAverage += ((skelToCompare[j].Y - skeleton.skeleton[j].Position.Y) - forwardAverage) / (forwardN + 1);
+                        forwardN++;
+                        //Add the Z distance to the average
+                        forwardAverage += ((skelToCompare[j].Z - skeleton.skeleton[j].Position.Z) - forwardAverage) / (forwardN + 1);
+                        forwardN++;
+                        #endregion
+
+                        #region Reverse Comarison
+                        Point3D tempPoint = skeleton.skeleton[j].Position;
+                        if (((JointType)j) == JointType.ShoulderLeft)
                         {
-                            //Add the X distance to the average
-                            average += ((skelToCompare[j].X - skeleton.skeleton[j].Position.X) - average) / (n + 1);
-                            n++;
-                            //Add the Y distance to the average
-                            average += ((skelToCompare[j].Y - skeleton.skeleton[j].Position.Y) - average) / (n + 1);
-                            n++;
-                            //Add the Z distance to the average
-                            average += ((skelToCompare[j].Z - skeleton.skeleton[j].Position.Z) - average) / (n + 1);
-                            n++;
+                            tempPoint = skeleton.skeleton[JointType.ShoulderRight].Position;
                         }
-                    }
+                        else if (((JointType)j) == JointType.ShoulderRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.ShoulderLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.ElbowLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.ElbowRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.ElbowRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.ElbowLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.WristLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.WristRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.WristRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.WristLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.HandLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.HandRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.HandRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.HandLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.HandTipLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.HandTipRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.HandTipRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.HandTipLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.ThumbLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.ThumbRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.ThumbRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.ThumbLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.HipLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.HipRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.HipRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.HipLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.KneeLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.KneeRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.KneeRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.KneeLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.AnkleLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.AnkleRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.AnkleRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.AnkleLeft].Position;
+                        }
+                        else if (((JointType)j) == JointType.FootLeft)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.FootRight].Position;
+                        }
+                        else if (((JointType)j) == JointType.FootRight)
+                        {
+                            tempPoint = skeleton.skeleton[JointType.FootLeft].Position;
+                        }
 
-                    //If any points were compared, add the average to the list, otherwise mark it as uncompared with NaN
-                    if (n > 0)
-                    {
-                        averageDistance.Add(average);
-                    }
-                    else
-                    {
-                        averageDistance.Add(double.NaN);
+                        //Add the X distance to the average
+                        reverseAverage += ((skelToCompare[j].X - skeleton.skeleton[j].Position.X) - reverseAverage) / (reverseN + 1);
+                        reverseN++;
+                        //Add the Y distance to the average
+                        reverseAverage += ((skelToCompare[j].Y - skeleton.skeleton[j].Position.Y) - reverseAverage) / (reverseN + 1);
+                        reverseN++;
+                        //Add the Z distance to the average
+                        reverseAverage += ((skelToCompare[j].Z - skeleton.skeleton[j].Position.Z) - reverseAverage) / (reverseN + 1);
+                        reverseN++;
+                        #endregion
                     }
                 }
-            //}
 
-            //Go through the list of averages and find the lowest
+                //If any points were compared, add the average to the list, otherwise mark it as uncompared with NaN
+                if (forwardN > 0)
+                {
+                    averageForwardDistance.Add(forwardAverage);
+                }
+                else
+                {
+                    averageForwardDistance.Add(double.NaN);
+                }
+                if (reverseN > 0)
+                {
+                    averageReverseDistance.Add(reverseAverage);
+                }
+                else
+                {
+                    averageReverseDistance.Add(double.NaN);
+                }
+            }
+
+            //Go through the lists of averages and find the lowest
             double absLowest = double.MaxValue;
             int lowestIdx = -1;  //Initialize to -1 to mark that no matching skeleton was found
-            for (int i = 0; i < averageDistance.Count; i++)
+            for (int i = 0; i < averageForwardDistance.Count; i++)
             {
-                if (!double.IsNaN(averageDistance[i]))
+                if (!double.IsNaN(averageForwardDistance[i]))
                 {
-                    double abs = Math.Abs(averageDistance[i]) ;
+                    double abs = Math.Abs(averageForwardDistance[i]);
                     if (abs < absLowest)
                     {
                         absLowest = abs;
                         lowestIdx = i;
+                    }
+                }
+            }
+            for (int i = 0; i < averageReverseDistance.Count; i++)
+            {
+                if (!double.IsNaN(averageReverseDistance[i]))
+                {
+                    double abs = Math.Abs(averageReverseDistance[i]);
+                    if (abs < absLowest)
+                    {
+                        absLowest = abs;
+                        lowestIdx = i;
+                        isReversed = true;
                     }
                 }
             }
@@ -147,16 +259,16 @@ namespace KinectWithVRServer
             }
         }
 
-        private void IntegrateSkeleton(KinectSkeleton skeleton, int number)
+        private void IntegrateSkeleton(KinectSkeleton skeleton, int number, bool isReversed)
         {
             if (number >= 0)
             {
-                filteredSkeletons[number].IntegrateSkeleton(skeleton);
+                filteredSkeletons[number].IntegrateSkeleton(skeleton, isReversed);
             }
             else
             {
                 FilteredSkeleton tempSkel = new FilteredSkeleton();
-                tempSkel.IntegrateSkeleton(skeleton);
+                tempSkel.IntegrateSkeleton(skeleton, isReversed);
                 filteredSkeletons.Add(tempSkel);
             }
         }
@@ -189,38 +301,34 @@ namespace KinectWithVRServer
             lhFilter = new HandFilter();
         }
 
-        internal void IntegrateSkeleton(KinectSkeleton skeleton)
+        internal void IntegrateSkeleton(KinectSkeleton skeleton, bool isReversed)
         {
             for (int i = 0; i < KinectBase.HelperMethods.TotalJointCount; i++)
             {
-                if (skeleton.skeleton[i].TrackingState == TrackingState.Tracked)
+                int j = GetJointIndex(i, isReversed);  //Swap the left and righ joints, if needed
+                //The indexer i is for the filtered joints (it is non-reversed)
+                //The indexer j is for the input joints (it reverses left-right, if needed)
+                if (skeleton.skeleton[j].TrackingState == TrackingState.Tracked)
                 {
-                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[i].Position), skeleton.skeleton[i].utcTime, PointToEigVector(skeleton.skeleton[i].spatialErrorStdDev));
-                    if (skeleton.skeleton[i].utcTime > lastTrackedTime[i])
+                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[j].Position), skeleton.skeleton[j].utcTime, PointToEigVector(skeleton.skeleton[j].spatialErrorStdDev));
+                    if (skeleton.skeleton[j].utcTime > lastTrackedTime[i])
                     {
-                        lastTrackedTime[i] = skeleton.skeleton[i].utcTime;
+                        lastTrackedTime[i] = skeleton.skeleton[j].utcTime;
                     }
                 }
-                else if (skeleton.skeleton[i].TrackingState == TrackingState.Inferred)
+                else if (skeleton.skeleton[j].TrackingState == TrackingState.Inferred)
                 {
-                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[i].Position), skeleton.skeleton[i].utcTime, PointToEigVector(skeleton.skeleton[i].spatialErrorStdDev));
-                    if (skeleton.skeleton[i].utcTime > lastInferredTime[i])
+                    filteredJoints[i].IntegrateMeasurement(PointToObMatrix(skeleton.skeleton[j].Position), skeleton.skeleton[j].utcTime, PointToEigVector(skeleton.skeleton[j].spatialErrorStdDev));
+                    if (skeleton.skeleton[j].utcTime > lastInferredTime[i])
                     {
-                        lastInferredTime[i] = skeleton.skeleton[i].utcTime;
+                        lastInferredTime[i] = skeleton.skeleton[j].utcTime;
                     }
                 }
             }
 
-            //Determine the state of the right hand grasp
-            if (skeleton.skeleton[JointType.HandRight].TrackingState == TrackingState.Tracked)
-            {
-                IntegrateLeftHandGrabState(skeleton);
-            }
-            //Determine the state of the left hand grasp
-            if (skeleton.skeleton[JointType.HandLeft].TrackingState == TrackingState.Tracked)
-            {
-                IntegrateRightHandGrabState(skeleton);
-            }
+            IntegrateLeftHandGrabState(skeleton, isReversed);
+            IntegrateRightHandGrabState(skeleton, isReversed);
+ 
         }
 
         internal KinectSkeleton PredictSkeleton(double msAheadOfNow)
@@ -1185,19 +1293,134 @@ namespace KinectWithVRServer
             return state;
         }
 
-        private void IntegrateLeftHandGrabState(KinectSkeleton skeleton)
+        private void IntegrateLeftHandGrabState(KinectSkeleton skeleton, bool isReversed)
         {
-            if (skeleton.skeleton[JointType.HandLeft].TrackingState == TrackingState.Tracked)
+            if (!isReversed)
             {
-                lhFilter.IntegrateMeasurement(skeleton.leftHandClosed);
+                if (skeleton.skeleton[JointType.HandLeft].TrackingState == TrackingState.Tracked)
+                {
+                    lhFilter.IntegrateMeasurement(skeleton.leftHandClosed);
+                }
+            }
+            else
+            {
+                if (skeleton.skeleton[JointType.HandRight].TrackingState == TrackingState.Tracked)
+                {
+                    lhFilter.IntegrateMeasurement(skeleton.rightHandClosed);
+                }
             }
         }
 
-        private void IntegrateRightHandGrabState(KinectSkeleton skeleton)
+        private void IntegrateRightHandGrabState(KinectSkeleton skeleton, bool isReversed)
         {
-            if (skeleton.skeleton[JointType.HandRight].TrackingState == TrackingState.Tracked)
+            if (!isReversed)
             {
-                rhFilter.IntegrateMeasurement(skeleton.rightHandClosed);
+                if (skeleton.skeleton[JointType.HandRight].TrackingState == TrackingState.Tracked)
+                {
+                    rhFilter.IntegrateMeasurement(skeleton.rightHandClosed);
+                }
+            }
+            else
+            {
+                if (skeleton.skeleton[JointType.HandLeft].TrackingState == TrackingState.Tracked)
+                {
+                    rhFilter.IntegrateMeasurement(skeleton.rightHandClosed);
+                }
+            }
+        }
+
+        private int GetJointIndex(int index, bool isReversed)
+        {
+            if (!isReversed)
+            {
+                return index;
+            }
+            else
+            {
+                if (((JointType)index) == JointType.ShoulderLeft)
+                {
+                    return (int)JointType.ShoulderRight;
+                }
+                else if (((JointType)index) == JointType.ShoulderRight)
+                {
+                    return (int)JointType.ShoulderLeft;
+                }
+                else if (((JointType)index) == JointType.ElbowLeft)
+                {
+                    return (int)JointType.ElbowRight;
+                }
+                else if (((JointType)index) == JointType.ElbowRight)
+                {
+                    return (int)JointType.ElbowLeft;
+                }
+                else if (((JointType)index) == JointType.WristLeft)
+                {
+                    return (int)JointType.WristRight;
+                }
+                else if (((JointType)index) == JointType.WristRight)
+                {
+                    return (int)JointType.WristLeft;
+                }
+                else if (((JointType)index) == JointType.HandLeft)
+                {
+                    return (int)JointType.HandRight;
+                }
+                else if (((JointType)index) == JointType.HandRight)
+                {
+                    return (int)JointType.HandLeft;
+                }
+                else if (((JointType)index) == JointType.HandTipLeft)
+                {
+                    return (int)JointType.HandTipRight;
+                }
+                else if (((JointType)index) == JointType.HandTipRight)
+                {
+                    return (int)JointType.HandTipLeft;
+                }
+                else if (((JointType)index) == JointType.ThumbLeft)
+                {
+                    return (int)JointType.ThumbRight;
+                }
+                else if (((JointType)index) == JointType.ThumbRight)
+                {
+                    return (int)JointType.ThumbLeft;
+                }
+                else if (((JointType)index) == JointType.HipLeft)
+                {
+                    return (int)JointType.HipRight;
+                }
+                else if (((JointType)index) == JointType.HipRight)
+                {
+                    return (int)JointType.HipLeft;
+                }
+                else if (((JointType)index) == JointType.KneeLeft)
+                {
+                    return (int)JointType.KneeRight;
+                }
+                else if (((JointType)index) == JointType.KneeRight)
+                {
+                    return (int)JointType.KneeLeft;
+                }
+                else if (((JointType)index) == JointType.AnkleLeft)
+                {
+                    return (int)JointType.AnkleRight;
+                }
+                else if (((JointType)index) == JointType.AnkleRight)
+                {
+                    return (int)JointType.AnkleLeft;
+                }
+                else if (((JointType)index) == JointType.FootLeft)
+                {
+                    return (int)JointType.FootRight;
+                }
+                else if (((JointType)index) == JointType.FootRight)
+                {
+                    return (int)JointType.FootLeft;
+                }
+                else  //The center joints don't need to be flipped
+                {
+                    return index;
+                }
             }
         }
     }
