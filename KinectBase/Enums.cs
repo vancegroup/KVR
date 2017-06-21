@@ -45,5 +45,5 @@ namespace KinectBase
     }
     //public enum GestureType { Recorded }
     public enum PressState { Pressed, Released }
-    public enum HMMModel { LeftToRight, Ergodic }
+    public enum HMMModel { LeftToRight, LeftToRight2, Ergodic, LeftToRight2Loop }
 }

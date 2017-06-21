@@ -111,9 +111,9 @@ namespace KinectBase
         private double sigmaxSensor = 0.2;  //These are inital guesses that can be overridden by using the appropriate IntegrateMeasurement function
         private double sigmaySensor = 0.2;  //These are standard deviations and will be squared later
         private double sigmazSensor = 0.2;
-        private double sigmaSqxActual = 4;    //These are related to the physics of a human moving 
-        private double sigmaSqyActual = 4;    //These are variance, not standard deviation, to save a bunch of multiplications
-        private double sigmaSqzActual = 4;
+        private double sigmaSqxActual = 9;    //These are related to the physics of a human moving 
+        private double sigmaSqyActual = 9;    //These are variance, not standard deviation, to save a bunch of multiplications
+        private double sigmaSqzActual = 9;
         private DateTime? lastTime = null;
 
         public JerkConst3DFilter()

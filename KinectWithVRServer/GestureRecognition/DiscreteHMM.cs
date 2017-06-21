@@ -338,6 +338,98 @@ namespace KinectWithVRServer
                     }
                 }
             }
+            else if (model == HMMModel.LeftToRight2)
+            {
+                //Setup the initial state distribution
+                for (int i = 0; i < statesList.Length; i++)
+                {
+                    if (i == 0)
+                    {
+                        //initialStateDistribution[i] = 1.0;
+                        initialStateDistribution[i] = 0.9;
+                    }
+                    else
+                    {
+                        //initialStateDistribution[i] = 0;
+                        initialStateDistribution[i] = 0.1 / (statesList.Length - 1);
+                    }
+                }
+
+                //Setup the state transition probabilities
+                for (int i = 0; i < statesList.Length; i++)
+                {
+                    for (int j = 0; j < statesList.Length; j++)
+                    {
+                        if (j == i || j == i + 1 || j == i + 2)
+                        {
+                            stateTransitionProbabilities[i, j] = 1.0 / 3.0;
+                        }
+                        else
+                        {
+                            stateTransitionProbabilities[i, j] = 0.0;
+                        }
+                    }
+                }
+
+                //Setup the symbol distribution
+                for (int i = 0; i < statesList.Length; i++)
+                {
+                    for (int j = 0; j < symbolsList.Length; j++)
+                    {
+                        symbolDistributionDiscrete[i, j] = evenSymProb;
+                    }
+                }
+            }
+            else if (model == HMMModel.LeftToRight2Loop)
+            {
+                //Setup the initial state distribution
+                for (int i = 0; i < statesList.Length; i++)
+                {
+                    if (i == 0)
+                    {
+                        //initialStateDistribution[i] = 1.0;
+                        initialStateDistribution[i] = 0.9;
+                    }
+                    else
+                    {
+                        //initialStateDistribution[i] = 0;
+                        initialStateDistribution[i] = 0.1 / (statesList.Length - 1);
+                    }
+                }
+
+                //Setup the state transition probabilities
+                for (int i = 0; i < statesList.Length; i++)
+                {
+                    for (int j = 0; j < statesList.Length; j++)
+                    {
+                        if (j == i || j == i + 1 || j == i + 2)
+                        {
+                            stateTransitionProbabilities[i, j] = 1 / 3.0;
+                        }
+                        //else if (i == statesList.Length - 2 && j == 0)
+                        //{
+                        //    stateTransitionProbabilities[i, j] = 1 / 3.0;
+                        //}
+                        else if (i == statesList.Length - 1 && (j == 0 /*|| j == 1*/))
+                        {
+                            stateTransitionProbabilities[i, j] = 1 / 3.0;
+                        }
+                        else
+                        {
+                            stateTransitionProbabilities[i, j] = 0.0;
+                        }
+                    }
+                }
+
+                //Setup the symbol distribution
+                for (int i = 0; i < statesList.Length; i++)
+                {
+                    for (int j = 0; j < symbolsList.Length; j++)
+                    {
+                        symbolDistributionDiscrete[i, j] = evenSymProb;
+                    }
+                }
+            }
             #endregion
         }
 

@@ -93,7 +93,8 @@ namespace KinectWithVRServer
 
         internal void AddGesture()
         {
-            GestureRecognizer recog = new GestureRecognizer(HMMModel.LeftToRight);
+            //GestureRecognizer recog = new GestureRecognizer(HMMModel.LeftToRight);
+            GestureRecognizer recog = new GestureRecognizer(HMMModel.LeftToRight2);
             recognizers.Add(recog);
             inGesture.Add(false);
         }
@@ -122,7 +123,7 @@ namespace KinectWithVRServer
         private double actualStd = 0.01;
         private DateTime utcLastTime;
         private int[] symbols = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-        private int[] states = { 0, 1, 2 };
+        private int[] states = { 0, 1, 2, 4, 5 };
         private List<Point3D> kCentroids = new List<Point3D>();
         private double rawLogThreshold = 0.0;
         private Queue<int> skeletonHistory = new Queue<int>();
@@ -211,14 +212,14 @@ namespace KinectWithVRServer
             }
             double stdDev = Math.Sqrt(moment2 / (double)(trainingData.Count - 1));
             sequenceLength = (int)Math.Floor(averageSequenceLength);
-            //if (double.IsNaN(stdDev))
-            //{
-            //    sequenceLength = (int)Math.Ceiling(averageSequenceLength);
-            //}
-            //else
-            //{
-            //    sequenceLength = (int)Math.Ceiling(averageSequenceLength + 2 * stdDev);
-            //}
+            if (double.IsNaN(stdDev))
+            {
+                sequenceLength = (int)Math.Ceiling(averageSequenceLength);
+            }
+            else
+            {
+                sequenceLength = (int)Math.Ceiling(averageSequenceLength + 2 * stdDev);
+            }
         }
 
         internal Point3D GetNormalizedRelativePosition(SkeletonData skeleton, JointType joint, double localShoulderWidth = double.NaN)
