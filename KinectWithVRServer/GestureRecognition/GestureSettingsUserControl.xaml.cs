@@ -437,5 +437,20 @@ namespace KinectWithVRServer
             }
         }
         #endregion
+
+        private void trainingSetsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsInitialized)
+            {
+                if (trainingSetsListBox.SelectedIndex >= 0 && trainingSetsListBox.SelectedIndex < trainingSetsListBox.Items.Count)
+                {
+                    removeButton.IsEnabled = true;
+                }
+                else
+                {
+                    removeButton.IsEnabled = false;
+                }
+            }
+        }
     }
 }

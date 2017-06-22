@@ -1417,9 +1417,9 @@ namespace KinectWithVRServer
                         DepthImageCanvas.Children.Clear();
                         for (int i = 0; i < skeletons.Length; i++)
                         {
-                            Trace.WriteLine("Point 4, i=" + i.ToString());
+                            //Trace.WriteLine("Point 4, i=" + i.ToString());
                             RenderSkeletonOnDepth(skeletons[i], AutoPickSkeletonRenderColor(i), GetIDofKinect(DepthStreamUniqueID), true);
-                            Trace.WriteLine("Point 5, i=" + i.ToString());
+                            //Trace.WriteLine("Point 5, i=" + i.ToString());
                         }
                     }), (object)e.skeletons);
                 }
@@ -2358,7 +2358,17 @@ namespace KinectWithVRServer
         #region Gesture Tab GUI Stuff
         private void currentGesturesDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            if (IsInitialized)
+            {
+                if (currentGesturesDataGrid.SelectedIndex >= 0 && currentGesturesDataGrid.SelectedIndex < currentGesturesDataGrid.Items.Count)
+                {
+                    RemoveGestureButton.IsEnabled = true;
+                }
+                else
+                {
+                    RemoveGestureButton.IsEnabled = false;
+                }
+            }
         }
         private void AddGestureButton_Click(object sender, RoutedEventArgs e)
         {

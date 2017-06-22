@@ -28,7 +28,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <TextBlock Text="Training Data:" Margin="2"/>
-            <ListBox Name="trainingSetsListBox" Margin="2" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <ListBox Name="trainingSetsListBox" Margin="2" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="trainingSetsListBox_SelectionChanged"/>
         </Grid>
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.ColumnDefinitions>
@@ -53,7 +53,7 @@
                 <Label Content="Record Training Set:" Margin="2" VerticalAlignment="Center"/>
                 <Button Name="startButton" Height="27" Width="72" Content="Start" Margin="2" Click="startButton_Click"/>
                 <Button Name="stopButton" Height="27" Width="72" Content="Stop" Margin="2" IsEnabled="False" Click="stopButton_Click"/>
-                <Button Name="removeButton" Height="27" Width="72" Content="Remove" Margin="2" Click="removeButton_Click"/>
+                <Button Name="removeButton" Height="27" Width="72" Content="Remove" Margin="2" IsEnabled="False" Click="removeButton_Click"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="2">
                 <Label Content="Recognizer:" Margin="2" VerticalAlignment="Center"/>

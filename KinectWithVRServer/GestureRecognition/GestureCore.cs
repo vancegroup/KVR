@@ -34,32 +34,35 @@ namespace KinectWithVRServer
         }
 
         //Note, this is fairly processor intensive, try to run in a background thread if possible
-        internal void UpdateRecognizer(KinectSkeleton latestSkeleton)
+        internal void UpdateRecognizer(KinectSkeleton[] latestSkeletons)
         {
-            if (running )
+            if (running)
             {
-                for (int i = 0; i < masterSettings.gestureCommands.Count; i++)
+                for (int s = 0; s < latestSkeletons.Length; s++)
                 {
-                    if (latestSkeleton.TrackingId == masterSettings.gestureCommands[i].trackedSkeleton)
+                    for (int i = 0; i < masterSettings.gestureCommands.Count; i++)
                     {
-                        recognizers[i].AddDataPoint(latestSkeleton, masterSettings.gestureCommands[i].monitoredJoint);
-                        double relativeProb = recognizers[i].TestGesture(masterSettings.gestureCommands[i].sensitivity);
-                        if (relativeProb < 1.0)
+                        if (latestSkeletons[s].TrackingId == masterSettings.gestureCommands[i].trackedSkeleton)
                         {
-                            if (!inGesture[i])
+                            recognizers[i].AddDataPoint(latestSkeletons[s], masterSettings.gestureCommands[i].monitoredJoint);
+                            double relativeProb = recognizers[i].TestGesture(masterSettings.gestureCommands[i].sensitivity);
+                            if (relativeProb < 1.0)
                             {
-                                inGesture[i] = true;
-                                GestureRecognizedEventArgs args = new GestureRecognizedEventArgs();
-                                args.UtcTime = DateTime.UtcNow;
-                                args.GestureName = masterSettings.gestureCommands[i].gestureName;
-                                OnGestureRecognized(args);
+                                if (!inGesture[i])
+                                {
+                                    inGesture[i] = true;
+                                    GestureRecognizedEventArgs args = new GestureRecognizedEventArgs();
+                                    args.UtcTime = DateTime.UtcNow;
+                                    args.GestureName = masterSettings.gestureCommands[i].gestureName;
+                                    OnGestureRecognized(args);
+                                }
                             }
-                        }
-                        else
-                        {
-                            if (inGesture[i])
+                            else
                             {
-                                inGesture[i] = false;
+                                if (inGesture[i])
+                                {
+                                    inGesture[i] = false;
+                                }
                             }
                         }
                     }
@@ -83,6 +86,11 @@ namespace KinectWithVRServer
 
         internal void StartRecognizer()
         {
+            for (int i = 0; i < recognizers.Count; i++)
+            {
+                recognizers[i].ClearHistory();
+            }
+
             running = true;
         }
 
@@ -94,7 +102,7 @@ namespace KinectWithVRServer
         internal void AddGesture()
         {
             //GestureRecognizer recog = new GestureRecognizer(HMMModel.LeftToRight);
-            GestureRecognizer recog = new GestureRecognizer(HMMModel.LeftToRight2);
+            GestureRecognizer recog = new GestureRecognizer(HMMModel.LeftToRightAll);
             recognizers.Add(recog);
             inGesture.Add(false);
         }
@@ -122,12 +130,13 @@ namespace KinectWithVRServer
         private double sensorStd = 0.01;
         private double actualStd = 0.01;
         private DateTime utcLastTime;
-        private int[] symbols = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-        private int[] states = { 0, 1, 2, 4, 5 };
+        private int[] symbols = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+        private int[] states = { 0, 1, 3, 4, 5, 6};
         private List<Point3D> kCentroids = new List<Point3D>();
         private double rawLogThreshold = 0.0;
         private Queue<int> skeletonHistory = new Queue<int>();
         private int sequenceLength = 0;
+        private const double thresholdScalar = 2.0;
 
         internal GestureRecognizer(HMMModel model)
         {
@@ -196,7 +205,7 @@ namespace KinectWithVRServer
                 double logProb = hmm.LogFastObservationSequenceProbability(clusteredTrainingData[i]);
                 aveProb += (logProb - aveProb) / (double)(i + 1);
             }
-            rawLogThreshold = aveProb * 2.0; //Set the baseline threshold to twice the average probility
+            rawLogThreshold = aveProb * thresholdScalar; //Set the baseline threshold to twice the average probility
             //Note: the probabilities logs of small numbers, so they are negative values (~-25 normally)
             //That means that a higher multiplier will make it more sensitive, a lower number less sensitive
 
@@ -231,6 +240,7 @@ namespace KinectWithVRServer
 
             Point3D temp = (Point3D)(skeleton[joint].Position - skeleton[JointType.ShoulderCenter].Position);
             temp = Point3D.Multiply(temp, skeleton[joint].Orientation.orientationMatrix);
+            //return new Point3D(temp.X, temp.Y, temp.Z);
             return new Point3D(temp.X / localShoulderWidth, temp.Y / localShoulderWidth, temp.Z / localShoulderWidth);
             //return skeleton[joint].Position;
         }
@@ -257,12 +267,19 @@ namespace KinectWithVRServer
             if (skeletonHistory.Count > 0.5 * sequenceLength)
             {
                 double logProb = hmm.LogFastObservationSequenceProbability(skeletonHistory.ToArray());
-                return logProb / (rawLogThreshold * sensitivity);  //This returns the normalized probability relative to the threshold, smaller numbers mean more probable, < 1.0 means it is above the threshold, >1.0 is below the probability threshold
+                double relativeProb = logProb / (rawLogThreshold * sensitivity);
+                System.Diagnostics.Trace.WriteLine("Relative prob: " + relativeProb.ToString());
+                return relativeProb;  //This returns the normalized probability relative to the threshold, smaller numbers mean more probable, < 1.0 means it is above the threshold, >1.0 is below the probability threshold
             }
             else
             {
                 return double.PositiveInfinity;
             }
+        }
+
+        internal void ClearHistory()
+        {
+            skeletonHistory.Clear();
         }
 
         private void UpdateShoulderWidth(Joint rightShoulder, Joint leftShoulder)
@@ -285,7 +302,7 @@ namespace KinectWithVRServer
                 shoulderCovariance = (1 - kalmanGain) * predCovar;
                 utcLastTime = utcNow;
 
-                System.Diagnostics.Trace.WriteLine("Width: " + shoulderWidth.ToString());
+                //System.Diagnostics.Trace.WriteLine("Width: " + shoulderWidth.ToString());
             }
         }
     }

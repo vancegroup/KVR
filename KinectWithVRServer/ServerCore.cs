@@ -201,6 +201,14 @@ namespace KinectWithVRServer
                 feedbackCore.StopFeedbackCore();
             }
 
+            //Start gesture recognition, if necessary
+            if (serverMasterOptions.gestureCommands.Count > 0)
+            {
+                gestRecog.StopRecognizer();
+                gestRecog.GestureRecognizer -= gestRecog_GestureRecognizer;
+                WriteToVerboseLog("Gesture recognizer stopped.");
+            }
+
             keepAliveTimer.Stop();
             keepAliveTimer.Dispose();
 
@@ -831,12 +839,12 @@ namespace KinectWithVRServer
                             {
                                 InvertButton(j, shortCommand.buttonNumber);
                             }
+
+                            WriteToVerboseLog(string.Format("Gesture \"{0}\" was recognized.", e.GestureName));
                         }
                     }
                 }
             }
-
-            throw new NotImplementedException();
         }
 
         private void skeletonUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -850,6 +858,9 @@ namespace KinectWithVRServer
                 List<KinectSkeleton> sortedSkeletons = SortSkeletons(mergedSkeletons, serverMasterOptions.mergedSkeletonOptions.skeletonSortMode, feedbackPosition);
 
                 doMergedSkeletonUpdate(sortedSkeletons);
+
+                //Send the skeletons to the gesture recognizer so it can do its work
+                gestRecog.UpdateRecognizer(sortedSkeletons.ToArray());
             }
         }
         void parent_MergedSkeletonChanged(object sender, SkeletonEventArgs e)
@@ -858,6 +869,9 @@ namespace KinectWithVRServer
             {
                 //These skeletons are pre-sorted, so we just need to send them on
                 doMergedSkeletonUpdate(new List<KinectSkeleton>(e.skeletons));
+
+                //Send the skeletons to the gesture recognizer so it can do its work
+                gestRecog.UpdateRecognizer(e.skeletons);
             }
         }
         private void doMergedSkeletonUpdate(List<KinectSkeleton> sortedSkeletons)
@@ -1478,34 +1492,33 @@ namespace KinectWithVRServer
             }
             #endregion
 
-            //TODO: Implement gesture parsing and error handling
             #region Parse the Gesture Commands
-            //for (int i = 0; i < serverMasterOptions.gestureCommands.Count; i++)
-            //{
-            //    bool found = false;
+            for (int i = 0; i < serverMasterOptions.gestureCommands.Count; i++)
+            {
+                bool found = false;
 
-            //    for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
-            //    {
-            //        if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.gestureCommands[i].serverName)
-            //        {
-            //            //The button server exists, so lets see if it is using a unique button channel
-            //            found = true;
-            //            if (!serverMasterOptions.buttonServers[j].uniqueChannels.Contains(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber))
-            //            {
-            //                serverMasterOptions.buttonServers[j].uniqueChannels.Add(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber);
-            //            }
-            //        }
-            //    }
+                for (int j = 0; j < serverMasterOptions.buttonServers.Count; j++)
+                {
+                    if (serverMasterOptions.buttonServers[j].serverName == serverMasterOptions.gestureCommands[i].serverName)
+                    {
+                        //The button server exists, so lets see if it is using a unique button channel
+                        found = true;
+                        if (!serverMasterOptions.buttonServers[j].uniqueChannels.Contains(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber))
+                        {
+                            serverMasterOptions.buttonServers[j].uniqueChannels.Add(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber);
+                        }
+                    }
+                }
 
-            //    if (!found)
-            //    {
-            //        ButtonServerSettings temp = new ButtonServerSettings();
-            //        temp.serverName = serverMasterOptions.gestureCommands[i].serverName;
-            //        temp.uniqueChannels = new List<int>();
-            //        temp.uniqueChannels.Add(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber);
-            //        serverMasterOptions.buttonServers.Add(temp);
-            //    }
-            //}
+                if (!found)
+                {
+                    ButtonServerSettings temp = new ButtonServerSettings();
+                    temp.serverName = serverMasterOptions.gestureCommands[i].serverName;
+                    temp.uniqueChannels = new List<int>();
+                    temp.uniqueChannels.Add(((GestureCommand)serverMasterOptions.gestureCommands[i]).buttonNumber);
+                    serverMasterOptions.buttonServers.Add(temp);
+                }
+            }
             #endregion
 
             #region Parse the per Kinect (acceleration, audio angle, and imager) settings
